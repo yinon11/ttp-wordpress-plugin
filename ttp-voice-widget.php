@@ -2,7 +2,7 @@
 /**
  * Plugin Name: TalkToPC Voice Widget
  * Description: Add AI voice conversations to your WordPress site. Let visitors talk to your AI agent with natural voice interactions.
- * Version: 1.1.3
+ * Version: 1.3.0
  * Author: TalkToPC
  * Author URI: https://talktopc.com
  * License: GPL-2.0-or-later
@@ -17,7 +17,7 @@ if (!defined('ABSPATH')) exit;
 // Constants
 define('TTP_API_URL', 'https://backend.talktopc.com');
 define('TTP_CONNECT_URL', 'https://talktopc.com/connect/wordpress');
-define('TTP_VERSION', '1.1.3');
+define('TTP_VERSION', '1.3.0');
 
 // =============================================================================
 // ADMIN MENU & SETTINGS
@@ -35,8 +35,7 @@ add_action('admin_menu', function() {
 
 // Register all settings
 add_action('admin_init', function() {
-    // Connection settings - separate group, not part of the form
-    // These are set via OAuth callback and should not be affected by form submission
+    // Connection settings - separate group (set via OAuth)
     register_setting('ttp_connection', 'ttp_api_key', ['sanitize_callback' => 'sanitize_text_field']);
     register_setting('ttp_connection', 'ttp_app_id', ['sanitize_callback' => 'sanitize_text_field']);
     register_setting('ttp_connection', 'ttp_user_email', ['sanitize_callback' => 'sanitize_email']);
@@ -52,20 +51,70 @@ add_action('admin_init', function() {
     register_setting('ttp_settings', 'ttp_override_voice_speed', ['sanitize_callback' => 'ttp_sanitize_float']);
     register_setting('ttp_settings', 'ttp_override_language', ['sanitize_callback' => 'sanitize_text_field']);
     register_setting('ttp_settings', 'ttp_override_temperature', ['sanitize_callback' => 'ttp_sanitize_float']);
+    register_setting('ttp_settings', 'ttp_override_max_tokens', ['sanitize_callback' => 'absint']);
+    register_setting('ttp_settings', 'ttp_override_max_call_duration', ['sanitize_callback' => 'absint']);
     
-    // Widget appearance
-    register_setting('ttp_settings', 'ttp_position', ['sanitize_callback' => 'sanitize_text_field', 'default' => 'bottom-right']);
+    // Behavior
     register_setting('ttp_settings', 'ttp_mode', ['sanitize_callback' => 'sanitize_text_field', 'default' => 'unified']);
     register_setting('ttp_settings', 'ttp_direction', ['sanitize_callback' => 'sanitize_text_field', 'default' => 'ltr']);
+    register_setting('ttp_settings', 'ttp_auto_open', ['sanitize_callback' => 'rest_sanitize_boolean']);
+    register_setting('ttp_settings', 'ttp_welcome_message', ['sanitize_callback' => 'sanitize_text_field']);
+    
+    // Button
+    register_setting('ttp_settings', 'ttp_position', ['sanitize_callback' => 'sanitize_text_field', 'default' => 'bottom-right']);
     register_setting('ttp_settings', 'ttp_button_size', ['sanitize_callback' => 'sanitize_text_field', 'default' => 'medium']);
     register_setting('ttp_settings', 'ttp_button_shape', ['sanitize_callback' => 'sanitize_text_field', 'default' => 'circle']);
-    register_setting('ttp_settings', 'ttp_button_bg_color', ['sanitize_callback' => 'sanitize_hex_color', 'default' => '#FFFFFF']);
+    register_setting('ttp_settings', 'ttp_button_bg_color', ['sanitize_callback' => 'sanitize_hex_color']);
+    register_setting('ttp_settings', 'ttp_button_hover_color', ['sanitize_callback' => 'sanitize_hex_color']);
+    register_setting('ttp_settings', 'ttp_button_shadow', ['sanitize_callback' => 'rest_sanitize_boolean', 'default' => true]);
+    
+    // Icon
+    register_setting('ttp_settings', 'ttp_icon_type', ['sanitize_callback' => 'sanitize_text_field', 'default' => 'custom']);
+    register_setting('ttp_settings', 'ttp_icon_custom_image', ['sanitize_callback' => 'esc_url_raw']);
+    register_setting('ttp_settings', 'ttp_icon_emoji', ['sanitize_callback' => 'sanitize_text_field']);
+    register_setting('ttp_settings', 'ttp_icon_text', ['sanitize_callback' => 'sanitize_text_field']);
+    register_setting('ttp_settings', 'ttp_icon_size', ['sanitize_callback' => 'sanitize_text_field', 'default' => 'medium']);
+    
+    // Panel
+    register_setting('ttp_settings', 'ttp_panel_width', ['sanitize_callback' => 'absint', 'default' => 350]);
+    register_setting('ttp_settings', 'ttp_panel_height', ['sanitize_callback' => 'absint', 'default' => 500]);
+    register_setting('ttp_settings', 'ttp_panel_border_radius', ['sanitize_callback' => 'absint', 'default' => 12]);
+    register_setting('ttp_settings', 'ttp_panel_bg_color', ['sanitize_callback' => 'sanitize_hex_color']);
+    
+    // Header
     register_setting('ttp_settings', 'ttp_header_title', ['sanitize_callback' => 'sanitize_text_field']);
-    register_setting('ttp_settings', 'ttp_header_bg_color', ['sanitize_callback' => 'sanitize_hex_color', 'default' => '#7C3AED']);
-    register_setting('ttp_settings', 'ttp_header_text_color', ['sanitize_callback' => 'sanitize_hex_color', 'default' => '#FFFFFF']);
+    register_setting('ttp_settings', 'ttp_header_bg_color', ['sanitize_callback' => 'sanitize_hex_color']);
+    register_setting('ttp_settings', 'ttp_header_text_color', ['sanitize_callback' => 'sanitize_hex_color']);
+    register_setting('ttp_settings', 'ttp_header_show_close', ['sanitize_callback' => 'rest_sanitize_boolean', 'default' => true]);
+    
+    // Voice interface
+    register_setting('ttp_settings', 'ttp_voice_mic_color', ['sanitize_callback' => 'sanitize_hex_color']);
+    register_setting('ttp_settings', 'ttp_voice_mic_active_color', ['sanitize_callback' => 'sanitize_hex_color']);
+    register_setting('ttp_settings', 'ttp_voice_avatar_color', ['sanitize_callback' => 'sanitize_hex_color']);
+    register_setting('ttp_settings', 'ttp_voice_start_btn_color', ['sanitize_callback' => 'sanitize_hex_color']);
+    register_setting('ttp_settings', 'ttp_voice_end_btn_color', ['sanitize_callback' => 'sanitize_hex_color']);
+    
+    // Text interface
+    register_setting('ttp_settings', 'ttp_text_send_btn_color', ['sanitize_callback' => 'sanitize_hex_color']);
+    register_setting('ttp_settings', 'ttp_text_input_placeholder', ['sanitize_callback' => 'sanitize_text_field']);
+    register_setting('ttp_settings', 'ttp_text_input_focus_color', ['sanitize_callback' => 'sanitize_hex_color']);
+    
+    // Landing screen
+    register_setting('ttp_settings', 'ttp_landing_logo', ['sanitize_callback' => 'sanitize_text_field']);
+    register_setting('ttp_settings', 'ttp_landing_title', ['sanitize_callback' => 'sanitize_text_field']);
+    register_setting('ttp_settings', 'ttp_landing_title_color', ['sanitize_callback' => 'sanitize_hex_color']);
+    
+    // Messages
+    register_setting('ttp_settings', 'ttp_msg_user_bg', ['sanitize_callback' => 'sanitize_hex_color']);
+    register_setting('ttp_settings', 'ttp_msg_agent_bg', ['sanitize_callback' => 'sanitize_hex_color']);
+    register_setting('ttp_settings', 'ttp_msg_text_color', ['sanitize_callback' => 'sanitize_hex_color']);
+    
+    // Advanced
+    register_setting('ttp_settings', 'ttp_custom_css', ['sanitize_callback' => 'wp_strip_all_tags']);
 });
 
 function ttp_sanitize_float($input) {
+    if ($input === '' || $input === null) return '';
     return filter_var($input, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
 }
 
@@ -79,21 +128,14 @@ add_action('admin_init', function() {
     // Handle OAuth callback
     if (isset($_GET['api_key']) && isset($_GET['state'])) {
         if (!wp_verify_nonce($_GET['state'], 'ttp_connect')) {
-            add_settings_error('ttp_settings', 'invalid_state', 'Security check failed. Please try again.', 'error');
+            add_settings_error('ttp_settings', 'invalid_state', 'Invalid security token. Please try again.');
             return;
         }
         
-        // Save credentials
         update_option('ttp_api_key', sanitize_text_field($_GET['api_key']));
+        if (isset($_GET['app_id'])) update_option('ttp_app_id', sanitize_text_field($_GET['app_id']));
+        if (isset($_GET['email'])) update_option('ttp_user_email', sanitize_email($_GET['email']));
         
-        if (isset($_GET['app_id'])) {
-            update_option('ttp_app_id', sanitize_text_field($_GET['app_id']));
-        }
-        if (isset($_GET['email'])) {
-            update_option('ttp_user_email', sanitize_email($_GET['email']));
-        }
-        
-        // Redirect to clean URL
         wp_redirect(admin_url('options-general.php?page=ttp-voice-widget&connected=1'));
         exit;
     }
@@ -101,16 +143,13 @@ add_action('admin_init', function() {
     // Handle disconnect
     if (isset($_GET['action']) && $_GET['action'] === 'disconnect') {
         if (!wp_verify_nonce($_GET['_wpnonce'], 'ttp_disconnect')) {
-            add_settings_error('ttp_settings', 'invalid_nonce', 'Security check failed.', 'error');
+            add_settings_error('ttp_settings', 'invalid_nonce', 'Invalid security token.');
             return;
         }
         
-        // Clear all connection data
         delete_option('ttp_api_key');
         delete_option('ttp_app_id');
         delete_option('ttp_user_email');
-        delete_option('ttp_agent_id');
-        delete_option('ttp_agent_name');
         
         wp_redirect(admin_url('options-general.php?page=ttp-voice-widget&disconnected=1'));
         exit;
@@ -121,90 +160,82 @@ add_action('admin_init', function() {
 // AJAX HANDLERS
 // =============================================================================
 
-// Fetch agents
 add_action('wp_ajax_ttp_fetch_agents', function() {
     check_ajax_referer('ttp_ajax_nonce', 'nonce');
-    
     $api_key = get_option('ttp_api_key');
-    if (empty($api_key)) {
-        wp_send_json_error(['message' => 'Not connected']);
-    }
+    if (empty($api_key)) wp_send_json_error(['message' => 'Not connected']);
     
     $response = wp_remote_get(TTP_API_URL . '/api/public/wordpress/agents', [
-        'headers' => [
-            'X-API-Key' => $api_key,
-            'Content-Type' => 'application/json'
-        ],
+        'headers' => ['X-API-Key' => $api_key, 'Content-Type' => 'application/json'],
         'timeout' => 30
     ]);
     
-    if (is_wp_error($response)) {
-        wp_send_json_error(['message' => $response->get_error_message()]);
-    }
-    
-    $body = json_decode(wp_remote_retrieve_body($response), true);
-    wp_send_json_success($body);
+    if (is_wp_error($response)) wp_send_json_error(['message' => $response->get_error_message()]);
+    wp_send_json_success(json_decode(wp_remote_retrieve_body($response), true));
 });
 
-// Fetch voices
 add_action('wp_ajax_ttp_fetch_voices', function() {
     check_ajax_referer('ttp_ajax_nonce', 'nonce');
-    
     $api_key = get_option('ttp_api_key');
-    if (empty($api_key)) {
-        wp_send_json_error(['message' => 'Not connected']);
-    }
+    if (empty($api_key)) wp_send_json_error(['message' => 'Not connected']);
     
     $response = wp_remote_get(TTP_API_URL . '/api/public/wordpress/voices', [
-        'headers' => [
-            'X-API-Key' => $api_key,
-            'Content-Type' => 'application/json'
-        ],
+        'headers' => ['X-API-Key' => $api_key, 'Content-Type' => 'application/json'],
         'timeout' => 30
     ]);
     
-    if (is_wp_error($response)) {
-        wp_send_json_error(['message' => $response->get_error_message()]);
-    }
-    
-    $body = json_decode(wp_remote_retrieve_body($response), true);
-    wp_send_json_success($body);
+    if (is_wp_error($response)) wp_send_json_error(['message' => $response->get_error_message()]);
+    wp_send_json_success(json_decode(wp_remote_retrieve_body($response), true));
 });
 
-// Create new agent
 add_action('wp_ajax_ttp_create_agent', function() {
     check_ajax_referer('ttp_ajax_nonce', 'nonce');
-    
     $api_key = get_option('ttp_api_key');
-    if (empty($api_key)) {
-        wp_send_json_error(['message' => 'Not connected']);
-    }
+    if (empty($api_key)) wp_send_json_error(['message' => 'Not connected']);
     
     $agent_name = isset($_POST['agent_name']) ? sanitize_text_field($_POST['agent_name']) : '';
-    if (empty($agent_name)) {
-        wp_send_json_error(['message' => 'Agent name is required']);
-    }
+    if (empty($agent_name)) wp_send_json_error(['message' => 'Agent name required']);
     
     $response = wp_remote_post(TTP_API_URL . '/api/public/wordpress/agents', [
-        'headers' => [
-            'X-API-Key' => $api_key,
-            'Content-Type' => 'application/json'
-        ],
-        'body' => wp_json_encode([
-            'name' => $agent_name,
-            'site_url' => home_url(),
-            'site_name' => get_bloginfo('name')
-        ]),
+        'headers' => ['X-API-Key' => $api_key, 'Content-Type' => 'application/json'],
+        'body' => json_encode(['name' => $agent_name, 'site_url' => home_url(), 'site_name' => get_bloginfo('name')]),
         'timeout' => 30
     ]);
     
-    if (is_wp_error($response)) {
-        wp_send_json_error(['message' => $response->get_error_message()]);
+    if (is_wp_error($response)) wp_send_json_error(['message' => $response->get_error_message()]);
+    wp_send_json_success(json_decode(wp_remote_retrieve_body($response), true));
+});
+
+function ttp_get_signed_url() {
+    if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'ttp_widget_nonce')) {
+        wp_send_json_error(['message' => 'Invalid security token']);
     }
     
+    $api_key = get_option('ttp_api_key');
+    $app_id = get_option('ttp_app_id');
+    $agent_id = get_option('ttp_agent_id');
+    
+    if (empty($api_key) || empty($agent_id)) wp_send_json_error(['message' => 'Widget not configured']);
+    
+    $response = wp_remote_post(TTP_API_URL . '/api/public/agents/signed-url', [
+        'headers' => ['Authorization' => 'Bearer ' . $api_key, 'Content-Type' => 'application/json'],
+        'body' => json_encode(['agentId' => $agent_id, 'appId' => $app_id, 'allowOverride' => true, 'expirationMs' => 3600000]),
+        'timeout' => 30
+    ]);
+    
+    if (is_wp_error($response)) wp_send_json_error(['message' => $response->get_error_message()]);
+    
+    $status_code = wp_remote_retrieve_response_code($response);
     $body = json_decode(wp_remote_retrieve_body($response), true);
-    wp_send_json_success($body);
-});
+    
+    if ($status_code !== 200) {
+        wp_send_json_error(['message' => isset($body['message']) ? $body['message'] : 'Failed to get signed URL', 'code' => $status_code]);
+    }
+    
+    wp_send_json_success(['signedUrl' => $body['signedLink']]);
+}
+add_action('wp_ajax_ttp_get_signed_url', 'ttp_get_signed_url');
+add_action('wp_ajax_nopriv_ttp_get_signed_url', 'ttp_get_signed_url');
 
 // =============================================================================
 // ADMIN SETTINGS PAGE
@@ -216,503 +247,376 @@ function ttp_settings_page() {
     $current_agent_id = get_option('ttp_agent_id', '');
     $current_agent_name = get_option('ttp_agent_name', '');
     
-    // Generate connect URL
     $state = wp_create_nonce('ttp_connect');
     $redirect_uri = admin_url('options-general.php?page=ttp-voice-widget');
     $connect_url = TTP_CONNECT_URL . '?' . http_build_query([
-        'redirect_uri' => $redirect_uri,
-        'state' => $state,
-        'site_url' => home_url(),
-        'site_name' => get_bloginfo('name')
+        'redirect_uri' => $redirect_uri, 'state' => $state,
+        'site_url' => home_url(), 'site_name' => get_bloginfo('name')
     ]);
+    $disconnect_url = wp_nonce_url(admin_url('options-general.php?page=ttp-voice-widget&action=disconnect'), 'ttp_disconnect');
     
-    // Disconnect URL
-    $disconnect_url = wp_nonce_url(
-        admin_url('options-general.php?page=ttp-voice-widget&action=disconnect'),
-        'ttp_disconnect'
-    );
+    wp_enqueue_style('wp-color-picker');
+    wp_enqueue_script('wp-color-picker');
     ?>
-    <div class="wrap">
+    <div class="wrap ttp-settings-wrap">
         <h1><?php esc_html_e('TalkToPC Voice Widget', 'ttp-voice-widget'); ?></h1>
         
         <?php settings_errors(); ?>
+        <?php if (isset($_GET['settings-updated'])): ?><div class="notice notice-success is-dismissible"><p>Settings saved!</p></div><?php endif; ?>
+        <?php if (isset($_GET['connected'])): ?><div class="notice notice-success is-dismissible"><p>Connected to TalkToPC!</p></div><?php endif; ?>
+        <?php if (isset($_GET['disconnected'])): ?><div class="notice notice-info is-dismissible"><p>Disconnected.</p></div><?php endif; ?>
         
-        <?php if (isset($_GET['settings-updated']) && $_GET['settings-updated'] === 'true'): ?>
-            <div class="notice notice-success is-dismissible">
-                <p><?php esc_html_e('Settings saved successfully!', 'ttp-voice-widget'); ?></p>
-            </div>
-        <?php endif; ?>
-        
-        <?php if (isset($_GET['connected'])): ?>
-            <div class="notice notice-success is-dismissible">
-                <p><?php esc_html_e('Successfully connected to TalkToPC!', 'ttp-voice-widget'); ?></p>
-            </div>
-        <?php endif; ?>
-        
-        <?php if (isset($_GET['disconnected'])): ?>
-            <div class="notice notice-info is-dismissible">
-                <p><?php esc_html_e('Disconnected from TalkToPC.', 'ttp-voice-widget'); ?></p>
-            </div>
-        <?php endif; ?>
-        
-        <!-- Module 1: Connection -->
+        <!-- Connection -->
         <div class="ttp-card">
-            <h2><?php esc_html_e('Account Connection', 'ttp-voice-widget'); ?></h2>
-            
+            <h2>Account Connection</h2>
             <?php if ($is_connected): ?>
                 <div class="ttp-connected-status">
                     <span class="dashicons dashicons-yes-alt" style="color: #00a32a;"></span>
-                    <strong><?php esc_html_e('Connected', 'ttp-voice-widget'); ?></strong>
-                    <?php if ($user_email): ?>
-                        <span class="ttp-email">(<?php echo esc_html($user_email); ?>)</span>
-                    <?php endif; ?>
-                    <a href="<?php echo esc_url($disconnect_url); ?>" class="button button-link-delete" style="margin-left: 10px;">
-                        <?php esc_html_e('Disconnect', 'ttp-voice-widget'); ?>
-                    </a>
+                    <strong>Connected</strong>
+                    <?php if ($user_email): ?><span class="ttp-email">(<?php echo esc_html($user_email); ?>)</span><?php endif; ?>
+                    <a href="<?php echo esc_url($disconnect_url); ?>" class="button button-link-delete" style="margin-left: 10px;">Disconnect</a>
                 </div>
             <?php else: ?>
-                <p><?php esc_html_e('Connect your TalkToPC account to get started.', 'ttp-voice-widget'); ?></p>
-                <a href="<?php echo esc_url($connect_url); ?>" class="button button-primary button-hero">
-                    <?php esc_html_e('Connect to TalkToPC', 'ttp-voice-widget'); ?>
-                </a>
-                <p class="description" style="margin-top: 10px;">
-                    <?php esc_html_e("Don't have an account? You'll be able to create one.", 'ttp-voice-widget'); ?>
-                </p>
+                <p>Connect your TalkToPC account to get started.</p>
+                <a href="<?php echo esc_url($connect_url); ?>" class="button button-primary button-hero">Connect to TalkToPC</a>
             <?php endif; ?>
         </div>
         
         <?php if ($is_connected): ?>
-        
         <form method="post" action="options.php">
             <?php settings_fields('ttp_settings'); ?>
             
-            <!-- Module 2: Agent Selection -->
+            <!-- Agent Selection -->
             <div class="ttp-card">
-                <h2><?php esc_html_e('Select Agent', 'ttp-voice-widget'); ?></h2>
-                
+                <h2>Select Agent</h2>
                 <table class="form-table">
                     <tr>
-                        <th scope="row"><label for="ttp_agent_select"><?php esc_html_e('Agent', 'ttp-voice-widget'); ?></label></th>
+                        <th><label for="ttp_agent_select">Agent</label></th>
                         <td>
                             <select id="ttp_agent_select" name="ttp_agent_id" class="regular-text">
-                                <option value=""><?php esc_html_e('Loading agents...', 'ttp-voice-widget'); ?></option>
+                                <option value="">Loading agents...</option>
                             </select>
-                            <span class="spinner" id="ttp-agents-loading" style="float: none; margin: 0 0 0 5px;"></span>
+                            <span class="spinner" id="ttp-agents-loading"></span>
                             <input type="hidden" name="ttp_agent_name" id="ttp_agent_name" value="<?php echo esc_attr($current_agent_name); ?>">
                         </td>
                     </tr>
                 </table>
-                
-                <div id="ttp-create-agent" style="margin-top: 5px; display: none;">
-                    <button type="button" class="button" id="ttp-show-create-agent">
-                        <?php esc_html_e('+ Create New Agent', 'ttp-voice-widget'); ?>
-                    </button>
+                <div id="ttp-create-agent" style="display: none;">
+                    <button type="button" class="button" id="ttp-show-create-agent">+ Create New Agent</button>
                     <div id="ttp-create-agent-form" style="display: none; margin-top: 10px;">
-                        <input type="text" id="ttp-new-agent-name" placeholder="<?php esc_attr_e('Agent name', 'ttp-voice-widget'); ?>" class="regular-text">
-                        <button type="button" class="button button-primary" id="ttp-create-agent-btn">
-                            <?php esc_html_e('Create', 'ttp-voice-widget'); ?>
-                        </button>
-                        <button type="button" class="button" id="ttp-cancel-create-agent">
-                            <?php esc_html_e('Cancel', 'ttp-voice-widget'); ?>
-                        </button>
+                        <input type="text" id="ttp-new-agent-name" placeholder="Agent name" class="regular-text">
+                        <button type="button" class="button button-primary" id="ttp-create-agent-btn">Create</button>
+                        <button type="button" class="button" id="ttp-cancel-create-agent">Cancel</button>
                     </div>
                 </div>
             </div>
             
-            <!-- Module 3: Agent Override Settings -->
+            <!-- Agent Settings Override -->
             <div class="ttp-card ttp-collapsible">
-                <h2 class="ttp-collapsible-header">
-                    <?php esc_html_e('Agent Settings (Override)', 'ttp-voice-widget'); ?>
-                    <span class="dashicons dashicons-arrow-down-alt2"></span>
-                </h2>
+                <h2 class="ttp-collapsible-header">Agent Settings (Override) <span class="dashicons dashicons-arrow-down-alt2"></span></h2>
                 <div class="ttp-collapsible-content">
-                    <p class="description"><?php esc_html_e('These settings override the agent defaults. Leave empty to use agent defaults.', 'ttp-voice-widget'); ?></p>
-                    
+                    <p class="description">Override agent defaults. Leave empty to use agent settings.</p>
                     <table class="form-table">
-                        <tr>
-                            <th scope="row"><label for="ttp_override_prompt"><?php esc_html_e('System Prompt', 'ttp-voice-widget'); ?></label></th>
-                            <td>
-                                <textarea id="ttp_override_prompt" name="ttp_override_prompt" rows="4" class="large-text"><?php echo esc_textarea(get_option('ttp_override_prompt')); ?></textarea>
-                                <p class="description"><?php esc_html_e('Override the agent system prompt', 'ttp-voice-widget'); ?></p>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row"><label for="ttp_override_first_message"><?php esc_html_e('First Message', 'ttp-voice-widget'); ?></label></th>
-                            <td>
-                                <input type="text" id="ttp_override_first_message" name="ttp_override_first_message" value="<?php echo esc_attr(get_option('ttp_override_first_message')); ?>" class="large-text" placeholder="Hello! How can I help you today?">
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row"><label for="ttp_override_voice"><?php esc_html_e('Voice', 'ttp-voice-widget'); ?></label></th>
-                            <td>
-                                <select id="ttp_override_voice" name="ttp_override_voice" class="regular-text">
-                                    <option value=""><?php esc_html_e('-- Use agent default --', 'ttp-voice-widget'); ?></option>
-                                </select>
-                                <span id="ttp-voice-loading" class="spinner" style="float: none;"></span>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row"><label for="ttp_override_voice_speed"><?php esc_html_e('Voice Speed', 'ttp-voice-widget'); ?></label></th>
-                            <td>
-                                <input type="number" id="ttp_override_voice_speed" name="ttp_override_voice_speed" value="<?php echo esc_attr(get_option('ttp_override_voice_speed')); ?>" class="small-text" min="0.5" max="2.0" step="0.1" placeholder="1.0">
-                                <p class="description"><?php esc_html_e('0.5 to 2.0 (1.0 = normal speed)', 'ttp-voice-widget'); ?></p>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row"><label for="ttp_override_language"><?php esc_html_e('Language', 'ttp-voice-widget'); ?></label></th>
-                            <td>
-                                <select id="ttp_override_language" name="ttp_override_language">
-                                    <option value=""><?php esc_html_e('-- Use agent default --', 'ttp-voice-widget'); ?></option>
-                                    <option value="en" <?php selected(get_option('ttp_override_language'), 'en'); ?>>English</option>
-                                    <option value="he" <?php selected(get_option('ttp_override_language'), 'he'); ?>>עברית (Hebrew)</option>
-                                    <option value="es" <?php selected(get_option('ttp_override_language'), 'es'); ?>>Español</option>
-                                    <option value="fr" <?php selected(get_option('ttp_override_language'), 'fr'); ?>>Français</option>
-                                    <option value="de" <?php selected(get_option('ttp_override_language'), 'de'); ?>>Deutsch</option>
-                                    <option value="ar" <?php selected(get_option('ttp_override_language'), 'ar'); ?>>العربية (Arabic)</option>
-                                    <option value="ru" <?php selected(get_option('ttp_override_language'), 'ru'); ?>>Русский</option>
-                                    <option value="zh" <?php selected(get_option('ttp_override_language'), 'zh'); ?>>中文</option>
-                                    <option value="ja" <?php selected(get_option('ttp_override_language'), 'ja'); ?>>日本語</option>
-                                </select>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row"><label for="ttp_override_temperature"><?php esc_html_e('Temperature', 'ttp-voice-widget'); ?></label></th>
-                            <td>
-                                <input type="number" id="ttp_override_temperature" name="ttp_override_temperature" value="<?php echo esc_attr(get_option('ttp_override_temperature')); ?>" class="small-text" min="0" max="2" step="0.1" placeholder="0.8">
-                                <p class="description"><?php esc_html_e('0 to 2.0 (higher = more creative)', 'ttp-voice-widget'); ?></p>
-                            </td>
-                        </tr>
+                        <tr><th><label for="ttp_override_prompt">System Prompt</label></th>
+                            <td><textarea id="ttp_override_prompt" name="ttp_override_prompt" rows="4" class="large-text"><?php echo esc_textarea(get_option('ttp_override_prompt')); ?></textarea></td></tr>
+                        <tr><th><label for="ttp_override_first_message">First Message</label></th>
+                            <td><input type="text" id="ttp_override_first_message" name="ttp_override_first_message" value="<?php echo esc_attr(get_option('ttp_override_first_message')); ?>" class="large-text"></td></tr>
+                        <tr><th><label for="ttp_override_voice">Voice</label></th>
+                            <td><select id="ttp_override_voice" name="ttp_override_voice" class="regular-text"><option value="">-- Use agent default --</option></select><span id="ttp-voice-loading" class="spinner"></span></td></tr>
+                        <tr><th><label for="ttp_override_voice_speed">Voice Speed</label></th>
+                            <td><input type="number" id="ttp_override_voice_speed" name="ttp_override_voice_speed" value="<?php echo esc_attr(get_option('ttp_override_voice_speed')); ?>" class="small-text" min="0.5" max="2.0" step="0.1"> <span class="description">0.5 to 2.0</span></td></tr>
+                        <tr><th><label for="ttp_override_language">Language</label></th>
+                            <td><select id="ttp_override_language" name="ttp_override_language" class="regular-text">
+                                <option value="">-- Use agent default --</option>
+                                <?php foreach(['en'=>'English','es'=>'Spanish','fr'=>'French','de'=>'German','he'=>'Hebrew','ar'=>'Arabic','zh'=>'Chinese','ja'=>'Japanese','pt'=>'Portuguese','ru'=>'Russian','it'=>'Italian','nl'=>'Dutch','ko'=>'Korean'] as $code=>$name): ?>
+                                <option value="<?php echo $code; ?>" <?php selected(get_option('ttp_override_language'), $code); ?>><?php echo $name; ?></option>
+                                <?php endforeach; ?>
+                            </select></td></tr>
+                        <tr><th><label for="ttp_override_temperature">Temperature</label></th>
+                            <td><input type="number" id="ttp_override_temperature" name="ttp_override_temperature" value="<?php echo esc_attr(get_option('ttp_override_temperature')); ?>" class="small-text" min="0" max="2" step="0.1"> <span class="description">0 to 2</span></td></tr>
+                        <tr><th><label for="ttp_override_max_tokens">Max Tokens</label></th>
+                            <td><input type="number" id="ttp_override_max_tokens" name="ttp_override_max_tokens" value="<?php echo esc_attr(get_option('ttp_override_max_tokens')); ?>" class="small-text" min="50" max="4000"></td></tr>
+                        <tr><th><label for="ttp_override_max_call_duration">Max Call Duration</label></th>
+                            <td><input type="number" id="ttp_override_max_call_duration" name="ttp_override_max_call_duration" value="<?php echo esc_attr(get_option('ttp_override_max_call_duration')); ?>" class="small-text" min="30" max="3600"> <span class="description">seconds</span></td></tr>
                     </table>
                 </div>
             </div>
             
-            <!-- Module 4: Widget Appearance -->
+            <!-- Behavior -->
             <div class="ttp-card ttp-collapsible">
-                <h2 class="ttp-collapsible-header">
-                    <?php esc_html_e('Widget Appearance', 'ttp-voice-widget'); ?>
-                    <span class="dashicons dashicons-arrow-down-alt2"></span>
-                </h2>
+                <h2 class="ttp-collapsible-header">Behavior <span class="dashicons dashicons-arrow-down-alt2"></span></h2>
                 <div class="ttp-collapsible-content">
                     <table class="form-table">
-                        <tr>
-                            <th scope="row"><label for="ttp_mode"><?php esc_html_e('Widget Mode', 'ttp-voice-widget'); ?></label></th>
-                            <td>
-                                <select id="ttp_mode" name="ttp_mode">
-                                    <option value="unified" <?php selected(get_option('ttp_mode', 'unified'), 'unified'); ?>><?php esc_html_e('Unified (Voice & Text)', 'ttp-voice-widget'); ?></option>
-                                    <option value="voice-only" <?php selected(get_option('ttp_mode'), 'voice-only'); ?>><?php esc_html_e('Voice Only', 'ttp-voice-widget'); ?></option>
-                                    <option value="text-only" <?php selected(get_option('ttp_mode'), 'text-only'); ?>><?php esc_html_e('Text Only', 'ttp-voice-widget'); ?></option>
-                                </select>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row"><label for="ttp_position"><?php esc_html_e('Position', 'ttp-voice-widget'); ?></label></th>
-                            <td>
-                                <select id="ttp_position" name="ttp_position">
-                                    <option value="bottom-right" <?php selected(get_option('ttp_position', 'bottom-right'), 'bottom-right'); ?>><?php esc_html_e('Bottom Right', 'ttp-voice-widget'); ?></option>
-                                    <option value="bottom-left" <?php selected(get_option('ttp_position'), 'bottom-left'); ?>><?php esc_html_e('Bottom Left', 'ttp-voice-widget'); ?></option>
-                                    <option value="top-right" <?php selected(get_option('ttp_position'), 'top-right'); ?>><?php esc_html_e('Top Right', 'ttp-voice-widget'); ?></option>
-                                    <option value="top-left" <?php selected(get_option('ttp_position'), 'top-left'); ?>><?php esc_html_e('Top Left', 'ttp-voice-widget'); ?></option>
-                                </select>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row"><label for="ttp_direction"><?php esc_html_e('Text Direction', 'ttp-voice-widget'); ?></label></th>
-                            <td>
-                                <select id="ttp_direction" name="ttp_direction">
-                                    <option value="ltr" <?php selected(get_option('ttp_direction', 'ltr'), 'ltr'); ?>><?php esc_html_e('Left to Right', 'ttp-voice-widget'); ?></option>
-                                    <option value="rtl" <?php selected(get_option('ttp_direction'), 'rtl'); ?>><?php esc_html_e('Right to Left', 'ttp-voice-widget'); ?></option>
-                                </select>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row"><label for="ttp_button_size"><?php esc_html_e('Button Size', 'ttp-voice-widget'); ?></label></th>
-                            <td>
-                                <select id="ttp_button_size" name="ttp_button_size">
-                                    <option value="small" <?php selected(get_option('ttp_button_size'), 'small'); ?>><?php esc_html_e('Small', 'ttp-voice-widget'); ?></option>
-                                    <option value="medium" <?php selected(get_option('ttp_button_size', 'medium'), 'medium'); ?>><?php esc_html_e('Medium', 'ttp-voice-widget'); ?></option>
-                                    <option value="large" <?php selected(get_option('ttp_button_size'), 'large'); ?>><?php esc_html_e('Large', 'ttp-voice-widget'); ?></option>
-                                    <option value="xl" <?php selected(get_option('ttp_button_size'), 'xl'); ?>><?php esc_html_e('Extra Large', 'ttp-voice-widget'); ?></option>
-                                </select>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row"><label for="ttp_button_shape"><?php esc_html_e('Button Shape', 'ttp-voice-widget'); ?></label></th>
-                            <td>
-                                <select id="ttp_button_shape" name="ttp_button_shape">
-                                    <option value="circle" <?php selected(get_option('ttp_button_shape', 'circle'), 'circle'); ?>><?php esc_html_e('Circle', 'ttp-voice-widget'); ?></option>
-                                    <option value="square" <?php selected(get_option('ttp_button_shape'), 'square'); ?>><?php esc_html_e('Square', 'ttp-voice-widget'); ?></option>
-                                    <option value="rounded" <?php selected(get_option('ttp_button_shape'), 'rounded'); ?>><?php esc_html_e('Rounded', 'ttp-voice-widget'); ?></option>
-                                </select>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row"><label for="ttp_button_bg_color"><?php esc_html_e('Button Color', 'ttp-voice-widget'); ?></label></th>
-                            <td>
-                                <input type="color" id="ttp_button_bg_color" name="ttp_button_bg_color" value="<?php echo esc_attr(get_option('ttp_button_bg_color', '#FFFFFF')); ?>">
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row"><label for="ttp_header_title"><?php esc_html_e('Header Title', 'ttp-voice-widget'); ?></label></th>
-                            <td>
-                                <input type="text" id="ttp_header_title" name="ttp_header_title" value="<?php echo esc_attr(get_option('ttp_header_title')); ?>" class="regular-text" placeholder="Chat Assistant">
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row"><label for="ttp_header_bg_color"><?php esc_html_e('Header Background', 'ttp-voice-widget'); ?></label></th>
-                            <td>
-                                <input type="color" id="ttp_header_bg_color" name="ttp_header_bg_color" value="<?php echo esc_attr(get_option('ttp_header_bg_color', '#7C3AED')); ?>">
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row"><label for="ttp_header_text_color"><?php esc_html_e('Header Text Color', 'ttp-voice-widget'); ?></label></th>
-                            <td>
-                                <input type="color" id="ttp_header_text_color" name="ttp_header_text_color" value="<?php echo esc_attr(get_option('ttp_header_text_color', '#FFFFFF')); ?>">
-                            </td>
-                        </tr>
+                        <tr><th><label for="ttp_mode">Widget Mode</label></th>
+                            <td><select id="ttp_mode" name="ttp_mode">
+                                <option value="unified" <?php selected(get_option('ttp_mode', 'unified'), 'unified'); ?>>Unified (Voice + Text)</option>
+                                <option value="voice-only" <?php selected(get_option('ttp_mode'), 'voice-only'); ?>>Voice Only</option>
+                                <option value="text-only" <?php selected(get_option('ttp_mode'), 'text-only'); ?>>Text Only</option>
+                            </select></td></tr>
+                        <tr><th><label for="ttp_direction">Text Direction</label></th>
+                            <td><select id="ttp_direction" name="ttp_direction">
+                                <option value="ltr" <?php selected(get_option('ttp_direction', 'ltr'), 'ltr'); ?>>Left to Right</option>
+                                <option value="rtl" <?php selected(get_option('ttp_direction'), 'rtl'); ?>>Right to Left</option>
+                            </select></td></tr>
+                        <tr><th>Auto Open</th>
+                            <td><label><input type="checkbox" name="ttp_auto_open" value="1" <?php checked(get_option('ttp_auto_open'), '1'); ?>> Open widget on page load</label></td></tr>
+                        <tr><th><label for="ttp_welcome_message">Welcome Message</label></th>
+                            <td><input type="text" id="ttp_welcome_message" name="ttp_welcome_message" value="<?php echo esc_attr(get_option('ttp_welcome_message')); ?>" class="large-text" placeholder="Hello! How can I help you today?"></td></tr>
                     </table>
                 </div>
             </div>
             
-            <?php submit_button(esc_html__('Save Settings', 'ttp-voice-widget')); ?>
+            <!-- Button Appearance -->
+            <div class="ttp-card ttp-collapsible">
+                <h2 class="ttp-collapsible-header">Button Appearance <span class="dashicons dashicons-arrow-down-alt2"></span></h2>
+                <div class="ttp-collapsible-content">
+                    <table class="form-table">
+                        <tr><th><label for="ttp_position">Position</label></th>
+                            <td><select id="ttp_position" name="ttp_position">
+                                <option value="bottom-right" <?php selected(get_option('ttp_position', 'bottom-right'), 'bottom-right'); ?>>Bottom Right</option>
+                                <option value="bottom-left" <?php selected(get_option('ttp_position'), 'bottom-left'); ?>>Bottom Left</option>
+                                <option value="top-right" <?php selected(get_option('ttp_position'), 'top-right'); ?>>Top Right</option>
+                                <option value="top-left" <?php selected(get_option('ttp_position'), 'top-left'); ?>>Top Left</option>
+                            </select></td></tr>
+                        <tr><th><label for="ttp_button_size">Size</label></th>
+                            <td><select id="ttp_button_size" name="ttp_button_size">
+                                <option value="small" <?php selected(get_option('ttp_button_size'), 'small'); ?>>Small</option>
+                                <option value="medium" <?php selected(get_option('ttp_button_size', 'medium'), 'medium'); ?>>Medium</option>
+                                <option value="large" <?php selected(get_option('ttp_button_size'), 'large'); ?>>Large</option>
+                                <option value="xl" <?php selected(get_option('ttp_button_size'), 'xl'); ?>>Extra Large</option>
+                            </select></td></tr>
+                        <tr><th><label for="ttp_button_shape">Shape</label></th>
+                            <td><select id="ttp_button_shape" name="ttp_button_shape">
+                                <option value="circle" <?php selected(get_option('ttp_button_shape', 'circle'), 'circle'); ?>>Circle</option>
+                                <option value="rounded" <?php selected(get_option('ttp_button_shape'), 'rounded'); ?>>Rounded</option>
+                                <option value="square" <?php selected(get_option('ttp_button_shape'), 'square'); ?>>Square</option>
+                            </select></td></tr>
+                        <tr><th><label for="ttp_button_bg_color">Background Color</label></th>
+                            <td><input type="text" id="ttp_button_bg_color" name="ttp_button_bg_color" value="<?php echo esc_attr(get_option('ttp_button_bg_color')); ?>" class="ttp-color-picker" data-default-color="#FFFFFF"></td></tr>
+                        <tr><th><label for="ttp_button_hover_color">Hover Color</label></th>
+                            <td><input type="text" id="ttp_button_hover_color" name="ttp_button_hover_color" value="<?php echo esc_attr(get_option('ttp_button_hover_color')); ?>" class="ttp-color-picker" data-default-color="#F5F5F5"></td></tr>
+                        <tr><th>Shadow</th>
+                            <td><label><input type="checkbox" name="ttp_button_shadow" value="1" <?php checked(get_option('ttp_button_shadow', '1'), '1'); ?>> Enable button shadow</label></td></tr>
+                    </table>
+                </div>
+            </div>
             
+            <!-- Icon -->
+            <div class="ttp-card ttp-collapsible">
+                <h2 class="ttp-collapsible-header">Button Icon <span class="dashicons dashicons-arrow-down-alt2"></span></h2>
+                <div class="ttp-collapsible-content">
+                    <table class="form-table">
+                        <tr><th><label for="ttp_icon_type">Icon Type</label></th>
+                            <td><select id="ttp_icon_type" name="ttp_icon_type">
+                                <option value="custom" <?php selected(get_option('ttp_icon_type', 'custom'), 'custom'); ?>>Custom Image</option>
+                                <option value="microphone" <?php selected(get_option('ttp_icon_type'), 'microphone'); ?>>Microphone</option>
+                                <option value="emoji" <?php selected(get_option('ttp_icon_type'), 'emoji'); ?>>Emoji</option>
+                                <option value="text" <?php selected(get_option('ttp_icon_type'), 'text'); ?>>Text</option>
+                            </select></td></tr>
+                        <tr class="ttp-icon-custom-row"><th><label for="ttp_icon_custom_image">Image URL</label></th>
+                            <td><input type="url" id="ttp_icon_custom_image" name="ttp_icon_custom_image" value="<?php echo esc_attr(get_option('ttp_icon_custom_image')); ?>" class="large-text" placeholder="https://talktopc.com/logo192.png"></td></tr>
+                        <tr class="ttp-icon-emoji-row" style="display:none;"><th><label for="ttp_icon_emoji">Emoji</label></th>
+                            <td><input type="text" id="ttp_icon_emoji" name="ttp_icon_emoji" value="<?php echo esc_attr(get_option('ttp_icon_emoji', '🎤')); ?>" class="small-text"></td></tr>
+                        <tr class="ttp-icon-text-row" style="display:none;"><th><label for="ttp_icon_text">Text</label></th>
+                            <td><input type="text" id="ttp_icon_text" name="ttp_icon_text" value="<?php echo esc_attr(get_option('ttp_icon_text', 'AI')); ?>" class="small-text" maxlength="4"></td></tr>
+                        <tr><th><label for="ttp_icon_size">Icon Size</label></th>
+                            <td><select id="ttp_icon_size" name="ttp_icon_size">
+                                <option value="small" <?php selected(get_option('ttp_icon_size'), 'small'); ?>>Small</option>
+                                <option value="medium" <?php selected(get_option('ttp_icon_size', 'medium'), 'medium'); ?>>Medium</option>
+                                <option value="large" <?php selected(get_option('ttp_icon_size'), 'large'); ?>>Large</option>
+                                <option value="xl" <?php selected(get_option('ttp_icon_size'), 'xl'); ?>>Extra Large</option>
+                            </select></td></tr>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Panel -->
+            <div class="ttp-card ttp-collapsible">
+                <h2 class="ttp-collapsible-header">Panel Settings <span class="dashicons dashicons-arrow-down-alt2"></span></h2>
+                <div class="ttp-collapsible-content">
+                    <table class="form-table">
+                        <tr><th><label for="ttp_panel_width">Width (px)</label></th>
+                            <td><input type="number" id="ttp_panel_width" name="ttp_panel_width" value="<?php echo esc_attr(get_option('ttp_panel_width', 350)); ?>" class="small-text" min="280" max="600"></td></tr>
+                        <tr><th><label for="ttp_panel_height">Height (px)</label></th>
+                            <td><input type="number" id="ttp_panel_height" name="ttp_panel_height" value="<?php echo esc_attr(get_option('ttp_panel_height', 500)); ?>" class="small-text" min="300" max="800"></td></tr>
+                        <tr><th><label for="ttp_panel_border_radius">Border Radius (px)</label></th>
+                            <td><input type="number" id="ttp_panel_border_radius" name="ttp_panel_border_radius" value="<?php echo esc_attr(get_option('ttp_panel_border_radius', 12)); ?>" class="small-text" min="0" max="30"></td></tr>
+                        <tr><th><label for="ttp_panel_bg_color">Background Color</label></th>
+                            <td><input type="text" id="ttp_panel_bg_color" name="ttp_panel_bg_color" value="<?php echo esc_attr(get_option('ttp_panel_bg_color')); ?>" class="ttp-color-picker" data-default-color="#FFFFFF"></td></tr>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Header -->
+            <div class="ttp-card ttp-collapsible">
+                <h2 class="ttp-collapsible-header">Header Settings <span class="dashicons dashicons-arrow-down-alt2"></span></h2>
+                <div class="ttp-collapsible-content">
+                    <table class="form-table">
+                        <tr><th><label for="ttp_header_title">Title</label></th>
+                            <td><input type="text" id="ttp_header_title" name="ttp_header_title" value="<?php echo esc_attr(get_option('ttp_header_title')); ?>" class="regular-text" placeholder="Chat Assistant"></td></tr>
+                        <tr><th><label for="ttp_header_bg_color">Background Color</label></th>
+                            <td><input type="text" id="ttp_header_bg_color" name="ttp_header_bg_color" value="<?php echo esc_attr(get_option('ttp_header_bg_color')); ?>" class="ttp-color-picker" data-default-color="#7C3AED"></td></tr>
+                        <tr><th><label for="ttp_header_text_color">Text Color</label></th>
+                            <td><input type="text" id="ttp_header_text_color" name="ttp_header_text_color" value="<?php echo esc_attr(get_option('ttp_header_text_color')); ?>" class="ttp-color-picker" data-default-color="#FFFFFF"></td></tr>
+                        <tr><th>Close Button</th>
+                            <td><label><input type="checkbox" name="ttp_header_show_close" value="1" <?php checked(get_option('ttp_header_show_close', '1'), '1'); ?>> Show close button</label></td></tr>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Voice Interface -->
+            <div class="ttp-card ttp-collapsible">
+                <h2 class="ttp-collapsible-header">Voice Interface Colors <span class="dashicons dashicons-arrow-down-alt2"></span></h2>
+                <div class="ttp-collapsible-content">
+                    <table class="form-table">
+                        <tr><th><label for="ttp_voice_mic_color">Mic Button Color</label></th>
+                            <td><input type="text" id="ttp_voice_mic_color" name="ttp_voice_mic_color" value="<?php echo esc_attr(get_option('ttp_voice_mic_color')); ?>" class="ttp-color-picker" data-default-color="#7C3AED"></td></tr>
+                        <tr><th><label for="ttp_voice_mic_active_color">Mic Active Color</label></th>
+                            <td><input type="text" id="ttp_voice_mic_active_color" name="ttp_voice_mic_active_color" value="<?php echo esc_attr(get_option('ttp_voice_mic_active_color')); ?>" class="ttp-color-picker" data-default-color="#EF4444"></td></tr>
+                        <tr><th><label for="ttp_voice_avatar_color">Avatar Color</label></th>
+                            <td><input type="text" id="ttp_voice_avatar_color" name="ttp_voice_avatar_color" value="<?php echo esc_attr(get_option('ttp_voice_avatar_color')); ?>" class="ttp-color-picker" data-default-color="#667eea"></td></tr>
+                        <tr><th><label for="ttp_voice_start_btn_color">Start Call Button</label></th>
+                            <td><input type="text" id="ttp_voice_start_btn_color" name="ttp_voice_start_btn_color" value="<?php echo esc_attr(get_option('ttp_voice_start_btn_color')); ?>" class="ttp-color-picker" data-default-color="#667eea"></td></tr>
+                        <tr><th><label for="ttp_voice_end_btn_color">End Call Button</label></th>
+                            <td><input type="text" id="ttp_voice_end_btn_color" name="ttp_voice_end_btn_color" value="<?php echo esc_attr(get_option('ttp_voice_end_btn_color')); ?>" class="ttp-color-picker" data-default-color="#EF4444"></td></tr>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Text Interface -->
+            <div class="ttp-card ttp-collapsible">
+                <h2 class="ttp-collapsible-header">Text Interface <span class="dashicons dashicons-arrow-down-alt2"></span></h2>
+                <div class="ttp-collapsible-content">
+                    <table class="form-table">
+                        <tr><th><label for="ttp_text_send_btn_color">Send Button Color</label></th>
+                            <td><input type="text" id="ttp_text_send_btn_color" name="ttp_text_send_btn_color" value="<?php echo esc_attr(get_option('ttp_text_send_btn_color')); ?>" class="ttp-color-picker" data-default-color="#7C3AED"></td></tr>
+                        <tr><th><label for="ttp_text_input_placeholder">Input Placeholder</label></th>
+                            <td><input type="text" id="ttp_text_input_placeholder" name="ttp_text_input_placeholder" value="<?php echo esc_attr(get_option('ttp_text_input_placeholder')); ?>" class="regular-text" placeholder="Type your message..."></td></tr>
+                        <tr><th><label for="ttp_text_input_focus_color">Input Focus Color</label></th>
+                            <td><input type="text" id="ttp_text_input_focus_color" name="ttp_text_input_focus_color" value="<?php echo esc_attr(get_option('ttp_text_input_focus_color')); ?>" class="ttp-color-picker" data-default-color="#7C3AED"></td></tr>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Messages -->
+            <div class="ttp-card ttp-collapsible">
+                <h2 class="ttp-collapsible-header">Message Colors <span class="dashicons dashicons-arrow-down-alt2"></span></h2>
+                <div class="ttp-collapsible-content">
+                    <table class="form-table">
+                        <tr><th><label for="ttp_msg_user_bg">User Message Background</label></th>
+                            <td><input type="text" id="ttp_msg_user_bg" name="ttp_msg_user_bg" value="<?php echo esc_attr(get_option('ttp_msg_user_bg')); ?>" class="ttp-color-picker" data-default-color="#E5E7EB"></td></tr>
+                        <tr><th><label for="ttp_msg_agent_bg">Agent Message Background</label></th>
+                            <td><input type="text" id="ttp_msg_agent_bg" name="ttp_msg_agent_bg" value="<?php echo esc_attr(get_option('ttp_msg_agent_bg')); ?>" class="ttp-color-picker" data-default-color="#F3F4F6"></td></tr>
+                        <tr><th><label for="ttp_msg_text_color">Message Text Color</label></th>
+                            <td><input type="text" id="ttp_msg_text_color" name="ttp_msg_text_color" value="<?php echo esc_attr(get_option('ttp_msg_text_color')); ?>" class="ttp-color-picker" data-default-color="#1F2937"></td></tr>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Landing Screen -->
+            <div class="ttp-card ttp-collapsible">
+                <h2 class="ttp-collapsible-header">Landing Screen <span class="dashicons dashicons-arrow-down-alt2"></span></h2>
+                <div class="ttp-collapsible-content">
+                    <p class="description">Shown in unified mode when user first opens widget.</p>
+                    <table class="form-table">
+                        <tr><th><label for="ttp_landing_logo">Logo (emoji/text)</label></th>
+                            <td><input type="text" id="ttp_landing_logo" name="ttp_landing_logo" value="<?php echo esc_attr(get_option('ttp_landing_logo')); ?>" class="small-text" placeholder="🤖"></td></tr>
+                        <tr><th><label for="ttp_landing_title">Title</label></th>
+                            <td><input type="text" id="ttp_landing_title" name="ttp_landing_title" value="<?php echo esc_attr(get_option('ttp_landing_title')); ?>" class="regular-text" placeholder="How would you like to chat?"></td></tr>
+                        <tr><th><label for="ttp_landing_title_color">Title Color</label></th>
+                            <td><input type="text" id="ttp_landing_title_color" name="ttp_landing_title_color" value="<?php echo esc_attr(get_option('ttp_landing_title_color')); ?>" class="ttp-color-picker" data-default-color="#1e293b"></td></tr>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Custom CSS -->
+            <div class="ttp-card ttp-collapsible">
+                <h2 class="ttp-collapsible-header">Custom CSS <span class="dashicons dashicons-arrow-down-alt2"></span></h2>
+                <div class="ttp-collapsible-content">
+                    <p class="description">Add custom CSS to further customize the widget.</p>
+                    <textarea id="ttp_custom_css" name="ttp_custom_css" rows="8" class="large-text code" placeholder="#text-chat-button { /* your styles */ }"><?php echo esc_textarea(get_option('ttp_custom_css')); ?></textarea>
+                </div>
+            </div>
+            
+            <?php submit_button('Save Settings'); ?>
         </form>
         
-        <!-- Status -->
-        <?php if (get_option('ttp_agent_id')): ?>
+        <?php if (!empty($current_agent_id)): ?>
         <div class="ttp-card ttp-status-card">
             <span class="dashicons dashicons-yes-alt" style="color: #00a32a;"></span>
-            <strong><?php esc_html_e('Widget is active!', 'ttp-voice-widget'); ?></strong>
-            <?php esc_html_e('Visit your site to see the voice widget.', 'ttp-voice-widget'); ?>
+            <strong>Widget is active!</strong> Visit your site to see the voice widget.
         </div>
         <?php endif; ?>
-        
-        <?php endif; // end if connected ?>
-        
+        <?php endif; ?>
     </div>
     
     <style>
-        .ttp-card {
-            background: #fff;
-            border: 1px solid #ccd0d4;
-            border-radius: 4px;
-            padding: 20px;
-            margin: 20px 0;
-        }
-        .ttp-card h2 {
-            margin-top: 0;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #eee;
-        }
-        .ttp-connected-status {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        .ttp-email {
-            color: #666;
-        }
-        .ttp-collapsible-header {
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .ttp-collapsible-content {
-            display: none;
-            padding-top: 15px;
-        }
-        .ttp-collapsible.open .ttp-collapsible-content {
-            display: block;
-        }
-        .ttp-collapsible.open .dashicons {
-            transform: rotate(180deg);
-        }
-        .ttp-status-card {
-            background: #d4edda;
-            border-color: #c3e6cb;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .ttp-loading {
-            display: flex;
-            align-items: center;
-        }
+        .ttp-settings-wrap { max-width: 800px; }
+        .ttp-card { background: #fff; border: 1px solid #ccd0d4; border-radius: 4px; padding: 20px; margin: 20px 0; }
+        .ttp-card h2 { margin-top: 0; padding-bottom: 10px; border-bottom: 1px solid #eee; }
+        .ttp-connected-status { display: flex; align-items: center; gap: 5px; }
+        .ttp-email { color: #666; }
+        .ttp-collapsible-header { cursor: pointer; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0 !important; border-bottom: none !important; }
+        .ttp-collapsible-content { display: none; padding-top: 15px; border-top: 1px solid #eee; margin-top: 15px; }
+        .ttp-collapsible.open .ttp-collapsible-content { display: block; }
+        .ttp-collapsible.open .dashicons { transform: rotate(180deg); }
+        .ttp-status-card { display: flex; align-items: center; gap: 8px; background: #d4edda; border-color: #c3e6cb; }
+        .form-table th { width: 200px; }
     </style>
     
     <script>
     jQuery(document).ready(function($) {
-        var ajaxNonce = '<?php echo wp_create_nonce('ttp_ajax_nonce'); ?>';
+        var ajaxNonce = '<?php echo wp_create_nonce("ttp_ajax_nonce"); ?>';
         var currentAgentId = '<?php echo esc_js($current_agent_id); ?>';
-        var currentVoice = '<?php echo esc_js(get_option('ttp_override_voice')); ?>';
+        var currentVoice = '<?php echo esc_js(get_option("ttp_override_voice")); ?>';
         
-        // Collapsible sections
-        $('.ttp-collapsible-header').on('click', function() {
-            $(this).closest('.ttp-collapsible').toggleClass('open');
-        });
+        $('.ttp-color-picker').wpColorPicker();
+        $('.ttp-collapsible-header').on('click', function() { $(this).closest('.ttp-collapsible').toggleClass('open'); });
         
-        // Fetch agents on load
+        $('#ttp_icon_type').on('change', function() {
+            var type = $(this).val();
+            $('.ttp-icon-custom-row, .ttp-icon-emoji-row, .ttp-icon-text-row').hide();
+            if (type === 'custom') $('.ttp-icon-custom-row').show();
+            else if (type === 'emoji') $('.ttp-icon-emoji-row').show();
+            else if (type === 'text') $('.ttp-icon-text-row').show();
+        }).trigger('change');
+        
         <?php if ($is_connected): ?>
-        fetchAgents();
-        fetchVoices();
+        fetchAgents(); fetchVoices();
         <?php endif; ?>
         
         function fetchAgents() {
             $('#ttp-agents-loading').addClass('is-active');
-            $.ajax({
-                url: ajaxurl,
-                method: 'POST',
-                data: {
-                    action: 'ttp_fetch_agents',
-                    nonce: ajaxNonce
-                },
-                success: function(response) {
-                    // API returns {success: true, data: [...]} wrapped by wp_send_json_success
-                    var agents = null;
-                    if (response.success && response.data) {
-                        // Handle both direct array and wrapped response
-                        if (Array.isArray(response.data)) {
-                            agents = response.data;
-                        } else if (response.data.success && Array.isArray(response.data.data)) {
-                            agents = response.data.data;
-                        } else if (Array.isArray(response.data.data)) {
-                            agents = response.data.data;
-                        }
-                    }
-                    $('#ttp-agents-loading').removeClass('is-active');
-                    if (agents && agents.length > 0) {
-                        renderAgents(agents);
-                    } else {
-                        $('#ttp_agent_select').html('<option value="">No agents found</option>');
-                    }
-                    $('#ttp-create-agent').show();
-                },
-                error: function() {
-                    $('#ttp-agents-loading').removeClass('is-active');
-                    $('#ttp_agent_select').html('<option value="">Failed to load agents</option>');
-                    $('#ttp-create-agent').show();
-                }
-            });
-        }
-        
-        function renderAgents(agents) {
-            var $select = $('#ttp_agent_select');
-            $select.empty();
-            $select.append('<option value="">-- Select an agent --</option>');
-            
-            agents.forEach(function(agent) {
-                var agentId = agent.agentId || agent.id; // Support both formats
-                var isSelected = agentId === currentAgentId;
-                $select.append('<option value="' + agentId + '"' + (isSelected ? ' selected' : '') + '>' + agent.name + '</option>');
-            });
-            
-            // Handle selection change
-            $select.off('change').on('change', function() {
-                var selectedOption = $(this).find('option:selected');
-                $('#ttp_agent_name').val(selectedOption.text() !== '-- Select an agent --' ? selectedOption.text() : '');
+            $.post(ajaxurl, { action: 'ttp_fetch_agents', nonce: ajaxNonce }, function(r) {
+                var agents = r.success && r.data ? (Array.isArray(r.data) ? r.data : (r.data.data || [])) : [];
+                $('#ttp-agents-loading').removeClass('is-active');
+                var $s = $('#ttp_agent_select').empty().append('<option value="">-- Select an agent --</option>');
+                agents.forEach(function(a) { var id = a.agentId || a.id; $s.append('<option value="'+id+'"'+(id===currentAgentId?' selected':'')+'>'+a.name+'</option>'); });
+                $s.on('change', function() { $('#ttp_agent_name').val($(this).find('option:selected').text()); });
+                $('#ttp-create-agent').show();
             });
         }
         
         function fetchVoices() {
             $('#ttp-voice-loading').addClass('is-active');
-            $.ajax({
-                url: ajaxurl,
-                method: 'POST',
-                data: {
-                    action: 'ttp_fetch_voices',
-                    nonce: ajaxNonce
-                },
-                success: function(response) {
-                    $('#ttp-voice-loading').removeClass('is-active');
-                    var voices = null;
-                    if (response.success && response.data) {
-                        // Handle both direct array and wrapped response
-                        if (Array.isArray(response.data)) {
-                            voices = response.data;
-                        } else if (response.data.success && Array.isArray(response.data.data)) {
-                            voices = response.data.data;
-                        } else if (Array.isArray(response.data.data)) {
-                            voices = response.data.data;
-                        }
-                    }
-                    if (voices && voices.length > 0) {
-                        var $select = $('#ttp_override_voice');
-                        voices.forEach(function(voice) {
-                            var voiceId = voice.voiceId || voice.id; // Support both formats
-                            var isSelected = voiceId === currentVoice;
-                            $select.append('<option value="' + voiceId + '"' + (isSelected ? ' selected' : '') + '>' + voice.name + '</option>');
-                        });
-                    }
-                },
-                error: function() {
-                    $('#ttp-voice-loading').removeClass('is-active');
-                }
+            $.post(ajaxurl, { action: 'ttp_fetch_voices', nonce: ajaxNonce }, function(r) {
+                $('#ttp-voice-loading').removeClass('is-active');
+                var voices = r.success && r.data ? (Array.isArray(r.data) ? r.data : (r.data.data || [])) : [];
+                var $s = $('#ttp_override_voice');
+                voices.forEach(function(v) { var id = v.voiceId || v.id; $s.append('<option value="'+id+'"'+(id===currentVoice?' selected':'')+'>'+v.name+'</option>'); });
             });
         }
         
-        // Show/hide create agent form
-        $('#ttp-show-create-agent').on('click', function() {
-            $(this).hide();
-            $('#ttp-create-agent-form').show();
-            $('#ttp-new-agent-name').focus();
-        });
-        
-        $('#ttp-cancel-create-agent').on('click', function() {
-            $('#ttp-create-agent-form').hide();
-            $('#ttp-show-create-agent').show();
-            $('#ttp-new-agent-name').val('');
-        });
-        
-        // Create agent
+        $('#ttp-show-create-agent').on('click', function() { $(this).hide(); $('#ttp-create-agent-form').show(); });
+        $('#ttp-cancel-create-agent').on('click', function() { $('#ttp-create-agent-form').hide(); $('#ttp-show-create-agent').show(); });
         $('#ttp-create-agent-btn').on('click', function() {
             var name = $('#ttp-new-agent-name').val().trim();
-            if (!name) {
-                alert('Please enter an agent name');
-                return;
-            }
-            
-            var $btn = $(this);
-            $btn.prop('disabled', true).text('Creating...');
-            
-            $.ajax({
-                url: ajaxurl,
-                method: 'POST',
-                data: {
-                    action: 'ttp_create_agent',
-                    nonce: ajaxNonce,
-                    agent_name: name
-                },
-                success: function(response) {
-                    if (response.success) {
-                        // Get new agent data
-                        var agentData = response.data.data || response.data;
-                        var newAgentId = agentData.agentId || agentData.id;
-                        var newAgentName = agentData.name || name;
-                        
-                        // Update current selection
-                        if (newAgentId) {
-                            currentAgentId = newAgentId;
-                        }
-                        
-                        // Refresh agents list (will auto-select new agent)
-                        fetchAgents();
-                        
-                        // Reset form
-                        $('#ttp-new-agent-name').val('');
-                        $('#ttp-create-agent-form').hide();
-                        $('#ttp-show-create-agent').show();
-                        $('#ttp_agent_name').val(newAgentName);
-                    } else {
-                        var errMsg = (response.data && response.data.message) || 'Failed to create agent';
-                        alert('Error: ' + errMsg);
-                    }
-                },
-                error: function() {
-                    alert('Failed to create agent. Please try again.');
-                },
-                complete: function() {
-                    $btn.prop('disabled', false).text('Create');
-                }
+            if (!name) { alert('Enter agent name'); return; }
+            var $btn = $(this).prop('disabled', true).text('Creating...');
+            $.post(ajaxurl, { action: 'ttp_create_agent', nonce: ajaxNonce, agent_name: name }, function(r) {
+                if (r.success) { var d = r.data.data || r.data; currentAgentId = d.agentId || d.id; fetchAgents(); $('#ttp-new-agent-name').val(''); $('#ttp-create-agent-form').hide(); $('#ttp-show-create-agent').show(); }
+                else { alert('Error: ' + (r.data?.message || 'Failed')); }
+                $btn.prop('disabled', false).text('Create');
             });
         });
     });
@@ -726,85 +630,113 @@ function ttp_settings_page() {
 
 add_action('wp_enqueue_scripts', function() {
     $api_key = get_option('ttp_api_key');
-    $app_id = get_option('ttp_app_id');
     $agent_id = get_option('ttp_agent_id');
-    
-    // Need at minimum api_key and agent_id
     if (empty($api_key) || empty($agent_id)) return;
     
     wp_enqueue_script('ttp-agent-widget', 'https://cdn.talktopc.com/agent-widget.js', [], TTP_VERSION, true);
     
-    // Build config
-    $config = [
-        'agentId' => $agent_id,
-    ];
+    $config = [];
     
-    if (!empty($app_id)) {
-        $config['appId'] = $app_id;
-    }
-    
-    // Position
-    $position = get_option('ttp_position', 'bottom-right');
-    if (!empty($position)) {
-        $config['position'] = $position;
-    }
-    
-    // Direction
-    $direction = get_option('ttp_direction', 'ltr');
-    if (!empty($direction)) {
-        $config['direction'] = $direction;
-    }
+    // Direction & Language
+    if ($v = get_option('ttp_direction')) $config['direction'] = $v;
+    if ($v = get_option('ttp_override_language')) $config['language'] = $v;
+    if ($v = get_option('ttp_position')) $config['position'] = $v;
     
     // Button
     $button = [];
-    if ($size = get_option('ttp_button_size')) $button['size'] = $size;
-    if ($shape = get_option('ttp_button_shape')) $button['shape'] = $shape;
-    if ($bg = get_option('ttp_button_bg_color')) $button['backgroundColor'] = $bg;
+    if ($v = get_option('ttp_button_size')) $button['size'] = $v;
+    if ($v = get_option('ttp_button_shape')) $button['shape'] = $v;
+    if ($v = get_option('ttp_button_bg_color')) $button['backgroundColor'] = $v;
+    if ($v = get_option('ttp_button_hover_color')) $button['hoverColor'] = $v;
+    $button['shadow'] = get_option('ttp_button_shadow', '1') === '1';
     if (!empty($button)) $config['button'] = $button;
+    
+    // Icon
+    $icon = [];
+    if ($v = get_option('ttp_icon_type')) $icon['type'] = $v;
+    if ($v = get_option('ttp_icon_custom_image')) $icon['customImage'] = $v;
+    if ($v = get_option('ttp_icon_emoji')) $icon['emoji'] = $v;
+    if ($v = get_option('ttp_icon_text')) $icon['text'] = $v;
+    if ($v = get_option('ttp_icon_size')) $icon['size'] = $v;
+    if (!empty($icon)) $config['icon'] = $icon;
+    
+    // Panel
+    $panel = [];
+    if ($v = get_option('ttp_panel_width')) $panel['width'] = intval($v);
+    if ($v = get_option('ttp_panel_height')) $panel['height'] = intval($v);
+    if ($v = get_option('ttp_panel_border_radius')) $panel['borderRadius'] = intval($v);
+    if ($v = get_option('ttp_panel_bg_color')) $panel['backgroundColor'] = $v;
+    if (!empty($panel)) $config['panel'] = $panel;
     
     // Header
     $header = [];
-    if ($title = get_option('ttp_header_title')) $header['title'] = $title;
-    if ($bg = get_option('ttp_header_bg_color')) $header['backgroundColor'] = $bg;
-    if ($text = get_option('ttp_header_text_color')) $header['textColor'] = $text;
+    if ($v = get_option('ttp_header_title')) $header['title'] = $v;
+    if ($v = get_option('ttp_header_bg_color')) $header['backgroundColor'] = $v;
+    if ($v = get_option('ttp_header_text_color')) $header['textColor'] = $v;
+    $header['showCloseButton'] = get_option('ttp_header_show_close', '1') === '1';
     if (!empty($header)) $config['header'] = $header;
+    
+    // Voice (with audio fix)
+    $voice = ['outputContainer'=>'raw','outputEncoding'=>'pcm','outputSampleRate'=>44100,'outputChannels'=>1,'outputBitDepth'=>16];
+    if ($v = get_option('ttp_voice_mic_color')) $voice['micButtonColor'] = $v;
+    if ($v = get_option('ttp_voice_mic_active_color')) $voice['micButtonActiveColor'] = $v;
+    if ($v = get_option('ttp_voice_avatar_color')) { $voice['avatarBackgroundColor'] = $v; $voice['avatarActiveBackgroundColor'] = $v; }
+    if ($v = get_option('ttp_voice_start_btn_color')) $voice['startCallButtonColor'] = $v;
+    if ($v = get_option('ttp_voice_end_btn_color')) $voice['endCallButtonColor'] = $v;
+    $config['voice'] = $voice;
+    
+    // Text
+    $text = [];
+    if ($v = get_option('ttp_text_send_btn_color')) $text['sendButtonColor'] = $v;
+    if ($v = get_option('ttp_text_input_placeholder')) $text['inputPlaceholder'] = $v;
+    if ($v = get_option('ttp_text_input_focus_color')) $text['inputFocusColor'] = $v;
+    if (!empty($text)) $config['text'] = $text;
+    
+    // Messages
+    $messages = [];
+    if ($v = get_option('ttp_msg_user_bg')) $messages['userBackgroundColor'] = $v;
+    if ($v = get_option('ttp_msg_agent_bg')) $messages['agentBackgroundColor'] = $v;
+    if ($v = get_option('ttp_msg_text_color')) $messages['textColor'] = $v;
+    if (!empty($messages)) $config['messages'] = $messages;
+    
+    // Landing
+    $landing = [];
+    if ($v = get_option('ttp_landing_logo')) $landing['logo'] = $v;
+    if ($v = get_option('ttp_landing_title')) $landing['title'] = $v;
+    if ($v = get_option('ttp_landing_title_color')) $landing['titleColor'] = $v;
+    if (!empty($landing)) $config['landing'] = $landing;
     
     // Behavior
     $behavior = [];
-    if ($mode = get_option('ttp_mode')) $behavior['mode'] = $mode;
+    if ($v = get_option('ttp_mode')) $behavior['mode'] = $v;
+    if (get_option('ttp_auto_open') === '1') $behavior['autoOpen'] = true;
+    if ($v = get_option('ttp_welcome_message')) { $behavior['showWelcomeMessage'] = true; $behavior['welcomeMessage'] = $v; }
     if (!empty($behavior)) $config['behavior'] = $behavior;
     
-    // Agent Settings Override
+    // Agent Overrides
     $override = [];
-    if ($prompt = get_option('ttp_override_prompt')) $override['prompt'] = $prompt;
-    if ($first = get_option('ttp_override_first_message')) $override['firstMessage'] = $first;
-    if ($voice = get_option('ttp_override_voice')) $override['voiceId'] = $voice;
-    if ($speed = get_option('ttp_override_voice_speed')) $override['voiceSpeed'] = floatval($speed);
-    if ($lang = get_option('ttp_override_language')) $override['language'] = $lang;
-    if ($temp = get_option('ttp_override_temperature')) $override['temperature'] = floatval($temp);
+    if ($v = get_option('ttp_override_prompt')) $override['prompt'] = $v;
+    if ($v = get_option('ttp_override_first_message')) $override['firstMessage'] = $v;
+    if ($v = get_option('ttp_override_voice')) $override['voiceId'] = $v;
+    if ($v = get_option('ttp_override_voice_speed')) $override['voiceSpeed'] = floatval($v);
+    if ($v = get_option('ttp_override_language')) $override['language'] = $v;
+    if ($v = get_option('ttp_override_temperature')) $override['temperature'] = floatval($v);
+    if ($v = get_option('ttp_override_max_tokens')) $override['maxTokens'] = intval($v);
+    if ($v = get_option('ttp_override_max_call_duration')) $override['maxCallDuration'] = intval($v);
     if (!empty($override)) $config['agentSettingsOverride'] = $override;
     
-    // Initialize widget
-    $inline_script = sprintf(
-        '(function() {
-            function initWidget() {
-                if (typeof TTPAgentSDK !== "undefined" && TTPAgentSDK.TTPChatWidget) {
-                    new TTPAgentSDK.TTPChatWidget(%s);
-                } else {
-                    setTimeout(initWidget, 100);
-                }
-            }
-            initWidget();
-        })();',
-        wp_json_encode($config)
-    );
+    // Custom CSS
+    if ($css = get_option('ttp_custom_css')) $config['customStyles'] = $css;
     
-    wp_add_inline_script('ttp-agent-widget', $inline_script);
+    $nonce = wp_create_nonce('ttp_widget_nonce');
+    
+    $script = sprintf('(function(){var c=%s,u=%s,n=%s;function f(){var x=new XMLHttpRequest();x.open("POST",u,true);x.setRequestHeader("Content-Type","application/x-www-form-urlencoded");x.onreadystatechange=function(){if(x.readyState===4&&x.status===200){try{var r=JSON.parse(x.responseText);if(r.success&&r.data.signedUrl){c.signedUrl=r.data.signedUrl;i();}}catch(e){console.error("TTP Widget error",e);}}};x.send("action=ttp_get_signed_url&nonce="+n);}function i(){if(typeof TTPAgentSDK!=="undefined"&&TTPAgentSDK.TTPChatWidget){new TTPAgentSDK.TTPChatWidget(c);}else{setTimeout(i,100);}}if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",f);}else{f();}})();',
+        wp_json_encode($config), wp_json_encode(admin_url('admin-ajax.php')), wp_json_encode($nonce));
+    
+    wp_add_inline_script('ttp-agent-widget', $script);
 });
 
-// Add settings link on plugins page
 add_filter('plugin_action_links_' . plugin_basename(__FILE__), function($links) {
-    $settings_link = '<a href="' . esc_url(admin_url('options-general.php?page=ttp-voice-widget')) . '">' . esc_html__('Settings', 'ttp-voice-widget') . '</a>';
-    array_unshift($links, $settings_link);
+    array_unshift($links, '<a href="' . admin_url('options-general.php?page=ttp-voice-widget') . '">Settings</a>');
     return $links;
 });
