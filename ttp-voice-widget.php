@@ -2,7 +2,7 @@
 /**
  * Plugin Name: TalkToPC Voice Widget
  * Description: Add AI voice conversations to your WordPress site. Let visitors talk to your AI agent with natural voice interactions.
- * Version: 1.5.2
+ * Version: 1.5.9
  * Author: TalkToPC
  * Author URI: https://talktopc.com
  * License: GPL-2.0-or-later
@@ -17,7 +17,7 @@ if (!defined('ABSPATH')) exit;
 // Constants
 define('TTP_API_URL', 'https://backend.talktopc.com');
 define('TTP_CONNECT_URL', 'https://talktopc.com/connect/wordpress');
-define('TTP_VERSION', '1.5.2');
+define('TTP_VERSION', '1.5.9');
 
 // Clean up all plugin data on uninstall
 register_uninstall_hook(__FILE__, 'ttp_uninstall_cleanup');
@@ -331,6 +331,24 @@ function ttp_delete_system_api_key() {
 // AJAX HANDLERS
 // =============================================================================
 
+// Save agent selection via AJAX (for auto-save after authorization)
+add_action('wp_ajax_ttp_save_agent_selection', function() {
+    check_ajax_referer('ttp_ajax_nonce', 'nonce');
+    
+    $agent_id = isset($_POST['agent_id']) ? sanitize_text_field($_POST['agent_id']) : '';
+    $agent_name = isset($_POST['agent_name']) ? sanitize_text_field($_POST['agent_name']) : '';
+    
+    if (empty($agent_id)) {
+        wp_send_json_error(['message' => 'Agent ID is required']);
+    }
+    
+    // Save the agent selection
+    update_option('ttp_agent_id', $agent_id);
+    update_option('ttp_agent_name', $agent_name);
+    
+    wp_send_json_success(['message' => 'Agent saved successfully', 'agent_id' => $agent_id]);
+});
+
 add_action('wp_ajax_ttp_fetch_agents', function() {
     check_ajax_referer('ttp_ajax_nonce', 'nonce');
     $api_key = get_option('ttp_api_key');
@@ -451,7 +469,7 @@ function ttp_settings_page() {
     wp_enqueue_script('wp-color-picker');
     ?>
     <div class="wrap ttp-settings-wrap">
-        <h1><?php esc_html_e('TalkToPC Voice Widget', 'ttp-voice-widget'); ?></h1>
+        <h1><?php esc_html_e('TalkToPC Voice Widget', 'ttp-voice-widget'); ?> <small style="font-size: 12px; color: #666;">v<?php echo TTP_VERSION; ?></small></h1>
         
         <?php settings_errors(); ?>
         <?php if (isset($_GET['settings-updated'])): ?><div class="notice notice-success is-dismissible"><p>Settings saved!</p></div><?php endif; ?>
@@ -754,10 +772,12 @@ function ttp_settings_page() {
     </style>
     
     <script>
+    console.log('🔧 TTP Voice Widget v<?php echo TTP_VERSION; ?> loaded');
     var agentsData = {}; // Global for debugging - access via console
     var voicesData = []; // Global voices data
     var languageMap = {}; // Language code to name mapping
     jQuery(document).ready(function($) {
+        console.log('🔧 Document ready - initializing plugin v<?php echo TTP_VERSION; ?>');
         var ajaxNonce = '<?php echo wp_create_nonce("ttp_ajax_nonce"); ?>';
         var currentAgentId = '<?php echo esc_js($current_agent_id); ?>';
         var currentVoice = '<?php echo esc_js(get_option("ttp_override_voice")); ?>';
@@ -775,13 +795,20 @@ function ttp_settings_page() {
         }).trigger('change');
         
         <?php if ($is_connected): ?>
+        console.log('🔌 Plugin is connected! Fetching agents and voices...');
+        console.log('🔌 Current saved agent ID:', '<?php echo esc_js($current_agent_id); ?>' || '(none)');
         fetchAgents(); fetchVoices();
+        <?php else: ?>
+        console.log('🔌 Plugin is NOT connected - no API key');
         <?php endif; ?>
         
         function fetchAgents() {
+            console.log('📡 fetchAgents() called...');
             $('#ttp-agents-loading').addClass('is-active');
             $.post(ajaxurl, { action: 'ttp_fetch_agents', nonce: ajaxNonce }, function(r) {
+                console.log('📡 fetchAgents response:', r);
                 var agents = r.success && r.data ? (Array.isArray(r.data) ? r.data : (r.data.data || [])) : [];
+                console.log('📡 Parsed agents array:', agents);
                 $('#ttp-agents-loading').removeClass('is-active');
                 
                 // If no agents exist, create a default one
@@ -804,17 +831,49 @@ function ttp_settings_page() {
                 agent_name: 'My first voice agent',
                 first_message: 'Hi, what can I do for you today?',
                 system_prompt: 'You are a helpful assistant',
-                voice_id: 'aura-luna-en',
+                voice_id: 'F2',
                 language: 'en-US'
             }, function(r) {
                 $('#ttp-agents-loading').removeClass('is-active');
-                if (r.success) {
+                if (r.success && r.data) {
                     console.log('✅ Default agent created:', r.data);
-                    // Re-fetch agents to populate dropdown
-                    fetchAgentsWithoutAutoCreate();
+                    
+                    // Get the agent from response (handle nested structure)
+                    var agent = r.data.data || r.data;
+                    var agentId = agent.agentId || agent.id;
+                    
+                    // Store in agentsData
+                    agentsData[agentId] = agent;
+                    
+                    // Populate dropdown with the new agent
+                    var $s = $('#ttp_agent_select').empty().append('<option value="">-- Select an agent --</option>');
+                    $s.append('<option value="'+agentId+'" selected>'+agent.name+'</option>');
+                    
+                    // Set the agent ID and name in hidden fields
+                    currentAgentId = agentId;
+                    $('#ttp_agent_name').val(agent.name);
+                    
+                    // Populate all override fields with agent's settings
+                    populateAgentSettings(agent);
+                    
+                    // Show create agent section
+                    $('#ttp-create-agent').show();
+                    
+                    // Setup change handler
+                    $s.off('change').on('change', function() {
+                        var selectedId = $(this).val();
+                        var selectedText = $(this).find('option:selected').text();
+                        $('#ttp_agent_name').val(selectedText !== '-- Select an agent --' ? selectedText : '');
+                        if (selectedId && agentsData[selectedId]) {
+                            populateAgentSettings(agentsData[selectedId]);
+                        }
+                    });
+                    
+                    // Auto-save the settings so the agent is persisted in plugin settings
+                    console.log('💾 Auto-saving with newly created default agent...');
+                    autoSaveSettings(agentId, agent.name);
                 } else {
                     console.error('❌ Failed to create default agent:', r.data?.message || 'Unknown error');
-                    // Show empty dropdown anyway
                     populateAgentsDropdown([]);
                 }
             }).fail(function() {
@@ -824,20 +883,13 @@ function ttp_settings_page() {
             });
         }
         
-        // Fetch agents without auto-create (to avoid infinite loop)
+        // Fetch agents without auto-create (used after manual creation)
         function fetchAgentsWithoutAutoCreate() {
             $('#ttp-agents-loading').addClass('is-active');
             $.post(ajaxurl, { action: 'ttp_fetch_agents', nonce: ajaxNonce }, function(r) {
                 var agents = r.success && r.data ? (Array.isArray(r.data) ? r.data : (r.data.data || [])) : [];
                 $('#ttp-agents-loading').removeClass('is-active');
                 populateAgentsDropdown(agents);
-                
-                // Auto-select the first (newly created) agent
-                if (agents.length > 0) {
-                    var firstAgent = agents[0];
-                    var id = firstAgent.agentId || firstAgent.id;
-                    $('#ttp_agent_select').val(id).trigger('change');
-                }
             });
         }
         
@@ -872,12 +924,89 @@ function ttp_settings_page() {
             });
             
             // Populate fields for initially selected agent
-            if (currentAgentId && agentsData[currentAgentId]) {
+            console.log('🔍 Checking agent selection:', 'currentAgentId=', JSON.stringify(currentAgentId), 'type=', typeof currentAgentId, 'agents.length=', agents.length);
+            
+            var hasCurrentAgent = currentAgentId && currentAgentId !== '' && agentsData[currentAgentId];
+            console.log('🔍 hasCurrentAgent:', hasCurrentAgent);
+            
+            if (hasCurrentAgent) {
                 console.log('📝 Populating initial agent:', currentAgentId);
                 populateAgentSettings(agentsData[currentAgentId]);
             }
+            // If no agent currently selected but agents exist, auto-select first one and save
+            else if (agents.length > 0) {
+                var firstAgent = agents[0];
+                var firstAgentId = firstAgent.agentId || firstAgent.id;
+                var firstName = firstAgent.name;
+                console.log('📝 NO agent selected! Auto-selecting first agent:', firstAgentId, firstName);
+                
+                // Select the first agent in dropdown
+                $s.val(firstAgentId);
+                $('#ttp_agent_name').val(firstName);
+                
+                // Populate settings
+                populateAgentSettings(firstAgent);
+                
+                // Auto-save the settings - pass values directly
+                console.log('💾 Calling autoSaveSettings with:', firstAgentId, firstName);
+                autoSaveSettings(firstAgentId, firstName);
+                return; // Exit early, page will reload
+            } else {
+                console.log('📝 No agents available');
+            }
             
             $('#ttp-create-agent').show();
+        }
+        
+        // Auto-save agent selection via AJAX
+        function autoSaveSettings(agentId, agentName) {
+            // Use passed parameters, or fall back to DOM values
+            agentId = agentId || $('#ttp_agent_select').val();
+            agentName = agentName || $('#ttp_agent_name').val();
+            
+            console.log('💾 autoSaveSettings called with:', agentId, agentName);
+            
+            if (!agentId) {
+                console.log('❌ No agent ID to save');
+                return;
+            }
+            
+            // Show saving indicator immediately
+            var $notice = $('<div class="notice notice-info" id="ttp-autosave-notice" style="margin: 10px 0; padding: 10px;"><p>⏳ Auto-saving agent selection...</p></div>');
+            $('.wrap h1').after($notice);
+            
+            console.log('💾 Making AJAX call to save agent:', agentId, agentName);
+            console.log('💾 ajaxurl:', ajaxurl);
+            console.log('💾 nonce:', ajaxNonce);
+            
+            $.ajax({
+                url: ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'ttp_save_agent_selection',
+                    nonce: ajaxNonce,
+                    agent_id: agentId,
+                    agent_name: agentName
+                },
+                success: function(r) {
+                    console.log('💾 AJAX response:', r);
+                    if (r.success) {
+                        console.log('✅ Agent saved successfully, reloading page...');
+                        $('#ttp-autosave-notice').removeClass('notice-info').addClass('notice-success').html('<p>✅ Agent saved! Reloading...</p>');
+                        setTimeout(function() {
+                            window.location.reload();
+                        }, 300);
+                    } else {
+                        console.error('❌ Failed to save agent:', r);
+                        $('#ttp-autosave-notice').removeClass('notice-info').addClass('notice-error').html('<p>❌ Failed to save agent. Please click Save Settings manually.</p>');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('❌ AJAX error:', status, error);
+                    console.error('❌ XHR response:', xhr.responseText);
+                    $('#ttp-autosave-notice').removeClass('notice-info').addClass('notice-error').html('<p>❌ Connection error. Please click Save Settings manually.</p>');
+                }
+            });
         }
         
         // Populate override fields with agent's configuration
@@ -889,9 +1018,16 @@ function ttp_settings_page() {
             
             // Check if configuration exists and has a value property (JSONB from database)
             if (agent.configuration && agent.configuration.value) {
-                // Parse the JSON string
+                // Parse the JSON string - may be double-escaped
                 try {
-                    config = JSON.parse(agent.configuration.value);
+                    var parsed = JSON.parse(agent.configuration.value);
+                    // Check if result is still a string (double-escaped JSON)
+                    if (typeof parsed === 'string') {
+                        console.log('📦 Double-escaped JSON detected, parsing again...');
+                        config = JSON.parse(parsed);
+                    } else {
+                        config = parsed;
+                    }
                     console.log('📦 Parsed config from configuration.value:', config);
                 } catch (e) {
                     console.error('❌ Failed to parse configuration.value:', e);
@@ -1069,7 +1205,26 @@ function ttp_settings_page() {
             if (!name) { alert('Enter agent name'); return; }
             var $btn = $(this).prop('disabled', true).text('Creating...');
             $.post(ajaxurl, { action: 'ttp_create_agent', nonce: ajaxNonce, agent_name: name }, function(r) {
-                if (r.success) { var d = r.data.data || r.data; currentAgentId = d.agentId || d.id; fetchAgents(); $('#ttp-new-agent-name').val(''); $('#ttp-create-agent-form').hide(); $('#ttp-show-create-agent').show(); }
+                if (r.success) {
+                    var agent = r.data.data || r.data;
+                    var agentId = agent.agentId || agent.id;
+                    
+                    // Store agent data
+                    agentsData[agentId] = agent;
+                    currentAgentId = agentId;
+                    
+                    // Add to dropdown and select it
+                    $('#ttp_agent_select').append('<option value="'+agentId+'">'+agent.name+'</option>').val(agentId);
+                    $('#ttp_agent_name').val(agent.name);
+                    
+                    // Populate settings from returned agent
+                    populateAgentSettings(agent);
+                    
+                    // Clean up form
+                    $('#ttp-new-agent-name').val('');
+                    $('#ttp-create-agent-form').hide();
+                    $('#ttp-show-create-agent').show();
+                }
                 else { alert('Error: ' + (r.data?.message || 'Failed')); }
                 $btn.prop('disabled', false).text('Create');
             });
