@@ -2,7 +2,7 @@
 /**
  * Plugin Name: TalkToPC Voice Widget
  * Description: Add AI voice conversations to your WordPress site. Let visitors talk to your AI agent with natural voice interactions.
- * Version: 1.5.0
+ * Version: 1.5.2
  * Author: TalkToPC
  * Author URI: https://talktopc.com
  * License: GPL-2.0-or-later
@@ -17,7 +17,7 @@ if (!defined('ABSPATH')) exit;
 // Constants
 define('TTP_API_URL', 'https://backend.talktopc.com');
 define('TTP_CONNECT_URL', 'https://talktopc.com/connect/wordpress');
-define('TTP_VERSION', '1.5.0');
+define('TTP_VERSION', '1.5.2');
 
 // Clean up all plugin data on uninstall
 register_uninstall_hook(__FILE__, 'ttp_uninstall_cleanup');
@@ -367,9 +367,30 @@ add_action('wp_ajax_ttp_create_agent', function() {
     $agent_name = isset($_POST['agent_name']) ? sanitize_text_field($_POST['agent_name']) : '';
     if (empty($agent_name)) wp_send_json_error(['message' => 'Agent name required']);
     
+    // Build agent configuration
+    $agent_data = [
+        'name' => $agent_name,
+        'site_url' => home_url(),
+        'site_name' => get_bloginfo('name')
+    ];
+    
+    // Optional configuration fields
+    if (!empty($_POST['first_message'])) {
+        $agent_data['first_message'] = sanitize_text_field($_POST['first_message']);
+    }
+    if (!empty($_POST['system_prompt'])) {
+        $agent_data['system_prompt'] = sanitize_textarea_field($_POST['system_prompt']);
+    }
+    if (!empty($_POST['voice_id'])) {
+        $agent_data['voice_id'] = sanitize_text_field($_POST['voice_id']);
+    }
+    if (!empty($_POST['language'])) {
+        $agent_data['language'] = sanitize_text_field($_POST['language']);
+    }
+    
     $response = wp_remote_post(TTP_API_URL . '/api/public/wordpress/agents', [
         'headers' => ['X-API-Key' => $api_key, 'Content-Type' => 'application/json'],
-        'body' => json_encode(['name' => $agent_name, 'site_url' => home_url(), 'site_name' => get_bloginfo('name')]),
+        'body' => json_encode($agent_data),
         'timeout' => 30
     ]);
     
@@ -498,11 +519,8 @@ function ttp_settings_page() {
                             <td><input type="number" id="ttp_override_voice_speed" name="ttp_override_voice_speed" value="<?php echo esc_attr(get_option('ttp_override_voice_speed')); ?>" class="small-text" min="0.5" max="2.0" step="0.1"> <span class="description">0.5 to 2.0</span></td></tr>
                         <tr><th><label for="ttp_override_language">Language</label></th>
                             <td><select id="ttp_override_language" name="ttp_override_language" class="regular-text">
-                                <option value="">-- Use agent default --</option>
-                                <?php foreach(['en'=>'English','es'=>'Spanish','fr'=>'French','de'=>'German','he'=>'Hebrew','ar'=>'Arabic','zh'=>'Chinese','ja'=>'Japanese','pt'=>'Portuguese','ru'=>'Russian','it'=>'Italian','nl'=>'Dutch','ko'=>'Korean'] as $code=>$name): ?>
-                                <option value="<?php echo $code; ?>" <?php selected(get_option('ttp_override_language'), $code); ?>><?php echo $name; ?></option>
-                                <?php endforeach; ?>
-                            </select></td></tr>
+                                <option value="">-- All languages --</option>
+                            </select><span id="ttp-language-loading" class="spinner"></span></td></tr>
                         <tr><th><label for="ttp_override_temperature">Temperature</label></th>
                             <td><input type="number" id="ttp_override_temperature" name="ttp_override_temperature" value="<?php echo esc_attr(get_option('ttp_override_temperature')); ?>" class="small-text" min="0" max="2" step="0.1"> <span class="description">0 to 2</span></td></tr>
                         <tr><th><label for="ttp_override_max_tokens">Max Tokens</label></th>
@@ -737,10 +755,13 @@ function ttp_settings_page() {
     
     <script>
     var agentsData = {}; // Global for debugging - access via console
+    var voicesData = []; // Global voices data
+    var languageMap = {}; // Language code to name mapping
     jQuery(document).ready(function($) {
         var ajaxNonce = '<?php echo wp_create_nonce("ttp_ajax_nonce"); ?>';
         var currentAgentId = '<?php echo esc_js($current_agent_id); ?>';
         var currentVoice = '<?php echo esc_js(get_option("ttp_override_voice")); ?>';
+        var currentLanguage = '<?php echo esc_js(get_option("ttp_override_language")); ?>';
         
         $('.ttp-color-picker').wpColorPicker();
         $('.ttp-collapsible-header').on('click', function() { $(this).closest('.ttp-collapsible').toggleClass('open'); });
@@ -763,42 +784,100 @@ function ttp_settings_page() {
                 var agents = r.success && r.data ? (Array.isArray(r.data) ? r.data : (r.data.data || [])) : [];
                 $('#ttp-agents-loading').removeClass('is-active');
                 
-                // Store full agent data for later use
-                agentsData = {};
-                agents.forEach(function(a) {
-                    var id = a.agentId || a.id;
-                    agentsData[id] = a;
-                });
-                
-                console.log('📋 Agents loaded:', agentsData);
-                
-                // Populate dropdown
-                var $s = $('#ttp_agent_select').empty().append('<option value="">-- Select an agent --</option>');
-                agents.forEach(function(a) {
-                    var id = a.agentId || a.id;
-                    $s.append('<option value="'+id+'"'+(id===currentAgentId?' selected':'')+'>'+a.name+'</option>');
-                });
-                
-                // Handle agent selection change
-                $s.off('change').on('change', function() {
-                    var selectedId = $(this).val();
-                    var selectedText = $(this).find('option:selected').text();
-                    $('#ttp_agent_name').val(selectedText !== '-- Select an agent --' ? selectedText : '');
-                    
-                    // Populate override fields with agent's current settings
-                    if (selectedId && agentsData[selectedId]) {
-                        populateAgentSettings(agentsData[selectedId]);
-                    }
-                });
-                
-                // Populate fields for initially selected agent
-                if (currentAgentId && agentsData[currentAgentId]) {
-                    console.log('📝 Populating initial agent:', currentAgentId);
-                    populateAgentSettings(agentsData[currentAgentId]);
+                // If no agents exist, create a default one
+                if (agents.length === 0) {
+                    console.log('📝 No agents found, creating default agent...');
+                    createDefaultAgent();
+                    return;
                 }
                 
-                $('#ttp-create-agent').show();
+                populateAgentsDropdown(agents);
             });
+        }
+        
+        // Create default agent when none exist
+        function createDefaultAgent() {
+            $('#ttp-agents-loading').addClass('is-active');
+            $.post(ajaxurl, {
+                action: 'ttp_create_agent',
+                nonce: ajaxNonce,
+                agent_name: 'My first voice agent',
+                first_message: 'Hi, what can I do for you today?',
+                system_prompt: 'You are a helpful assistant',
+                voice_id: 'aura-luna-en',
+                language: 'en-US'
+            }, function(r) {
+                $('#ttp-agents-loading').removeClass('is-active');
+                if (r.success) {
+                    console.log('✅ Default agent created:', r.data);
+                    // Re-fetch agents to populate dropdown
+                    fetchAgentsWithoutAutoCreate();
+                } else {
+                    console.error('❌ Failed to create default agent:', r.data?.message || 'Unknown error');
+                    // Show empty dropdown anyway
+                    populateAgentsDropdown([]);
+                }
+            }).fail(function() {
+                $('#ttp-agents-loading').removeClass('is-active');
+                console.error('❌ AJAX failed when creating default agent');
+                populateAgentsDropdown([]);
+            });
+        }
+        
+        // Fetch agents without auto-create (to avoid infinite loop)
+        function fetchAgentsWithoutAutoCreate() {
+            $('#ttp-agents-loading').addClass('is-active');
+            $.post(ajaxurl, { action: 'ttp_fetch_agents', nonce: ajaxNonce }, function(r) {
+                var agents = r.success && r.data ? (Array.isArray(r.data) ? r.data : (r.data.data || [])) : [];
+                $('#ttp-agents-loading').removeClass('is-active');
+                populateAgentsDropdown(agents);
+                
+                // Auto-select the first (newly created) agent
+                if (agents.length > 0) {
+                    var firstAgent = agents[0];
+                    var id = firstAgent.agentId || firstAgent.id;
+                    $('#ttp_agent_select').val(id).trigger('change');
+                }
+            });
+        }
+        
+        // Populate agents dropdown
+        function populateAgentsDropdown(agents) {
+            // Store full agent data for later use
+            agentsData = {};
+            agents.forEach(function(a) {
+                var id = a.agentId || a.id;
+                agentsData[id] = a;
+            });
+            
+            console.log('📋 Agents loaded:', agentsData);
+            
+            // Populate dropdown
+            var $s = $('#ttp_agent_select').empty().append('<option value="">-- Select an agent --</option>');
+            agents.forEach(function(a) {
+                var id = a.agentId || a.id;
+                $s.append('<option value="'+id+'"'+(id===currentAgentId?' selected':'')+'>'+a.name+'</option>');
+            });
+            
+            // Handle agent selection change
+            $s.off('change').on('change', function() {
+                var selectedId = $(this).val();
+                var selectedText = $(this).find('option:selected').text();
+                $('#ttp_agent_name').val(selectedText !== '-- Select an agent --' ? selectedText : '');
+                
+                // Populate override fields with agent's current settings
+                if (selectedId && agentsData[selectedId]) {
+                    populateAgentSettings(agentsData[selectedId]);
+                }
+            });
+            
+            // Populate fields for initially selected agent
+            if (currentAgentId && agentsData[currentAgentId]) {
+                console.log('📝 Populating initial agent:', currentAgentId);
+                populateAgentSettings(agentsData[currentAgentId]);
+            }
+            
+            $('#ttp-create-agent').show();
         }
         
         // Populate override fields with agent's configuration
@@ -846,13 +925,19 @@ function ttp_settings_page() {
             $('#ttp_override_voice_speed').val(voiceSpeed);
             console.log('  voiceSpeed:', voiceSpeed);
             
-            // Language - extract base code if it's a locale (e.g., "en-US" -> "en")
+            // Language - use the full language code (e.g., "en-US")
             var lang = config.agentLanguage || config.language || '';
-            if (lang && lang.includes('-')) {
-                lang = lang.split('-')[0]; // "en-US" -> "en", "he-IL" -> "he"
-            }
             $('#ttp_override_language').val(lang);
-            console.log('  language:', lang, '(original:', config.agentLanguage, ')');
+            console.log('  language:', lang);
+            
+            // Filter voices by selected language
+            if (typeof populateVoicesDropdown === 'function') {
+                populateVoicesDropdown(lang);
+                // Re-select the voice after filtering
+                if (voiceId) {
+                    $('#ttp_override_voice').val(voiceId);
+                }
+            }
             
             // Temperature
             var temp = config.temperature || '';
@@ -871,13 +956,110 @@ function ttp_settings_page() {
         }
         
         function fetchVoices() {
-            $('#ttp-voice-loading').addClass('is-active');
+            $('#ttp-voice-loading, #ttp-language-loading').addClass('is-active');
             $.post(ajaxurl, { action: 'ttp_fetch_voices', nonce: ajaxNonce }, function(r) {
-                $('#ttp-voice-loading').removeClass('is-active');
-                var voices = r.success && r.data ? (Array.isArray(r.data) ? r.data : (r.data.data || [])) : [];
-                var $s = $('#ttp_override_voice');
-                voices.forEach(function(v) { var id = v.voiceId || v.id; $s.append('<option value="'+id+'"'+(id===currentVoice?' selected':'')+'>'+v.name+'</option>'); });
+                $('#ttp-voice-loading, #ttp-language-loading').removeClass('is-active');
+                voicesData = r.success && r.data ? (Array.isArray(r.data) ? r.data : (r.data.data || [])) : [];
+                
+                console.log('🎤 Voices loaded:', voicesData);
+                
+                // Language name mapping
+                var langNames = {
+                    'en': 'English', 'en-US': 'English (US)', 'en-GB': 'English (UK)',
+                    'es': 'Spanish', 'es-ES': 'Spanish (Spain)', 'es-MX': 'Spanish (Mexico)',
+                    'fr': 'French', 'fr-FR': 'French (France)', 'fr-CA': 'French (Canada)',
+                    'de': 'German', 'de-DE': 'German',
+                    'he': 'Hebrew', 'he-IL': 'Hebrew',
+                    'ar': 'Arabic', 'ar-SA': 'Arabic',
+                    'zh': 'Chinese', 'zh-CN': 'Chinese (Simplified)', 'zh-TW': 'Chinese (Traditional)',
+                    'ja': 'Japanese', 'ja-JP': 'Japanese',
+                    'pt': 'Portuguese', 'pt-BR': 'Portuguese (Brazil)', 'pt-PT': 'Portuguese (Portugal)',
+                    'ru': 'Russian', 'ru-RU': 'Russian',
+                    'it': 'Italian', 'it-IT': 'Italian',
+                    'nl': 'Dutch', 'nl-NL': 'Dutch',
+                    'ko': 'Korean', 'ko-KR': 'Korean',
+                    'pl': 'Polish', 'pl-PL': 'Polish',
+                    'tr': 'Turkish', 'tr-TR': 'Turkish',
+                    'hi': 'Hindi', 'hi-IN': 'Hindi',
+                    'sv': 'Swedish', 'sv-SE': 'Swedish',
+                    'da': 'Danish', 'da-DK': 'Danish',
+                    'fi': 'Finnish', 'fi-FI': 'Finnish',
+                    'no': 'Norwegian', 'nb-NO': 'Norwegian',
+                    'uk': 'Ukrainian', 'uk-UA': 'Ukrainian',
+                    'cs': 'Czech', 'cs-CZ': 'Czech',
+                    'el': 'Greek', 'el-GR': 'Greek',
+                    'ro': 'Romanian', 'ro-RO': 'Romanian',
+                    'hu': 'Hungarian', 'hu-HU': 'Hungarian',
+                    'th': 'Thai', 'th-TH': 'Thai',
+                    'vi': 'Vietnamese', 'vi-VN': 'Vietnamese',
+                    'id': 'Indonesian', 'id-ID': 'Indonesian',
+                    'ms': 'Malay', 'ms-MY': 'Malay'
+                };
+                
+                // Extract unique languages from all voices
+                languageMap = {};
+                voicesData.forEach(function(v) {
+                    var langs = v.languages || [];
+                    langs.forEach(function(lang) {
+                        if (!languageMap[lang]) {
+                            languageMap[lang] = langNames[lang] || lang;
+                        }
+                    });
+                });
+                
+                console.log('🌍 Languages found:', languageMap);
+                
+                // Populate language dropdown
+                var $langSelect = $('#ttp_override_language');
+                $langSelect.find('option:not(:first)').remove(); // Keep "All languages" option
+                
+                // Sort languages by name
+                var sortedLangs = Object.keys(languageMap).sort(function(a, b) {
+                    return languageMap[a].localeCompare(languageMap[b]);
+                });
+                
+                sortedLangs.forEach(function(code) {
+                    $langSelect.append('<option value="' + code + '"' + (code === currentLanguage ? ' selected' : '') + '>' + languageMap[code] + '</option>');
+                });
+                
+                // Populate voices (filtered by current language if set)
+                populateVoicesDropdown(currentLanguage);
+                
+                // Language change handler - filter voices
+                $langSelect.off('change').on('change', function() {
+                    var selectedLang = $(this).val();
+                    populateVoicesDropdown(selectedLang);
+                });
             });
+        }
+        
+        // Populate voices dropdown, optionally filtered by language
+        function populateVoicesDropdown(filterLang) {
+            var $voiceSelect = $('#ttp_override_voice');
+            $voiceSelect.find('option:not(:first)').remove(); // Keep "Use agent default" option
+            
+            var filteredVoices = voicesData;
+            if (filterLang) {
+                filteredVoices = voicesData.filter(function(v) {
+                    var langs = v.languages || [];
+                    return langs.some(function(l) {
+                        // Match exact or base language (e.g., "en" matches "en-US")
+                        return l === filterLang || l.startsWith(filterLang + '-') || filterLang.startsWith(l + '-');
+                    });
+                });
+            }
+            
+            console.log('🎤 Filtered voices for "' + (filterLang || 'all') + '":', filteredVoices.length);
+            
+            filteredVoices.forEach(function(v) {
+                var id = v.voiceId || v.id;
+                $voiceSelect.append('<option value="' + id + '"' + (id === currentVoice ? ' selected' : '') + '>' + v.name + '</option>');
+            });
+            
+            // If current voice is not in filtered list, clear selection
+            if (currentVoice && $voiceSelect.find('option[value="' + currentVoice + '"]').length === 0) {
+                $voiceSelect.val('');
+            }
         }
         
         $('#ttp-show-create-agent').on('click', function() { $(this).hide(); $('#ttp-create-agent-form').show(); });
