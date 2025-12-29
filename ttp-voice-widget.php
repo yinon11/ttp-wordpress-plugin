@@ -2,7 +2,7 @@
 /**
  * Plugin Name: TalkToPC Voice Widget
  * Description: Add AI voice conversations to your WordPress site. Let visitors talk to your AI agent with natural voice interactions.
- * Version: 1.4.6
+ * Version: 1.5.0
  * Author: TalkToPC
  * Author URI: https://talktopc.com
  * License: GPL-2.0-or-later
@@ -17,7 +17,7 @@ if (!defined('ABSPATH')) exit;
 // Constants
 define('TTP_API_URL', 'https://backend.talktopc.com');
 define('TTP_CONNECT_URL', 'https://talktopc.com/connect/wordpress');
-define('TTP_VERSION', '1.4.6');
+define('TTP_VERSION', '1.5.0');
 
 // Clean up all plugin data on uninstall
 register_uninstall_hook(__FILE__, 'ttp_uninstall_cleanup');
@@ -51,12 +51,14 @@ function ttp_uninstall_cleanup() {
 // =============================================================================
 
 add_action('admin_menu', function() {
-    add_options_page(
-        'TalkToPC Voice Widget',
-        'TalkToPC Widget',
-        'manage_options',
-        'ttp-voice-widget',
-        'ttp_settings_page'
+    add_menu_page(
+        'TalkToPC Voice Widget',      // Page title
+        'TalkToPC',                    // Menu title
+        'manage_options',              // Capability
+        'ttp-voice-widget',            // Menu slug
+        'ttp_settings_page',           // Callback function
+        'dashicons-microphone',        // Icon (microphone)
+        30                             // Position (below Comments)
     );
 });
 
@@ -176,7 +178,7 @@ add_action('admin_init', function() {
         if ($app_id) update_option('ttp_app_id', $app_id);
         if ($user_email) update_option('ttp_user_email', $user_email);
         
-        wp_redirect(admin_url('options-general.php?page=ttp-voice-widget&connected=1'));
+        wp_redirect(admin_url('admin.php?page=ttp-voice-widget&connected=1'));
         exit;
     }
     
@@ -228,7 +230,7 @@ add_action('admin_init', function() {
             delete_option($option);
         }
         
-        wp_redirect(admin_url('options-general.php?page=ttp-voice-widget&disconnected=1'));
+        wp_redirect(admin_url('admin.php?page=ttp-voice-widget&disconnected=1'));
         exit;
     }
 });
@@ -417,12 +419,12 @@ function ttp_settings_page() {
     $current_agent_name = get_option('ttp_agent_name', '');
     
     $state = wp_create_nonce('ttp_connect');
-    $redirect_uri = admin_url('options-general.php?page=ttp-voice-widget');
+    $redirect_uri = admin_url('admin.php?page=ttp-voice-widget');
     $connect_url = TTP_CONNECT_URL . '?' . http_build_query([
         'redirect_uri' => $redirect_uri, 'state' => $state,
         'site_url' => home_url(), 'site_name' => get_bloginfo('name')
     ]);
-    $disconnect_url = wp_nonce_url(admin_url('options-general.php?page=ttp-voice-widget&action=disconnect'), 'ttp_disconnect');
+    $disconnect_url = wp_nonce_url(admin_url('admin.php?page=ttp-voice-widget&action=disconnect'), 'ttp_disconnect');
     
     wp_enqueue_style('wp-color-picker');
     wp_enqueue_script('wp-color-picker');
@@ -1008,6 +1010,6 @@ add_action('wp_enqueue_scripts', function() {
 });
 
 add_filter('plugin_action_links_' . plugin_basename(__FILE__), function($links) {
-    array_unshift($links, '<a href="' . admin_url('options-general.php?page=ttp-voice-widget') . '">Settings</a>');
+    array_unshift($links, '<a href="' . admin_url('admin.php?page=ttp-voice-widget') . '">Settings</a>');
     return $links;
 });
