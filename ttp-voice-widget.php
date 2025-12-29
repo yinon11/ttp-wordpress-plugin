@@ -2,7 +2,7 @@
 /**
  * Plugin Name: TalkToPC Voice Widget
  * Description: Add AI voice conversations to your WordPress site. Let visitors talk to your AI agent with natural voice interactions.
- * Version: 1.3.0
+ * Version: 1.4.5
  * Author: TalkToPC
  * Author URI: https://talktopc.com
  * License: GPL-2.0-or-later
@@ -17,7 +17,34 @@ if (!defined('ABSPATH')) exit;
 // Constants
 define('TTP_API_URL', 'https://backend.talktopc.com');
 define('TTP_CONNECT_URL', 'https://talktopc.com/connect/wordpress');
-define('TTP_VERSION', '1.3.0');
+define('TTP_VERSION', '1.4.5');
+
+// Clean up all plugin data on uninstall
+register_uninstall_hook(__FILE__, 'ttp_uninstall_cleanup');
+function ttp_uninstall_cleanup() {
+    $all_options = [
+        'ttp_api_key', 'ttp_app_id', 'ttp_user_email',
+        'ttp_agent_id', 'ttp_agent_name',
+        'ttp_override_prompt', 'ttp_override_first_message', 'ttp_override_voice',
+        'ttp_override_voice_speed', 'ttp_override_language', 'ttp_override_temperature',
+        'ttp_override_max_tokens', 'ttp_override_max_call_duration',
+        'ttp_mode', 'ttp_direction', 'ttp_auto_open', 'ttp_welcome_message',
+        'ttp_position', 'ttp_button_size', 'ttp_button_shape', 'ttp_button_bg_color',
+        'ttp_button_hover_color', 'ttp_button_shadow',
+        'ttp_icon_type', 'ttp_icon_custom_image', 'ttp_icon_emoji', 'ttp_icon_text', 'ttp_icon_size',
+        'ttp_panel_width', 'ttp_panel_height', 'ttp_panel_border_radius', 'ttp_panel_bg_color',
+        'ttp_header_title', 'ttp_header_bg_color', 'ttp_header_text_color', 'ttp_header_show_close',
+        'ttp_voice_mic_color', 'ttp_voice_mic_active_color', 'ttp_voice_avatar_color',
+        'ttp_voice_start_btn_color', 'ttp_voice_end_btn_color',
+        'ttp_text_send_btn_color', 'ttp_text_input_placeholder', 'ttp_text_input_focus_color',
+        'ttp_landing_logo', 'ttp_landing_title', 'ttp_landing_title_color',
+        'ttp_msg_user_bg', 'ttp_msg_agent_bg', 'ttp_msg_text_color',
+        'ttp_custom_css'
+    ];
+    foreach ($all_options as $option) {
+        delete_option($option);
+    }
+}
 
 // =============================================================================
 // ADMIN MENU & SETTINGS
@@ -132,9 +159,22 @@ add_action('admin_init', function() {
             return;
         }
         
-        update_option('ttp_api_key', sanitize_text_field($_GET['api_key']));
-        if (isset($_GET['app_id'])) update_option('ttp_app_id', sanitize_text_field($_GET['app_id']));
-        if (isset($_GET['email'])) update_option('ttp_user_email', sanitize_email($_GET['email']));
+        $oauth_api_key = sanitize_text_field($_GET['api_key']);
+        $app_id = isset($_GET['app_id']) ? sanitize_text_field($_GET['app_id']) : '';
+        $user_email = isset($_GET['email']) ? sanitize_email($_GET['email']) : '';
+        
+        // Get or create system API key using the OAuth key for initial auth
+        $system_key = ttp_get_or_create_system_api_key($oauth_api_key);
+        
+        if ($system_key) {
+            update_option('ttp_api_key', $system_key);
+        } else {
+            // Fallback to OAuth key if system key creation fails
+            update_option('ttp_api_key', $oauth_api_key);
+        }
+        
+        if ($app_id) update_option('ttp_app_id', $app_id);
+        if ($user_email) update_option('ttp_user_email', $user_email);
         
         wp_redirect(admin_url('options-general.php?page=ttp-voice-widget&connected=1'));
         exit;
@@ -147,14 +187,143 @@ add_action('admin_init', function() {
             return;
         }
         
-        delete_option('ttp_api_key');
-        delete_option('ttp_app_id');
-        delete_option('ttp_user_email');
+        // Try to delete the system API key from TalkToPC before disconnecting
+        ttp_delete_system_api_key();
+        
+        // Delete ALL plugin settings for clean slate on reconnect
+        $all_options = [
+            // Connection
+            'ttp_api_key', 'ttp_app_id', 'ttp_user_email',
+            // Agent
+            'ttp_agent_id', 'ttp_agent_name',
+            // Agent overrides
+            'ttp_override_prompt', 'ttp_override_first_message', 'ttp_override_voice',
+            'ttp_override_voice_speed', 'ttp_override_language', 'ttp_override_temperature',
+            'ttp_override_max_tokens', 'ttp_override_max_call_duration',
+            // Behavior
+            'ttp_mode', 'ttp_direction', 'ttp_auto_open', 'ttp_welcome_message',
+            // Button
+            'ttp_position', 'ttp_button_size', 'ttp_button_shape', 'ttp_button_bg_color',
+            'ttp_button_hover_color', 'ttp_button_shadow',
+            // Icon
+            'ttp_icon_type', 'ttp_icon_custom_image', 'ttp_icon_emoji', 'ttp_icon_text', 'ttp_icon_size',
+            // Panel
+            'ttp_panel_width', 'ttp_panel_height', 'ttp_panel_border_radius', 'ttp_panel_bg_color',
+            // Header
+            'ttp_header_title', 'ttp_header_bg_color', 'ttp_header_text_color', 'ttp_header_show_close',
+            // Voice interface
+            'ttp_voice_mic_color', 'ttp_voice_mic_active_color', 'ttp_voice_avatar_color',
+            'ttp_voice_start_btn_color', 'ttp_voice_end_btn_color',
+            // Text interface
+            'ttp_text_send_btn_color', 'ttp_text_input_placeholder', 'ttp_text_input_focus_color',
+            // Landing
+            'ttp_landing_logo', 'ttp_landing_title', 'ttp_landing_title_color',
+            // Messages
+            'ttp_msg_user_bg', 'ttp_msg_agent_bg', 'ttp_msg_text_color',
+            // Custom CSS
+            'ttp_custom_css'
+        ];
+        
+        foreach ($all_options as $option) {
+            delete_option($option);
+        }
         
         wp_redirect(admin_url('options-general.php?page=ttp-voice-widget&disconnected=1'));
         exit;
     }
 });
+
+/**
+ * Get or create a system API key for WordPress
+ * Flow: List keys → Delete existing "WordPress System Key" if found → Create fresh one
+ * 
+ * @param string $auth_key API key to use for authentication
+ * @return string|null The new system API key or null on failure
+ */
+function ttp_get_or_create_system_api_key($auth_key) {
+    // Step 1: List existing API keys
+    $list_response = wp_remote_get(TTP_API_URL . '/api/public/wordpress/api-keys', [
+        'headers' => ['X-API-Key' => $auth_key, 'Content-Type' => 'application/json'],
+        'timeout' => 30
+    ]);
+    
+    if (!is_wp_error($list_response) && wp_remote_retrieve_response_code($list_response) === 200) {
+        $list_body = json_decode(wp_remote_retrieve_body($list_response), true);
+        $api_keys = isset($list_body['api_keys']) ? $list_body['api_keys'] : [];
+        
+        // Step 2: Find and delete existing "WordPress System Key"
+        foreach ($api_keys as $key) {
+            if (isset($key['key_name']) && $key['key_name'] === 'WordPress System Key' && isset($key['id'])) {
+                // Delete existing system key
+                wp_remote_request(TTP_API_URL . '/api/public/wordpress/api-keys/' . $key['id'], [
+                    'method' => 'DELETE',
+                    'headers' => ['X-API-Key' => $auth_key, 'Content-Type' => 'application/json'],
+                    'timeout' => 30
+                ]);
+                break;
+            }
+        }
+    }
+    
+    // Step 3: Create fresh system API key
+    $create_response = wp_remote_post(TTP_API_URL . '/api/public/wordpress/api-keys', [
+        'headers' => ['X-API-Key' => $auth_key, 'Content-Type' => 'application/json'],
+        'body' => json_encode([
+            'key_name' => 'WordPress System Key',
+            'description' => 'System-generated API key for WordPress plugin (' . home_url() . ')',
+            'permissions' => ['agents:read', 'agents:write', 'voices:read']
+        ]),
+        'timeout' => 30
+    ]);
+    
+    if (is_wp_error($create_response)) {
+        error_log('TTP Widget: Failed to create system API key - ' . $create_response->get_error_message());
+        return null;
+    }
+    
+    $status_code = wp_remote_retrieve_response_code($create_response);
+    $create_body = json_decode(wp_remote_retrieve_body($create_response), true);
+    
+    if ($status_code === 200 && isset($create_body['api_key'])) {
+        return $create_body['api_key'];
+    }
+    
+    error_log('TTP Widget: Failed to create system API key - Status: ' . $status_code);
+    return null;
+}
+
+/**
+ * Delete the system API key when disconnecting
+ */
+function ttp_delete_system_api_key() {
+    $api_key = get_option('ttp_api_key');
+    if (empty($api_key)) return;
+    
+    // List keys to find system key ID
+    $list_response = wp_remote_get(TTP_API_URL . '/api/public/wordpress/api-keys', [
+        'headers' => ['X-API-Key' => $api_key, 'Content-Type' => 'application/json'],
+        'timeout' => 30
+    ]);
+    
+    if (is_wp_error($list_response) || wp_remote_retrieve_response_code($list_response) !== 200) {
+        return;
+    }
+    
+    $list_body = json_decode(wp_remote_retrieve_body($list_response), true);
+    $api_keys = isset($list_body['api_keys']) ? $list_body['api_keys'] : [];
+    
+    // Find and delete "WordPress System Key"
+    foreach ($api_keys as $key) {
+        if (isset($key['key_name']) && $key['key_name'] === 'WordPress System Key' && isset($key['id'])) {
+            wp_remote_request(TTP_API_URL . '/api/public/wordpress/api-keys/' . $key['id'], [
+                'method' => 'DELETE',
+                'headers' => ['X-API-Key' => $api_key, 'Content-Type' => 'application/json'],
+                'timeout' => 30
+            ]);
+            break;
+        }
+    }
+}
 
 // =============================================================================
 // AJAX HANDLERS
@@ -565,6 +734,7 @@ function ttp_settings_page() {
     </style>
     
     <script>
+    var agentsData = {}; // Global for debugging - access via console
     jQuery(document).ready(function($) {
         var ajaxNonce = '<?php echo wp_create_nonce("ttp_ajax_nonce"); ?>';
         var currentAgentId = '<?php echo esc_js($current_agent_id); ?>';
@@ -590,11 +760,115 @@ function ttp_settings_page() {
             $.post(ajaxurl, { action: 'ttp_fetch_agents', nonce: ajaxNonce }, function(r) {
                 var agents = r.success && r.data ? (Array.isArray(r.data) ? r.data : (r.data.data || [])) : [];
                 $('#ttp-agents-loading').removeClass('is-active');
+                
+                // Store full agent data for later use
+                agentsData = {};
+                agents.forEach(function(a) {
+                    var id = a.agentId || a.id;
+                    agentsData[id] = a;
+                });
+                
+                console.log('📋 Agents loaded:', agentsData);
+                
+                // Populate dropdown
                 var $s = $('#ttp_agent_select').empty().append('<option value="">-- Select an agent --</option>');
-                agents.forEach(function(a) { var id = a.agentId || a.id; $s.append('<option value="'+id+'"'+(id===currentAgentId?' selected':'')+'>'+a.name+'</option>'); });
-                $s.on('change', function() { $('#ttp_agent_name').val($(this).find('option:selected').text()); });
+                agents.forEach(function(a) {
+                    var id = a.agentId || a.id;
+                    $s.append('<option value="'+id+'"'+(id===currentAgentId?' selected':'')+'>'+a.name+'</option>');
+                });
+                
+                // Handle agent selection change
+                $s.off('change').on('change', function() {
+                    var selectedId = $(this).val();
+                    var selectedText = $(this).find('option:selected').text();
+                    $('#ttp_agent_name').val(selectedText !== '-- Select an agent --' ? selectedText : '');
+                    
+                    // Populate override fields with agent's current settings
+                    if (selectedId && agentsData[selectedId]) {
+                        populateAgentSettings(agentsData[selectedId]);
+                    }
+                });
+                
+                // Populate fields for initially selected agent
+                if (currentAgentId && agentsData[currentAgentId]) {
+                    console.log('📝 Populating initial agent:', currentAgentId);
+                    populateAgentSettings(agentsData[currentAgentId]);
+                }
+                
                 $('#ttp-create-agent').show();
             });
+        }
+        
+        // Populate override fields with agent's configuration
+        function populateAgentSettings(agent) {
+            console.log('🔧 populateAgentSettings called with:', agent);
+            
+            // Get configuration - handle different structures
+            var config = {};
+            
+            // Check if configuration exists and has a value property (JSONB from database)
+            if (agent.configuration && agent.configuration.value) {
+                // Parse the JSON string
+                try {
+                    config = JSON.parse(agent.configuration.value);
+                    console.log('📦 Parsed config from configuration.value:', config);
+                } catch (e) {
+                    console.error('❌ Failed to parse configuration.value:', e);
+                    config = agent.configuration;
+                }
+            } else if (agent.configuration && typeof agent.configuration === 'object') {
+                config = agent.configuration;
+                console.log('📦 Config object (direct):', config);
+            } else {
+                config = agent;
+                console.log('📦 Using agent as config:', config);
+            }
+            
+            // System Prompt
+            var prompt = config.systemPrompt || config.prompt || '';
+            $('#ttp_override_prompt').val(prompt);
+            console.log('  systemPrompt:', prompt);
+            
+            // First Message
+            var firstMsg = config.firstMessage || '';
+            $('#ttp_override_first_message').val(firstMsg);
+            console.log('  firstMessage:', firstMsg);
+            
+            // Voice
+            var voiceId = config.voiceId || '';
+            $('#ttp_override_voice').val(voiceId);
+            console.log('  voiceId:', voiceId);
+            
+            // Voice Speed
+            var voiceSpeed = config.voiceSpeed || '';
+            $('#ttp_override_voice_speed').val(voiceSpeed);
+            console.log('  voiceSpeed:', voiceSpeed);
+            
+            // Language - extract base code if it's a locale (e.g., "en-US" -> "en")
+            var lang = config.agentLanguage || config.language || '';
+            if (lang && lang.includes('-')) {
+                lang = lang.split('-')[0]; // "en-US" -> "en", "he-IL" -> "he"
+            }
+            $('#ttp_override_language').val(lang);
+            console.log('  language:', lang, '(original:', config.agentLanguage, ')');
+            
+            // Temperature
+            var temp = config.temperature || '';
+            $('#ttp_override_temperature').val(temp);
+            console.log('  temperature:', temp);
+            
+            // Max Tokens
+            var maxTokens = config.maxTokens || '';
+            $('#ttp_override_max_tokens').val(maxTokens);
+            console.log('  maxTokens:', maxTokens);
+            
+            // Max Call Duration
+            var maxDuration = config.maxCallDuration || '';
+            $('#ttp_override_max_call_duration').val(maxDuration);
+            console.log('  maxCallDuration:', maxDuration);
+            
+            // Open the Agent Settings section to show populated fields
+            $('.ttp-collapsible').first().next().addClass('open');
         }
         
         function fetchVoices() {
