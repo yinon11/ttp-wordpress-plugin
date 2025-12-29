@@ -2,7 +2,7 @@
 /**
  * Plugin Name: TalkToPC Voice Widget
  * Description: Add AI voice conversations to your WordPress site. Let visitors talk to your AI agent with natural voice interactions.
- * Version: 1.4.5
+ * Version: 1.4.6
  * Author: TalkToPC
  * Author URI: https://talktopc.com
  * License: GPL-2.0-or-later
@@ -17,7 +17,7 @@ if (!defined('ABSPATH')) exit;
 // Constants
 define('TTP_API_URL', 'https://backend.talktopc.com');
 define('TTP_CONNECT_URL', 'https://talktopc.com/connect/wordpress');
-define('TTP_VERSION', '1.4.5');
+define('TTP_VERSION', '1.4.6');
 
 // Clean up all plugin data on uninstall
 register_uninstall_hook(__FILE__, 'ttp_uninstall_cleanup');
@@ -481,7 +481,7 @@ function ttp_settings_page() {
             </div>
             
             <!-- Agent Settings Override -->
-            <div class="ttp-card ttp-collapsible">
+            <div class="ttp-card ttp-collapsible open">
                 <h2 class="ttp-collapsible-header">Agent Settings (Override) <span class="dashicons dashicons-arrow-down-alt2"></span></h2>
                 <div class="ttp-collapsible-content">
                     <p class="description">Override agent defaults. Leave empty to use agent settings.</p>
@@ -866,9 +866,6 @@ function ttp_settings_page() {
             var maxDuration = config.maxCallDuration || '';
             $('#ttp_override_max_call_duration').val(maxDuration);
             console.log('  maxCallDuration:', maxDuration);
-            
-            // Open the Agent Settings section to show populated fields
-            $('.ttp-collapsible').first().next().addClass('open');
         }
         
         function fetchVoices() {
