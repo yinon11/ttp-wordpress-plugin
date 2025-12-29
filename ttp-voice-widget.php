@@ -2,7 +2,7 @@
 /**
  * Plugin Name: TalkToPC Voice Widget
  * Description: Add AI voice conversations to your WordPress site. Let visitors talk to your AI agent with natural voice interactions.
- * Version: 1.6.7
+ * Version: 1.9.0
  * Author: TalkToPC
  * Author URI: https://talktopc.com
  * License: GPL-2.0-or-later
@@ -17,7 +17,7 @@ if (!defined('ABSPATH')) exit;
 // Constants
 define('TTP_API_URL', 'https://backend.talktopc.com');
 define('TTP_CONNECT_URL', 'https://talktopc.com/connect/wordpress');
-define('TTP_VERSION', '1.6.7');
+define('TTP_VERSION', '1.9.0');
 
 // Clean up all plugin data on uninstall
 register_uninstall_hook(__FILE__, 'ttp_uninstall_cleanup');
@@ -486,6 +486,232 @@ add_action('wp_ajax_ttp_update_agent', function() {
     wp_send_json_success(['message' => 'Agent updated successfully', 'agent' => $body]);
 });
 
+// Generate system prompt from site content (AI with local fallback)
+add_action('wp_ajax_ttp_generate_prompt', function() {
+    check_ajax_referer('ttp_ajax_nonce', 'nonce');
+    
+    $api_key = get_option('ttp_api_key');
+    
+    // Collect site information
+    $site_name = get_bloginfo('name');
+    $site_description = get_bloginfo('description');
+    $site_url = home_url();
+    $site_language = get_locale(); // e.g., 'en_US', 'he_IL', 'fr_FR'
+    
+    // Get all published pages
+    $pages = get_posts([
+        'post_type' => 'page',
+        'post_status' => 'publish',
+        'numberposts' => 50,
+        'orderby' => 'menu_order',
+        'order' => 'ASC'
+    ]);
+    
+    $pages_content = [];
+    foreach ($pages as $page) {
+        $content = wp_strip_all_tags($page->post_content);
+        $content = preg_replace('/\s+/', ' ', $content);
+        $content = trim($content);
+        
+        if (!empty($content)) {
+            $pages_content[] = [
+                'title' => $page->post_title,
+                'content' => mb_substr($content, 0, 2000)
+            ];
+        }
+    }
+    
+    // Get recent blog posts
+    $posts = get_posts([
+        'post_type' => 'post',
+        'post_status' => 'publish',
+        'numberposts' => 10,
+        'orderby' => 'date',
+        'order' => 'DESC'
+    ]);
+    
+    $posts_content = [];
+    foreach ($posts as $post) {
+        $content = wp_strip_all_tags($post->post_content);
+        $content = preg_replace('/\s+/', ' ', $content);
+        $content = trim($content);
+        
+        if (!empty($content)) {
+            $posts_content[] = [
+                'title' => $post->post_title,
+                'excerpt' => mb_substr($content, 0, 500)
+            ];
+        }
+    }
+    
+    // Check for WooCommerce products
+    $products_content = [];
+    $currency_symbol = '$';
+    if (class_exists('WooCommerce')) {
+        $currency_symbol = get_woocommerce_currency_symbol();
+        $products = get_posts([
+            'post_type' => 'product',
+            'post_status' => 'publish',
+            'numberposts' => 100,
+            'orderby' => 'title',
+            'order' => 'ASC'
+        ]);
+        
+        foreach ($products as $product) {
+            $wc_product = wc_get_product($product->ID);
+            if ($wc_product) {
+                $products_content[] = [
+                    'name' => $product->post_title,
+                    'price' => $wc_product->get_price(),
+                    'description' => mb_substr(wp_strip_all_tags($product->post_content), 0, 300),
+                    'in_stock' => $wc_product->is_in_stock()
+                ];
+            }
+        }
+    }
+    
+    // Get menu items for navigation context
+    $menus = [];
+    $menu_locations = get_nav_menu_locations();
+    foreach ($menu_locations as $location => $menu_id) {
+        if ($menu_id) {
+            $menu_items = wp_get_nav_menu_items($menu_id);
+            if ($menu_items) {
+                foreach ($menu_items as $item) {
+                    $menus[] = $item->title;
+                }
+            }
+        }
+    }
+    $menus = array_unique(array_values($menus));
+    
+    $stats = [
+        'pages' => count($pages_content),
+        'posts' => count($posts_content),
+        'products' => count($products_content),
+        'menu_items' => count($menus)
+    ];
+    
+    // Try backend AI generation if connected
+    $ai_prompt = null;
+    if (!empty($api_key)) {
+        $payload = [
+            'site' => [
+                'name' => $site_name,
+                'description' => $site_description,
+                'url' => $site_url,
+                'language' => $site_language
+            ],
+            'pages' => $pages_content,
+            'posts' => $posts_content,
+            'products' => $products_content,
+            'currency' => $currency_symbol,
+            'menus' => $menus,
+            'stats' => $stats
+        ];
+        
+        $json_payload = json_encode($payload, JSON_UNESCAPED_UNICODE);
+        $compressed_payload = gzencode($json_payload, 9);
+        
+        error_log('TTP Widget: Trying AI generation - Raw: ' . strlen($json_payload) . ' bytes, Compressed: ' . strlen($compressed_payload) . ' bytes');
+        
+        $response = wp_remote_post(TTP_API_URL . '/api/public/wordpress/generate-prompt', [
+            'headers' => [
+                'X-API-Key' => $api_key,
+                'Content-Type' => 'application/json',
+                'Content-Encoding' => 'gzip'
+            ],
+            'body' => $compressed_payload,
+            'timeout' => 120
+        ]);
+        
+        if (!is_wp_error($response) && wp_remote_retrieve_response_code($response) === 200) {
+            $body = json_decode(wp_remote_retrieve_body($response), true);
+            if (!empty($body['prompt'])) {
+                $ai_prompt = $body['prompt'];
+                error_log('TTP Widget: AI generation successful');
+            }
+        } else {
+            $err = is_wp_error($response) ? $response->get_error_message() : 'Status ' . wp_remote_retrieve_response_code($response);
+            error_log('TTP Widget: AI generation failed (' . $err . '), falling back to local');
+        }
+    }
+    
+    // Use AI prompt if available, otherwise generate locally
+    if ($ai_prompt) {
+        wp_send_json_success([
+            'prompt' => $ai_prompt,
+            'stats' => $stats,
+            'source' => 'ai'
+        ]);
+        return;
+    }
+    
+    // Fallback: Generate prompt locally
+    $prompt = "You are a helpful voice assistant for {$site_name}";
+    if (!empty($site_description)) {
+        $prompt .= " - {$site_description}";
+    }
+    $prompt .= ".\n\n";
+    
+    $prompt .= "Your role is to assist visitors with questions about the website, its services, and content. Be friendly, professional, and helpful.\n\n";
+    
+    // Add pages context
+    if (!empty($pages_content)) {
+        $prompt .= "=== WEBSITE PAGES ===\n";
+        foreach ($pages_content as $page) {
+            $prompt .= "\n## {$page['title']}\n";
+            $prompt .= "{$page['content']}\n";
+        }
+        $prompt .= "\n";
+    }
+    
+    // Add products context if WooCommerce
+    if (!empty($products_content)) {
+        $prompt .= "=== PRODUCTS ===\n";
+        foreach ($products_content as $product) {
+            $prompt .= "- {$product['name']}";
+            if (!empty($product['price'])) {
+                $prompt .= " ({$currency_symbol}{$product['price']})";
+            }
+            if (!empty($product['description'])) {
+                $prompt .= ": {$product['description']}";
+            }
+            $prompt .= "\n";
+        }
+        $prompt .= "\n";
+    }
+    
+    // Add blog posts context
+    if (!empty($posts_content)) {
+        $prompt .= "=== RECENT BLOG POSTS ===\n";
+        foreach ($posts_content as $post) {
+            $prompt .= "- {$post['title']}: {$post['excerpt']}\n";
+        }
+        $prompt .= "\n";
+    }
+    
+    // Add navigation context
+    if (!empty($menus)) {
+        $prompt .= "=== MAIN NAVIGATION ===\n";
+        $prompt .= "The website has these main sections: " . implode(', ', array_slice($menus, 0, 15)) . "\n\n";
+    }
+    
+    // Add instructions
+    $prompt .= "=== INSTRUCTIONS ===\n";
+    $prompt .= "- Answer questions based on the website content above\n";
+    $prompt .= "- If asked about something not covered, politely say you don't have that information and suggest contacting the website directly\n";
+    $prompt .= "- Keep responses concise and conversational since this is a voice interface\n";
+    $prompt .= "- Direct visitors to relevant pages when appropriate\n";
+    $prompt .= "- Be warm and welcoming to new visitors\n";
+    
+    wp_send_json_success([
+        'prompt' => $prompt,
+        'stats' => $stats,
+        'source' => 'local'
+    ]);
+});
+
 add_action('wp_ajax_ttp_fetch_agents', function() {
     check_ajax_referer('ttp_ajax_nonce', 'nonce');
     $api_key = get_option('ttp_api_key');
@@ -522,6 +748,9 @@ add_action('wp_ajax_ttp_create_agent', function() {
     $agent_name = isset($_POST['agent_name']) ? sanitize_text_field($_POST['agent_name']) : '';
     if (empty($agent_name)) wp_send_json_error(['message' => 'Agent name required']);
     
+    // Check if we should auto-generate prompt from site content
+    $auto_generate = isset($_POST['auto_generate_prompt']) && $_POST['auto_generate_prompt'] === 'true';
+    
     // Build agent configuration
     $agent_data = [
         'name' => $agent_name,
@@ -529,7 +758,7 @@ add_action('wp_ajax_ttp_create_agent', function() {
         'site_name' => get_bloginfo('name')
     ];
     
-    // Optional configuration fields
+    // Optional configuration fields (used for manual creation)
     if (!empty($_POST['first_message'])) {
         $agent_data['first_message'] = sanitize_text_field($_POST['first_message']);
     }
@@ -543,14 +772,151 @@ add_action('wp_ajax_ttp_create_agent', function() {
         $agent_data['language'] = sanitize_text_field($_POST['language']);
     }
     
+    // If auto-generate, collect site content for AI prompt generation
+    if ($auto_generate) {
+        error_log('TTP Widget: Auto-generating prompt from site content');
+        
+        $site_language = get_locale();
+        
+        // Collect site info
+        $site_content = [
+            'site' => [
+                'name' => get_bloginfo('name'),
+                'description' => get_bloginfo('description'),
+                'url' => home_url(),
+                'language' => $site_language
+            ],
+            'pages' => [],
+            'posts' => [],
+            'products' => [],
+            'menus' => []
+        ];
+        
+        // Get pages
+        $pages = get_posts([
+            'post_type' => 'page',
+            'post_status' => 'publish',
+            'numberposts' => 50,
+            'orderby' => 'menu_order',
+            'order' => 'ASC'
+        ]);
+        
+        foreach ($pages as $page) {
+            $content = wp_strip_all_tags($page->post_content);
+            $content = preg_replace('/\s+/', ' ', $content);
+            $content = trim($content);
+            
+            if (!empty($content)) {
+                $site_content['pages'][] = [
+                    'title' => $page->post_title,
+                    'content' => mb_substr($content, 0, 2000)
+                ];
+            }
+        }
+        
+        // Get posts
+        $posts = get_posts([
+            'post_type' => 'post',
+            'post_status' => 'publish',
+            'numberposts' => 10,
+            'orderby' => 'date',
+            'order' => 'DESC'
+        ]);
+        
+        foreach ($posts as $post) {
+            $content = wp_strip_all_tags($post->post_content);
+            $content = preg_replace('/\s+/', ' ', $content);
+            $content = trim($content);
+            
+            if (!empty($content)) {
+                $site_content['posts'][] = [
+                    'title' => $post->post_title,
+                    'excerpt' => mb_substr($content, 0, 500)
+                ];
+            }
+        }
+        
+        // Get WooCommerce products
+        if (class_exists('WooCommerce')) {
+            $site_content['currency'] = get_woocommerce_currency_symbol();
+            $products = get_posts([
+                'post_type' => 'product',
+                'post_status' => 'publish',
+                'numberposts' => 100,
+                'orderby' => 'title',
+                'order' => 'ASC'
+            ]);
+            
+            foreach ($products as $product) {
+                $wc_product = wc_get_product($product->ID);
+                if ($wc_product) {
+                    $site_content['products'][] = [
+                        'name' => $product->post_title,
+                        'price' => $wc_product->get_price(),
+                        'description' => mb_substr(wp_strip_all_tags($product->post_content), 0, 300),
+                        'in_stock' => $wc_product->is_in_stock()
+                    ];
+                }
+            }
+        }
+        
+        // Get menus
+        $menu_locations = get_nav_menu_locations();
+        foreach ($menu_locations as $location => $menu_id) {
+            if ($menu_id) {
+                $menu_items = wp_get_nav_menu_items($menu_id);
+                if ($menu_items) {
+                    foreach ($menu_items as $item) {
+                        $site_content['menus'][] = $item->title;
+                    }
+                }
+            }
+        }
+        $site_content['menus'] = array_unique(array_values($site_content['menus']));
+        
+        // Add site content to agent data
+        $agent_data['site_content'] = $site_content;
+        
+        // Set language from site locale
+        $lang_code = explode('_', $site_language)[0];
+        $agent_data['language'] = $lang_code;
+        
+        error_log('TTP Widget: Collected site content - pages: ' . count($site_content['pages']) . 
+                  ', posts: ' . count($site_content['posts']) . 
+                  ', products: ' . count($site_content['products']));
+    }
+    
+    // Prepare request - use gzip if site_content is included
+    $json_body = json_encode($agent_data, JSON_UNESCAPED_UNICODE);
+    $headers = ['X-API-Key' => $api_key, 'Content-Type' => 'application/json'];
+    $body = $json_body;
+    $timeout = 30;
+    
+    if ($auto_generate && !empty($agent_data['site_content'])) {
+        // Gzip compress for large payloads
+        $body = gzencode($json_body, 9);
+        $headers['Content-Encoding'] = 'gzip';
+        $timeout = 120; // Longer timeout for AI generation
+        error_log('TTP Widget: Sending gzipped request - raw: ' . strlen($json_body) . ' bytes, compressed: ' . strlen($body) . ' bytes');
+    }
+    
     $response = wp_remote_post(TTP_API_URL . '/api/public/wordpress/agents', [
-        'headers' => ['X-API-Key' => $api_key, 'Content-Type' => 'application/json'],
-        'body' => json_encode($agent_data),
-        'timeout' => 30
+        'headers' => $headers,
+        'body' => $body,
+        'timeout' => $timeout
     ]);
     
     if (is_wp_error($response)) wp_send_json_error(['message' => $response->get_error_message()]);
-    wp_send_json_success(json_decode(wp_remote_retrieve_body($response), true));
+    
+    $status_code = wp_remote_retrieve_response_code($response);
+    $response_body = json_decode(wp_remote_retrieve_body($response), true);
+    
+    if ($status_code !== 200) {
+        error_log('TTP Widget: Create agent failed - Status: ' . $status_code . ', Body: ' . wp_remote_retrieve_body($response));
+        wp_send_json_error(['message' => $response_body['error'] ?? 'Failed to create agent']);
+    }
+    
+    wp_send_json_success($response_body);
 });
 
 function ttp_get_signed_url() {
@@ -665,7 +1031,17 @@ function ttp_settings_page() {
                     <p class="description">Override agent defaults. Leave empty to use agent settings.</p>
                     <table class="form-table">
                         <tr><th><label for="ttp_override_prompt">System Prompt</label></th>
-                            <td><textarea id="ttp_override_prompt" name="ttp_override_prompt" rows="4" class="large-text"><?php echo esc_textarea(get_option('ttp_override_prompt')); ?></textarea></td></tr>
+                            <td>
+                                <textarea id="ttp_override_prompt" name="ttp_override_prompt" rows="6" class="large-text"><?php echo esc_textarea(get_option('ttp_override_prompt')); ?></textarea>
+                                <p style="margin-top: 8px;">
+                                    <button type="button" class="button" id="ttp-generate-prompt-btn">
+                                        <span class="dashicons dashicons-admin-site" style="vertical-align: middle; margin-right: 4px;"></span>
+                                        Generate from Site Content
+                                    </button>
+                                    <span id="ttp-generate-prompt-status" style="margin-left: 10px;"></span>
+                                </p>
+                                <p class="description">Automatically create a prompt based on your website's pages and content.</p>
+                            </td></tr>
                         <tr><th><label for="ttp_override_first_message">First Message</label></th>
                             <td><input type="text" id="ttp_override_first_message" name="ttp_override_first_message" value="<?php echo esc_attr(get_option('ttp_override_first_message')); ?>" class="large-text"></td></tr>
                         <tr><th><label for="ttp_override_voice">Voice</label></th>
@@ -955,19 +1331,23 @@ function ttp_settings_page() {
             });
         }
         
-        // Create default agent when none exist
+        // Create default agent when none exist - with AI-generated prompt
         function createDefaultAgent() {
             $('#ttp-agents-loading').addClass('is-active');
+            
+            // Show generating message
+            var $status = $('<div id="ttp-generating-status" style="margin-top: 10px; padding: 10px; background: #f0f6fc; border-left: 4px solid #2271b1; font-style: italic;">🤖 Creating your AI assistant and generating personalized prompt from your website content... This may take a minute.</div>');
+            $('#ttp-agents-loading').after($status);
+            
             $.post(ajaxurl, {
                 action: 'ttp_create_agent',
                 nonce: ajaxNonce,
-                agent_name: 'My first voice agent',
-                first_message: 'Hi, what can I do for you today?',
-                system_prompt: 'You are a helpful assistant',
-                voice_id: 'F2',
-                language: 'en-US'
+                agent_name: '<?php echo esc_js(get_bloginfo("name")); ?>' + ' Assistant',
+                auto_generate_prompt: 'true'
             }, function(r) {
                 $('#ttp-agents-loading').removeClass('is-active');
+                $('#ttp-generating-status').remove();
+                
                 if (r.success && r.data) {
                     // Get the agent from response (handle nested structure)
                     var agent = r.data.data || r.data;
@@ -990,6 +1370,11 @@ function ttp_settings_page() {
                     // Show create agent section
                     $('#ttp-create-agent').show();
                     
+                    // Show success message
+                    var $success = $('<div class="notice notice-success" style="margin: 10px 0; padding: 10px;"><p>✅ <strong>AI Assistant Created!</strong> Your agent has been configured with a personalized prompt based on your website content.</p></div>');
+                    $('#ttp-create-agent').before($success);
+                    setTimeout(function() { $success.fadeOut(function() { $(this).remove(); }); }, 8000);
+                    
                     // Setup change handler
                     $s.off('change').on('change', function() {
                         var selectedId = $(this).val();
@@ -1003,10 +1388,19 @@ function ttp_settings_page() {
                     // Auto-save the settings so the agent is persisted in plugin settings
                     autoSaveSettings(agentId, agent.name);
                 } else {
+                    // Show error but still allow manual creation
+                    var errorMsg = r.data?.message || 'Failed to auto-create agent';
+                    var $error = $('<div class="notice notice-warning" style="margin: 10px 0; padding: 10px;"><p>⚠️ ' + errorMsg + ' - You can create an agent manually below.</p></div>');
+                    $('#ttp-create-agent').before($error);
                     populateAgentsDropdown([]);
                 }
-            }).fail(function() {
+            }).fail(function(xhr, status, error) {
                 $('#ttp-agents-loading').removeClass('is-active');
+                $('#ttp-generating-status').remove();
+                
+                // Show error but still allow manual creation
+                var $error = $('<div class="notice notice-warning" style="margin: 10px 0; padding: 10px;"><p>⚠️ Could not auto-create agent: ' + error + ' - You can create an agent manually below.</p></div>');
+                $('#ttp-create-agent').before($error);
                 populateAgentsDropdown([]);
             });
         }
@@ -1361,8 +1755,65 @@ function ttp_settings_page() {
                 $btn.prop('disabled', false).text('Create');
             });
         });
+        
+        // Generate prompt from site content
+        $('#ttp-generate-prompt-btn').on('click', function() {
+            var $btn = $(this);
+            var $status = $('#ttp-generate-prompt-status');
+            var $textarea = $('#ttp_override_prompt');
+            
+            // Check if textarea has content
+            if ($textarea.val().trim() !== '') {
+                if (!confirm('This will replace the current system prompt. Continue?')) {
+                    return;
+                }
+            }
+            
+            $btn.prop('disabled', true).html('<span class="dashicons dashicons-update spin" style="vertical-align: middle; animation: spin 1s linear infinite;"></span> Generating...');
+            $status.text('Scanning website content...');
+            
+            $.post(ajaxurl, { action: 'ttp_generate_prompt', nonce: ajaxNonce }, function(r) {
+                if (r.success) {
+                    $textarea.val(r.data.prompt);
+                    
+                    var stats = r.data.stats;
+                    var statsText = 'Generated from: ';
+                    var parts = [];
+                    if (stats.pages > 0) parts.push(stats.pages + ' pages');
+                    if (stats.posts > 0) parts.push(stats.posts + ' posts');
+                    if (stats.products > 0) parts.push(stats.products + ' products');
+                    if (stats.menu_items > 0) parts.push(stats.menu_items + ' menu items');
+                    statsText += parts.join(', ');
+                    
+                    $status.html('<span style="color: green;">✓ ' + statsText + '</span>');
+                    
+                    // Highlight the textarea briefly
+                    $textarea.css('background-color', '#e8f5e9');
+                    setTimeout(function() {
+                        $textarea.css('background-color', '');
+                    }, 2000);
+                } else {
+                    $status.html('<span style="color: red;">Error: ' + (r.data?.message || 'Failed to generate') + '</span>');
+                }
+                
+                $btn.prop('disabled', false).html('<span class="dashicons dashicons-admin-site" style="vertical-align: middle; margin-right: 4px;"></span> Generate from Site Content');
+            }).fail(function() {
+                $status.html('<span style="color: red;">Error: Request failed</span>');
+                $btn.prop('disabled', false).html('<span class="dashicons dashicons-admin-site" style="vertical-align: middle; margin-right: 4px;"></span> Generate from Site Content');
+            });
+        });
     });
     </script>
+    
+    <style>
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    .dashicons.spin {
+        display: inline-block;
+    }
+    </style>
     <?php
 }
 
