@@ -2,7 +2,7 @@
 /**
  * Plugin Name: TalkToPC Voice Widget
  * Description: Add AI voice conversations to your WordPress site. Let visitors talk to your AI agent with natural voice interactions.
- * Version: 1.5.9
+ * Version: 1.6.5
  * Author: TalkToPC
  * Author URI: https://talktopc.com
  * License: GPL-2.0-or-later
@@ -17,7 +17,7 @@ if (!defined('ABSPATH')) exit;
 // Constants
 define('TTP_API_URL', 'https://backend.talktopc.com');
 define('TTP_CONNECT_URL', 'https://talktopc.com/connect/wordpress');
-define('TTP_VERSION', '1.5.9');
+define('TTP_VERSION', '1.6.5');
 
 // Clean up all plugin data on uninstall
 register_uninstall_hook(__FILE__, 'ttp_uninstall_cleanup');
@@ -347,6 +347,74 @@ add_action('wp_ajax_ttp_save_agent_selection', function() {
     update_option('ttp_agent_name', $agent_name);
     
     wp_send_json_success(['message' => 'Agent saved successfully', 'agent_id' => $agent_id]);
+});
+
+// Update agent configuration in backend
+add_action('wp_ajax_ttp_update_agent', function() {
+    check_ajax_referer('ttp_ajax_nonce', 'nonce');
+    $api_key = get_option('ttp_api_key');
+    if (empty($api_key)) wp_send_json_error(['message' => 'Not connected']);
+    
+    $agent_id = isset($_POST['agent_id']) ? sanitize_text_field($_POST['agent_id']) : '';
+    if (empty($agent_id)) wp_send_json_error(['message' => 'Agent ID required']);
+    
+    // Build update data - use camelCase keys to match backend expectations
+    $update_data = [];
+    
+    if (isset($_POST['system_prompt']) && $_POST['system_prompt'] !== '') {
+        $update_data['systemPrompt'] = sanitize_textarea_field($_POST['system_prompt']);
+    }
+    if (isset($_POST['first_message']) && $_POST['first_message'] !== '') {
+        $update_data['firstMessage'] = sanitize_text_field($_POST['first_message']);
+    }
+    if (isset($_POST['voice_id']) && $_POST['voice_id'] !== '') {
+        $update_data['voiceId'] = sanitize_text_field($_POST['voice_id']);
+    }
+    if (isset($_POST['voice_speed']) && $_POST['voice_speed'] !== '') {
+        $update_data['voiceSpeed'] = floatval($_POST['voice_speed']);
+    }
+    if (isset($_POST['language']) && $_POST['language'] !== '') {
+        $update_data['agentLanguage'] = sanitize_text_field($_POST['language']);
+    }
+    if (isset($_POST['temperature']) && $_POST['temperature'] !== '') {
+        $update_data['temperature'] = floatval($_POST['temperature']);
+    }
+    if (isset($_POST['max_tokens']) && $_POST['max_tokens'] !== '') {
+        $update_data['maxTokens'] = intval($_POST['max_tokens']);
+    }
+    if (isset($_POST['max_call_duration']) && $_POST['max_call_duration'] !== '') {
+        $update_data['maxCallDuration'] = intval($_POST['max_call_duration']);
+    }
+    
+    // If no data to update, just return success
+    if (empty($update_data)) {
+        wp_send_json_success(['message' => 'No changes to save']);
+    }
+    
+    error_log('TTP Widget: Updating agent ' . $agent_id . ' with data: ' . json_encode($update_data));
+    
+    $response = wp_remote_request(TTP_API_URL . '/api/public/wordpress/agents/' . $agent_id, [
+        'method' => 'PUT',
+        'headers' => ['X-API-Key' => $api_key, 'Content-Type' => 'application/json'],
+        'body' => json_encode($update_data),
+        'timeout' => 30
+    ]);
+    
+    if (is_wp_error($response)) {
+        error_log('TTP Widget: Update failed - ' . $response->get_error_message());
+        wp_send_json_error(['message' => $response->get_error_message()]);
+    }
+    
+    $status_code = wp_remote_retrieve_response_code($response);
+    $body = json_decode(wp_remote_retrieve_body($response), true);
+    
+    if ($status_code !== 200) {
+        error_log('TTP Widget: Update failed - Status ' . $status_code . ' - ' . wp_remote_retrieve_body($response));
+        wp_send_json_error(['message' => isset($body['message']) ? $body['message'] : 'Failed to update agent', 'status' => $status_code]);
+    }
+    
+    error_log('TTP Widget: Agent updated successfully');
+    wp_send_json_success(['message' => 'Agent updated successfully', 'agent' => $body]);
 });
 
 add_action('wp_ajax_ttp_fetch_agents', function() {
@@ -777,11 +845,12 @@ function ttp_settings_page() {
     var voicesData = []; // Global voices data
     var languageMap = {}; // Language code to name mapping
     jQuery(document).ready(function($) {
-        console.log('🔧 Document ready - initializing plugin v<?php echo TTP_VERSION; ?>');
+        console.log('🔧 Document ready');
         var ajaxNonce = '<?php echo wp_create_nonce("ttp_ajax_nonce"); ?>';
         var currentAgentId = '<?php echo esc_js($current_agent_id); ?>';
         var currentVoice = '<?php echo esc_js(get_option("ttp_override_voice")); ?>';
         var currentLanguage = '<?php echo esc_js(get_option("ttp_override_language")); ?>';
+        console.log('🔧 Current saved values - agentId:', currentAgentId, 'voice:', currentVoice, 'language:', currentLanguage);
         
         $('.ttp-color-picker').wpColorPicker();
         $('.ttp-collapsible-header').on('click', function() { $(this).closest('.ttp-collapsible').toggleClass('open'); });
@@ -795,25 +864,20 @@ function ttp_settings_page() {
         }).trigger('change');
         
         <?php if ($is_connected): ?>
-        console.log('🔌 Plugin is connected! Fetching agents and voices...');
-        console.log('🔌 Current saved agent ID:', '<?php echo esc_js($current_agent_id); ?>' || '(none)');
-        fetchAgents(); fetchVoices();
-        <?php else: ?>
-        console.log('🔌 Plugin is NOT connected - no API key');
+        // Load voices FIRST, then agents (to avoid race condition with dropdowns)
+        fetchVoices(function() {
+            fetchAgents();
+        });
         <?php endif; ?>
         
         function fetchAgents() {
-            console.log('📡 fetchAgents() called...');
             $('#ttp-agents-loading').addClass('is-active');
             $.post(ajaxurl, { action: 'ttp_fetch_agents', nonce: ajaxNonce }, function(r) {
-                console.log('📡 fetchAgents response:', r);
                 var agents = r.success && r.data ? (Array.isArray(r.data) ? r.data : (r.data.data || [])) : [];
-                console.log('📡 Parsed agents array:', agents);
                 $('#ttp-agents-loading').removeClass('is-active');
                 
                 // If no agents exist, create a default one
                 if (agents.length === 0) {
-                    console.log('📝 No agents found, creating default agent...');
                     createDefaultAgent();
                     return;
                 }
@@ -836,8 +900,6 @@ function ttp_settings_page() {
             }, function(r) {
                 $('#ttp-agents-loading').removeClass('is-active');
                 if (r.success && r.data) {
-                    console.log('✅ Default agent created:', r.data);
-                    
                     // Get the agent from response (handle nested structure)
                     var agent = r.data.data || r.data;
                     var agentId = agent.agentId || agent.id;
@@ -870,15 +932,12 @@ function ttp_settings_page() {
                     });
                     
                     // Auto-save the settings so the agent is persisted in plugin settings
-                    console.log('💾 Auto-saving with newly created default agent...');
                     autoSaveSettings(agentId, agent.name);
                 } else {
-                    console.error('❌ Failed to create default agent:', r.data?.message || 'Unknown error');
                     populateAgentsDropdown([]);
                 }
             }).fail(function() {
                 $('#ttp-agents-loading').removeClass('is-active');
-                console.error('❌ AJAX failed when creating default agent');
                 populateAgentsDropdown([]);
             });
         }
@@ -902,8 +961,6 @@ function ttp_settings_page() {
                 agentsData[id] = a;
             });
             
-            console.log('📋 Agents loaded:', agentsData);
-            
             // Populate dropdown
             var $s = $('#ttp_agent_select').empty().append('<option value="">-- Select an agent --</option>');
             agents.forEach(function(a) {
@@ -924,13 +981,9 @@ function ttp_settings_page() {
             });
             
             // Populate fields for initially selected agent
-            console.log('🔍 Checking agent selection:', 'currentAgentId=', JSON.stringify(currentAgentId), 'type=', typeof currentAgentId, 'agents.length=', agents.length);
-            
             var hasCurrentAgent = currentAgentId && currentAgentId !== '' && agentsData[currentAgentId];
-            console.log('🔍 hasCurrentAgent:', hasCurrentAgent);
             
             if (hasCurrentAgent) {
-                console.log('📝 Populating initial agent:', currentAgentId);
                 populateAgentSettings(agentsData[currentAgentId]);
             }
             // If no agent currently selected but agents exist, auto-select first one and save
@@ -938,7 +991,6 @@ function ttp_settings_page() {
                 var firstAgent = agents[0];
                 var firstAgentId = firstAgent.agentId || firstAgent.id;
                 var firstName = firstAgent.name;
-                console.log('📝 NO agent selected! Auto-selecting first agent:', firstAgentId, firstName);
                 
                 // Select the first agent in dropdown
                 $s.val(firstAgentId);
@@ -948,11 +1000,8 @@ function ttp_settings_page() {
                 populateAgentSettings(firstAgent);
                 
                 // Auto-save the settings - pass values directly
-                console.log('💾 Calling autoSaveSettings with:', firstAgentId, firstName);
                 autoSaveSettings(firstAgentId, firstName);
                 return; // Exit early, page will reload
-            } else {
-                console.log('📝 No agents available');
             }
             
             $('#ttp-create-agent').show();
@@ -964,20 +1013,13 @@ function ttp_settings_page() {
             agentId = agentId || $('#ttp_agent_select').val();
             agentName = agentName || $('#ttp_agent_name').val();
             
-            console.log('💾 autoSaveSettings called with:', agentId, agentName);
-            
             if (!agentId) {
-                console.log('❌ No agent ID to save');
                 return;
             }
             
             // Show saving indicator immediately
             var $notice = $('<div class="notice notice-info" id="ttp-autosave-notice" style="margin: 10px 0; padding: 10px;"><p>⏳ Auto-saving agent selection...</p></div>');
             $('.wrap h1').after($notice);
-            
-            console.log('💾 Making AJAX call to save agent:', agentId, agentName);
-            console.log('💾 ajaxurl:', ajaxurl);
-            console.log('💾 nonce:', ajaxNonce);
             
             $.ajax({
                 url: ajaxurl,
@@ -989,21 +1031,16 @@ function ttp_settings_page() {
                     agent_name: agentName
                 },
                 success: function(r) {
-                    console.log('💾 AJAX response:', r);
                     if (r.success) {
-                        console.log('✅ Agent saved successfully, reloading page...');
                         $('#ttp-autosave-notice').removeClass('notice-info').addClass('notice-success').html('<p>✅ Agent saved! Reloading...</p>');
                         setTimeout(function() {
                             window.location.reload();
                         }, 300);
                     } else {
-                        console.error('❌ Failed to save agent:', r);
                         $('#ttp-autosave-notice').removeClass('notice-info').addClass('notice-error').html('<p>❌ Failed to save agent. Please click Save Settings manually.</p>');
                     }
                 },
                 error: function(xhr, status, error) {
-                    console.error('❌ AJAX error:', status, error);
-                    console.error('❌ XHR response:', xhr.responseText);
                     $('#ttp-autosave-notice').removeClass('notice-info').addClass('notice-error').html('<p>❌ Connection error. Please click Save Settings manually.</p>');
                 }
             });
@@ -1011,8 +1048,6 @@ function ttp_settings_page() {
         
         // Populate override fields with agent's configuration
         function populateAgentSettings(agent) {
-            console.log('🔧 populateAgentSettings called with:', agent);
-            
             // Get configuration - handle different structures
             var config = {};
             
@@ -1023,51 +1058,43 @@ function ttp_settings_page() {
                     var parsed = JSON.parse(agent.configuration.value);
                     // Check if result is still a string (double-escaped JSON)
                     if (typeof parsed === 'string') {
-                        console.log('📦 Double-escaped JSON detected, parsing again...');
                         config = JSON.parse(parsed);
                     } else {
                         config = parsed;
                     }
-                    console.log('📦 Parsed config from configuration.value:', config);
                 } catch (e) {
-                    console.error('❌ Failed to parse configuration.value:', e);
                     config = agent.configuration;
                 }
             } else if (agent.configuration && typeof agent.configuration === 'object') {
                 config = agent.configuration;
-                console.log('📦 Config object (direct):', config);
             } else {
                 config = agent;
-                console.log('📦 Using agent as config:', config);
             }
             
             // System Prompt
             var prompt = config.systemPrompt || config.prompt || '';
             $('#ttp_override_prompt').val(prompt);
-            console.log('  systemPrompt:', prompt);
             
             // First Message
             var firstMsg = config.firstMessage || '';
             $('#ttp_override_first_message').val(firstMsg);
-            console.log('  firstMessage:', firstMsg);
             
             // Voice
             var voiceId = config.voiceId || '';
+            console.log('🔧 Setting voice:', voiceId);
             $('#ttp_override_voice').val(voiceId);
-            console.log('  voiceId:', voiceId);
             
             // Voice Speed
             var voiceSpeed = config.voiceSpeed || '';
             $('#ttp_override_voice_speed').val(voiceSpeed);
-            console.log('  voiceSpeed:', voiceSpeed);
             
             // Language - use the full language code (e.g., "en-US")
             var lang = config.agentLanguage || config.language || '';
+            console.log('🔧 Setting language:', lang);
             $('#ttp_override_language').val(lang);
-            console.log('  language:', lang);
             
-            // Filter voices by selected language
-            if (typeof populateVoicesDropdown === 'function') {
+            // Filter voices by selected language and re-select voice
+            if (lang && typeof populateVoicesDropdown === 'function') {
                 populateVoicesDropdown(lang);
                 // Re-select the voice after filtering
                 if (voiceId) {
@@ -1078,26 +1105,23 @@ function ttp_settings_page() {
             // Temperature
             var temp = config.temperature || '';
             $('#ttp_override_temperature').val(temp);
-            console.log('  temperature:', temp);
             
             // Max Tokens
             var maxTokens = config.maxTokens || '';
             $('#ttp_override_max_tokens').val(maxTokens);
-            console.log('  maxTokens:', maxTokens);
             
             // Max Call Duration
             var maxDuration = config.maxCallDuration || '';
             $('#ttp_override_max_call_duration').val(maxDuration);
-            console.log('  maxCallDuration:', maxDuration);
         }
         
-        function fetchVoices() {
+        function fetchVoices(callback) {
+            console.log('🎤 fetchVoices() called');
             $('#ttp-voice-loading, #ttp-language-loading').addClass('is-active');
             $.post(ajaxurl, { action: 'ttp_fetch_voices', nonce: ajaxNonce }, function(r) {
                 $('#ttp-voice-loading, #ttp-language-loading').removeClass('is-active');
                 voicesData = r.success && r.data ? (Array.isArray(r.data) ? r.data : (r.data.data || [])) : [];
-                
-                console.log('🎤 Voices loaded:', voicesData);
+                console.log('🎤 Voices loaded:', voicesData.length);
                 
                 // Language name mapping
                 var langNames = {
@@ -1143,8 +1167,6 @@ function ttp_settings_page() {
                     });
                 });
                 
-                console.log('🌍 Languages found:', languageMap);
-                
                 // Populate language dropdown
                 var $langSelect = $('#ttp_override_language');
                 $langSelect.find('option:not(:first)').remove(); // Keep "All languages" option
@@ -1166,6 +1188,12 @@ function ttp_settings_page() {
                     var selectedLang = $(this).val();
                     populateVoicesDropdown(selectedLang);
                 });
+                
+                // Call callback if provided (for chaining)
+                if (typeof callback === 'function') {
+                    console.log('🎤 Voices ready, calling callback');
+                    callback();
+                }
             });
         }
         
@@ -1184,8 +1212,6 @@ function ttp_settings_page() {
                     });
                 });
             }
-            
-            console.log('🎤 Filtered voices for "' + (filterLang || 'all') + '":', filteredVoices.length);
             
             filteredVoices.forEach(function(v) {
                 var id = v.voiceId || v.id;
@@ -1228,6 +1254,103 @@ function ttp_settings_page() {
                 else { alert('Error: ' + (r.data?.message || 'Failed')); }
                 $btn.prop('disabled', false).text('Create');
             });
+        });
+        
+        // Intercept form submission to update agent in backend first
+        $('form[action="options.php"]').on('submit', function(e) {
+            var $form = $(this);
+            var agentId = $('#ttp_agent_select').val();
+            
+            // If no agent selected or form already processed, just submit normally
+            if (!agentId || $form.data('backend-updated')) {
+                console.log('💾 Submitting form normally (no agent or already updated)');
+                return true;
+            }
+            
+            // Prevent default submission
+            e.preventDefault();
+            console.log('💾 Intercepted form submission, updating backend first...');
+            
+            // Collect override values (only non-empty ones)
+            var updateData = {
+                action: 'ttp_update_agent',
+                nonce: ajaxNonce,
+                agent_id: agentId
+            };
+            
+            var systemPrompt = $('#ttp_override_prompt').val();
+            var firstMessage = $('#ttp_override_first_message').val();
+            var voiceId = $('#ttp_override_voice').val();
+            var voiceSpeed = $('#ttp_override_voice_speed').val();
+            var language = $('#ttp_override_language').val();
+            var temperature = $('#ttp_override_temperature').val();
+            var maxTokens = $('#ttp_override_max_tokens').val();
+            var maxCallDuration = $('#ttp_override_max_call_duration').val();
+            
+            if (systemPrompt) updateData.system_prompt = systemPrompt;
+            if (firstMessage) updateData.first_message = firstMessage;
+            if (voiceId) updateData.voice_id = voiceId;
+            if (voiceSpeed) updateData.voice_speed = voiceSpeed;
+            if (language) updateData.language = language;
+            if (temperature) updateData.temperature = temperature;
+            if (maxTokens) updateData.max_tokens = maxTokens;
+            if (maxCallDuration) updateData.max_call_duration = maxCallDuration;
+            
+            console.log('💾 Sending update to backend:', updateData);
+            
+            // Show saving indicator
+            var $submitBtn = $form.find('input[type="submit"]');
+            var originalText = $submitBtn.val();
+            $submitBtn.val('Saving to backend...').prop('disabled', true);
+            
+            // Helper function to submit form natively
+            function submitFormNatively() {
+                console.log('💾 Submitting WordPress form...');
+                $submitBtn.val('Saving settings....');
+                $form.data('backend-updated', true);
+                // Re-enable button briefly for native submit
+                $submitBtn.prop('disabled', false);
+                // Use native form submit to ensure page reload
+                $form[0].submit();
+                
+                // Fallback: if page doesn't reload within 2 seconds, force reload
+                // This handles edge cases where form submit doesn't cause navigation
+                setTimeout(function() {
+                    console.log('💾 Fallback: forcing page reload...');
+                    window.location.href = window.location.pathname + '?page=ttp-voice-widget&settings-updated=true';
+                }, 2000);
+            }
+            
+            // Helper function to reset button on error
+            function resetButton() {
+                $submitBtn.val(originalText).prop('disabled', false);
+            }
+            
+            // Update backend first
+            $.post(ajaxurl, updateData, function(r) {
+                console.log('💾 Backend update response:', r);
+                
+                if (r.success) {
+                    console.log('✅ Backend updated, now saving WordPress options...');
+                    submitFormNatively();
+                } else {
+                    console.error('❌ Backend update failed:', r.data?.message);
+                    if (confirm('Backend update failed: ' + (r.data?.message || 'Unknown error') + '\n\nSave WordPress settings anyway?')) {
+                        submitFormNatively();
+                    } else {
+                        resetButton();
+                    }
+                }
+            }).fail(function(xhr, status, error) {
+                console.error('❌ Backend update AJAX failed:', status, error);
+                if (confirm('Could not connect to backend.\n\nSave WordPress settings anyway?')) {
+                    submitFormNatively();
+                } else {
+                    resetButton();
+                }
+            });
+            
+            return false;
         });
     });
     </script>
