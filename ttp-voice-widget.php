@@ -2,7 +2,7 @@
 /**
  * Plugin Name: TalkToPC Voice Widget
  * Description: Add AI voice conversations to your WordPress site. Let visitors talk to your AI agent with natural voice interactions.
- * Version: 1.6.5
+ * Version: 1.6.7
  * Author: TalkToPC
  * Author URI: https://talktopc.com
  * License: GPL-2.0-or-later
@@ -17,7 +17,7 @@ if (!defined('ABSPATH')) exit;
 // Constants
 define('TTP_API_URL', 'https://backend.talktopc.com');
 define('TTP_CONNECT_URL', 'https://talktopc.com/connect/wordpress');
-define('TTP_VERSION', '1.6.5');
+define('TTP_VERSION', '1.6.7');
 
 // Clean up all plugin data on uninstall
 register_uninstall_hook(__FILE__, 'ttp_uninstall_cleanup');
@@ -145,6 +145,75 @@ add_action('admin_init', function() {
 function ttp_sanitize_float($input) {
     if ($input === '' || $input === null) return '';
     return filter_var($input, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+}
+
+// Sync agent settings to backend when WordPress settings are saved
+add_action('update_option_ttp_override_prompt', 'ttp_sync_agent_to_backend', 10, 0);
+add_action('update_option_ttp_override_first_message', 'ttp_sync_agent_to_backend', 10, 0);
+add_action('update_option_ttp_override_voice', 'ttp_sync_agent_to_backend', 10, 0);
+add_action('update_option_ttp_override_voice_speed', 'ttp_sync_agent_to_backend', 10, 0);
+add_action('update_option_ttp_override_language', 'ttp_sync_agent_to_backend', 10, 0);
+add_action('update_option_ttp_override_temperature', 'ttp_sync_agent_to_backend', 10, 0);
+add_action('update_option_ttp_override_max_tokens', 'ttp_sync_agent_to_backend', 10, 0);
+add_action('update_option_ttp_override_max_call_duration', 'ttp_sync_agent_to_backend', 10, 0);
+
+function ttp_sync_agent_to_backend() {
+    // Prevent multiple syncs in the same request
+    static $synced = false;
+    if ($synced) return;
+    $synced = true;
+    
+    $api_key = get_option('ttp_api_key');
+    $agent_id = get_option('ttp_agent_id');
+    
+    if (empty($api_key) || empty($agent_id)) {
+        return;
+    }
+    
+    // Collect all override values - use camelCase for backend
+    $update_data = [];
+    
+    $prompt = get_option('ttp_override_prompt');
+    $first_message = get_option('ttp_override_first_message');
+    $voice = get_option('ttp_override_voice');
+    $voice_speed = get_option('ttp_override_voice_speed');
+    $language = get_option('ttp_override_language');
+    $temperature = get_option('ttp_override_temperature');
+    $max_tokens = get_option('ttp_override_max_tokens');
+    $max_call_duration = get_option('ttp_override_max_call_duration');
+    
+    if (!empty($prompt)) $update_data['systemPrompt'] = $prompt;
+    if (!empty($first_message)) $update_data['firstMessage'] = $first_message;
+    if (!empty($voice)) $update_data['voiceId'] = $voice;
+    if (!empty($voice_speed)) $update_data['voiceSpeed'] = floatval($voice_speed);
+    if (!empty($language)) $update_data['agentLanguage'] = $language;
+    if (!empty($temperature)) $update_data['temperature'] = floatval($temperature);
+    if (!empty($max_tokens)) $update_data['maxTokens'] = intval($max_tokens);
+    if (!empty($max_call_duration)) $update_data['maxCallDuration'] = intval($max_call_duration);
+    
+    if (empty($update_data)) {
+        return;
+    }
+    
+    error_log('TTP Widget: Syncing agent ' . $agent_id . ' to backend with data: ' . json_encode($update_data));
+    
+    $response = wp_remote_request(TTP_API_URL . '/api/public/wordpress/agents/' . $agent_id, [
+        'method' => 'PUT',
+        'headers' => ['X-API-Key' => $api_key, 'Content-Type' => 'application/json'],
+        'body' => json_encode($update_data),
+        'timeout' => 30
+    ]);
+    
+    if (is_wp_error($response)) {
+        error_log('TTP Widget: Backend sync failed - ' . $response->get_error_message());
+    } else {
+        $status_code = wp_remote_retrieve_response_code($response);
+        if ($status_code === 200) {
+            error_log('TTP Widget: Backend sync successful');
+        } else {
+            error_log('TTP Widget: Backend sync failed - Status ' . $status_code . ' - ' . wp_remote_retrieve_body($response));
+        }
+    }
 }
 
 // =============================================================================
@@ -1084,9 +1153,35 @@ function ttp_settings_page() {
             console.log('🔧 Setting voice:', voiceId);
             $('#ttp_override_voice').val(voiceId);
             
-            // Voice Speed
-            var voiceSpeed = config.voiceSpeed || '';
-            $('#ttp_override_voice_speed').val(voiceSpeed);
+            // Voice Speed - prefer voice's specific default over generic 1.0
+            var voiceSpeed = config.voiceSpeed;
+            var voiceDefaultSpeed = null;
+            
+            console.log('🔧 Voice speed from agent config:', voiceSpeed, 'type:', typeof voiceSpeed);
+            
+            // Look up voice's default speed
+            if (voiceId && voicesData.length > 0) {
+                var voice = voicesData.find(function(v) {
+                    return (v.voiceId || v.id) === voiceId;
+                });
+                console.log('🔧 Found voice in voicesData:', voice ? voice.name : 'NOT FOUND');
+                if (voice) {
+                    console.log('🔧 Voice object:', JSON.stringify(voice));
+                    voiceDefaultSpeed = voice.defaultVoiceSpeed;
+                    console.log('🔧 Voice defaultVoiceSpeed:', voiceDefaultSpeed);
+                }
+            }
+            
+            // Use voice's specific default if:
+            // - Agent has no voiceSpeed, OR
+            // - Agent has generic default (1.0) but voice has different default
+            if (voiceDefaultSpeed && (!voiceSpeed || voiceSpeed == 1 || voiceSpeed == 1.0)) {
+                console.log('🔧 Replacing agent speed', voiceSpeed, 'with voice default', voiceDefaultSpeed);
+                voiceSpeed = voiceDefaultSpeed;
+            }
+            
+            console.log('🔧 Final voice speed to display:', voiceSpeed);
+            $('#ttp_override_voice_speed').val(voiceSpeed || '');
             
             // Language - use the full language code (e.g., "en-US")
             var lang = config.agentLanguage || config.language || '';
@@ -1215,7 +1310,8 @@ function ttp_settings_page() {
             
             filteredVoices.forEach(function(v) {
                 var id = v.voiceId || v.id;
-                $voiceSelect.append('<option value="' + id + '"' + (id === currentVoice ? ' selected' : '') + '>' + v.name + '</option>');
+                var defaultSpeed = v.defaultVoiceSpeed || 1.0;
+                $voiceSelect.append('<option value="' + id + '" data-default-speed="' + defaultSpeed + '"' + (id === currentVoice ? ' selected' : '') + '>' + v.name + '</option>');
             });
             
             // If current voice is not in filtered list, clear selection
@@ -1223,6 +1319,16 @@ function ttp_settings_page() {
                 $voiceSelect.val('');
             }
         }
+        
+        // Voice change handler - update voice speed to voice's default
+        $('#ttp_override_voice').on('change', function() {
+            var $selected = $(this).find('option:selected');
+            var defaultSpeed = $selected.data('default-speed');
+            if (defaultSpeed) {
+                $('#ttp_override_voice_speed').val(defaultSpeed);
+                console.log('🎤 Voice changed, setting default speed:', defaultSpeed);
+            }
+        });
         
         $('#ttp-show-create-agent').on('click', function() { $(this).hide(); $('#ttp-create-agent-form').show(); });
         $('#ttp-cancel-create-agent').on('click', function() { $('#ttp-create-agent-form').hide(); $('#ttp-show-create-agent').show(); });
@@ -1254,103 +1360,6 @@ function ttp_settings_page() {
                 else { alert('Error: ' + (r.data?.message || 'Failed')); }
                 $btn.prop('disabled', false).text('Create');
             });
-        });
-        
-        // Intercept form submission to update agent in backend first
-        $('form[action="options.php"]').on('submit', function(e) {
-            var $form = $(this);
-            var agentId = $('#ttp_agent_select').val();
-            
-            // If no agent selected or form already processed, just submit normally
-            if (!agentId || $form.data('backend-updated')) {
-                console.log('💾 Submitting form normally (no agent or already updated)');
-                return true;
-            }
-            
-            // Prevent default submission
-            e.preventDefault();
-            console.log('💾 Intercepted form submission, updating backend first...');
-            
-            // Collect override values (only non-empty ones)
-            var updateData = {
-                action: 'ttp_update_agent',
-                nonce: ajaxNonce,
-                agent_id: agentId
-            };
-            
-            var systemPrompt = $('#ttp_override_prompt').val();
-            var firstMessage = $('#ttp_override_first_message').val();
-            var voiceId = $('#ttp_override_voice').val();
-            var voiceSpeed = $('#ttp_override_voice_speed').val();
-            var language = $('#ttp_override_language').val();
-            var temperature = $('#ttp_override_temperature').val();
-            var maxTokens = $('#ttp_override_max_tokens').val();
-            var maxCallDuration = $('#ttp_override_max_call_duration').val();
-            
-            if (systemPrompt) updateData.system_prompt = systemPrompt;
-            if (firstMessage) updateData.first_message = firstMessage;
-            if (voiceId) updateData.voice_id = voiceId;
-            if (voiceSpeed) updateData.voice_speed = voiceSpeed;
-            if (language) updateData.language = language;
-            if (temperature) updateData.temperature = temperature;
-            if (maxTokens) updateData.max_tokens = maxTokens;
-            if (maxCallDuration) updateData.max_call_duration = maxCallDuration;
-            
-            console.log('💾 Sending update to backend:', updateData);
-            
-            // Show saving indicator
-            var $submitBtn = $form.find('input[type="submit"]');
-            var originalText = $submitBtn.val();
-            $submitBtn.val('Saving to backend...').prop('disabled', true);
-            
-            // Helper function to submit form natively
-            function submitFormNatively() {
-                console.log('💾 Submitting WordPress form...');
-                $submitBtn.val('Saving settings....');
-                $form.data('backend-updated', true);
-                // Re-enable button briefly for native submit
-                $submitBtn.prop('disabled', false);
-                // Use native form submit to ensure page reload
-                $form[0].submit();
-                
-                // Fallback: if page doesn't reload within 2 seconds, force reload
-                // This handles edge cases where form submit doesn't cause navigation
-                setTimeout(function() {
-                    console.log('💾 Fallback: forcing page reload...');
-                    window.location.href = window.location.pathname + '?page=ttp-voice-widget&settings-updated=true';
-                }, 2000);
-            }
-            
-            // Helper function to reset button on error
-            function resetButton() {
-                $submitBtn.val(originalText).prop('disabled', false);
-            }
-            
-            // Update backend first
-            $.post(ajaxurl, updateData, function(r) {
-                console.log('💾 Backend update response:', r);
-                
-                if (r.success) {
-                    console.log('✅ Backend updated, now saving WordPress options...');
-                    submitFormNatively();
-                } else {
-                    console.error('❌ Backend update failed:', r.data?.message);
-                    if (confirm('Backend update failed: ' + (r.data?.message || 'Unknown error') + '\n\nSave WordPress settings anyway?')) {
-                        submitFormNatively();
-                    } else {
-                        resetButton();
-                    }
-                }
-            }).fail(function(xhr, status, error) {
-                console.error('❌ Backend update AJAX failed:', status, error);
-                if (confirm('Could not connect to backend.\n\nSave WordPress settings anyway?')) {
-                    submitFormNatively();
-                } else {
-                    resetButton();
-                }
-            });
-            
-            return false;
         });
     });
     </script>
