@@ -79,8 +79,20 @@ add_action('wp_ajax_ttp_create_agent', function() {
     if (!empty($_POST['voice_id'])) {
         $agent_data['voice_id'] = sanitize_text_field($_POST['voice_id']);
     }
+    if (isset($_POST['voice_speed']) && $_POST['voice_speed'] !== '') {
+        $agent_data['voice_speed'] = floatval($_POST['voice_speed']);
+    }
     if (!empty($_POST['language'])) {
         $agent_data['language'] = sanitize_text_field($_POST['language']);
+    }
+    if (isset($_POST['temperature']) && $_POST['temperature'] !== '') {
+        $agent_data['temperature'] = floatval($_POST['temperature']);
+    }
+    if (isset($_POST['max_tokens']) && $_POST['max_tokens'] !== '') {
+        $agent_data['max_tokens'] = intval($_POST['max_tokens']);
+    }
+    if (isset($_POST['max_call_duration']) && $_POST['max_call_duration'] !== '') {
+        $agent_data['max_call_duration'] = intval($_POST['max_call_duration']);
     }
     
     // If auto-generate, collect site content for AI prompt generation

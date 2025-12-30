@@ -618,7 +618,40 @@ function ttp_render_admin_scripts($current_agent_id) {
             var name = $('#ttp-new-agent-name').val().trim();
             if (!name) { alert('Enter agent name'); return; }
             var $btn = $(this).prop('disabled', true).text('Creating...');
-            $.post(ajaxurl, { action: 'ttp_create_agent', nonce: ajaxNonce, agent_name: name }, function(r) {
+            
+            // Build request data with optional fields
+            var postData = {
+                action: 'ttp_create_agent',
+                nonce: ajaxNonce,
+                agent_name: name
+            };
+            
+            // Add optional fields if they have values
+            var voiceId = $('#ttp_override_voice').val();
+            if (voiceId) postData.voice_id = voiceId;
+            
+            var voiceSpeed = $('#ttp_override_voice_speed').val();
+            if (voiceSpeed) postData.voice_speed = voiceSpeed;
+            
+            var language = $('#ttp_override_language').val();
+            if (language) postData.language = language;
+            
+            var temperature = $('#ttp_override_temperature').val();
+            if (temperature) postData.temperature = temperature;
+            
+            var maxTokens = $('#ttp_override_max_tokens').val();
+            if (maxTokens) postData.max_tokens = maxTokens;
+            
+            var maxCallDuration = $('#ttp_override_max_call_duration').val();
+            if (maxCallDuration) postData.max_call_duration = maxCallDuration;
+            
+            var systemPrompt = $('#ttp_override_prompt').val();
+            if (systemPrompt) postData.system_prompt = systemPrompt;
+            
+            var firstMessage = $('#ttp_override_first_message').val();
+            if (firstMessage) postData.first_message = firstMessage;
+            
+            $.post(ajaxurl, postData, function(r) {
                 if (r.success) {
                     var agent = r.data.data || r.data, agentId = agent.agentId || agent.id;
                     agentsData[agentId] = agent;
