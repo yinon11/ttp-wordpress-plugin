@@ -1,0 +1,504 @@
+<?php
+/**
+ * AJAX Handlers
+ * 
+ * All WordPress AJAX endpoints for the plugin:
+ * - ttp_fetch_agents      - Get user's agents from TalkToPC API
+ * - ttp_fetch_voices      - Get available voices from TalkToPC API
+ * - ttp_create_agent      - Create new agent (with optional AI prompt)
+ * - ttp_update_agent      - Update agent settings
+ * - ttp_generate_prompt   - Generate system prompt from site content
+ * - ttp_save_agent_selection - Save selected agent to options
+ * - ttp_get_signed_url    - Get signed URL for widget (public)
+ */
+
+if (!defined('ABSPATH')) exit;
+
+// =============================================================================
+// FETCH AGENTS
+// =============================================================================
+add_action('wp_ajax_ttp_fetch_agents', function() {
+    check_ajax_referer('ttp_ajax_nonce', 'nonce');
+    $api_key = get_option('ttp_api_key');
+    if (empty($api_key)) wp_send_json_error(['message' => 'Not connected']);
+    
+    $response = wp_remote_get(TTP_API_URL . '/api/public/wordpress/agents', [
+        'headers' => ['X-API-Key' => $api_key, 'Content-Type' => 'application/json'],
+        'timeout' => 30
+    ]);
+    
+    if (is_wp_error($response)) wp_send_json_error(['message' => $response->get_error_message()]);
+    wp_send_json_success(json_decode(wp_remote_retrieve_body($response), true));
+});
+
+// =============================================================================
+// FETCH VOICES
+// =============================================================================
+add_action('wp_ajax_ttp_fetch_voices', function() {
+    check_ajax_referer('ttp_ajax_nonce', 'nonce');
+    $api_key = get_option('ttp_api_key');
+    if (empty($api_key)) wp_send_json_error(['message' => 'Not connected']);
+    
+    $response = wp_remote_get(TTP_API_URL . '/api/public/wordpress/voices', [
+        'headers' => ['X-API-Key' => $api_key, 'Content-Type' => 'application/json'],
+        'timeout' => 30
+    ]);
+    
+    if (is_wp_error($response)) wp_send_json_error(['message' => $response->get_error_message()]);
+    wp_send_json_success(json_decode(wp_remote_retrieve_body($response), true));
+});
+
+// =============================================================================
+// CREATE AGENT
+// =============================================================================
+add_action('wp_ajax_ttp_create_agent', function() {
+    check_ajax_referer('ttp_ajax_nonce', 'nonce');
+    $api_key = get_option('ttp_api_key');
+    if (empty($api_key)) wp_send_json_error(['message' => 'Not connected']);
+    
+    $agent_name = isset($_POST['agent_name']) ? sanitize_text_field($_POST['agent_name']) : '';
+    if (empty($agent_name)) wp_send_json_error(['message' => 'Agent name required']);
+    
+    // Check if we should auto-generate prompt from site content
+    $auto_generate = isset($_POST['auto_generate_prompt']) && $_POST['auto_generate_prompt'] === 'true';
+    
+    // Build agent configuration
+    $agent_data = [
+        'name' => $agent_name,
+        'site_url' => home_url(),
+        'site_name' => get_bloginfo('name')
+    ];
+    
+    // Optional configuration fields (used for manual creation)
+    if (!empty($_POST['first_message'])) {
+        $agent_data['first_message'] = sanitize_text_field($_POST['first_message']);
+    }
+    if (!empty($_POST['system_prompt'])) {
+        $agent_data['system_prompt'] = sanitize_textarea_field($_POST['system_prompt']);
+    }
+    if (!empty($_POST['voice_id'])) {
+        $agent_data['voice_id'] = sanitize_text_field($_POST['voice_id']);
+    }
+    if (!empty($_POST['language'])) {
+        $agent_data['language'] = sanitize_text_field($_POST['language']);
+    }
+    
+    // If auto-generate, collect site content for AI prompt generation
+    if ($auto_generate) {
+        error_log('TTP Widget: Auto-generating prompt from site content');
+        $agent_data['site_content'] = ttp_collect_site_content();
+        
+        // Set language from site locale
+        $site_language = get_locale();
+        $lang_code = explode('_', $site_language)[0];
+        $agent_data['language'] = $lang_code;
+        
+        error_log('TTP Widget: Collected site content - pages: ' . count($agent_data['site_content']['pages']) . 
+                  ', posts: ' . count($agent_data['site_content']['posts']) . 
+                  ', products: ' . count($agent_data['site_content']['products']));
+    }
+    
+    // Prepare request - use gzip if site_content is included
+    $json_body = json_encode($agent_data, JSON_UNESCAPED_UNICODE);
+    $headers = ['X-API-Key' => $api_key, 'Content-Type' => 'application/json'];
+    $body = $json_body;
+    $timeout = 30;
+    
+    if ($auto_generate && !empty($agent_data['site_content'])) {
+        // Gzip compress for large payloads
+        $body = gzencode($json_body, 9);
+        $headers['Content-Encoding'] = 'gzip';
+        $timeout = 120; // Longer timeout for AI generation
+        error_log('TTP Widget: Sending gzipped request - raw: ' . strlen($json_body) . ' bytes, compressed: ' . strlen($body) . ' bytes');
+    }
+    
+    $response = wp_remote_post(TTP_API_URL . '/api/public/wordpress/agents', [
+        'headers' => $headers,
+        'body' => $body,
+        'timeout' => $timeout
+    ]);
+    
+    if (is_wp_error($response)) wp_send_json_error(['message' => $response->get_error_message()]);
+    
+    $status_code = wp_remote_retrieve_response_code($response);
+    $response_body = json_decode(wp_remote_retrieve_body($response), true);
+    
+    if ($status_code !== 200) {
+        error_log('TTP Widget: Create agent failed - Status: ' . $status_code . ', Body: ' . wp_remote_retrieve_body($response));
+        wp_send_json_error(['message' => $response_body['error'] ?? 'Failed to create agent']);
+    }
+    
+    wp_send_json_success($response_body);
+});
+
+// =============================================================================
+// UPDATE AGENT
+// =============================================================================
+add_action('wp_ajax_ttp_update_agent', function() {
+    check_ajax_referer('ttp_ajax_nonce', 'nonce');
+    $api_key = get_option('ttp_api_key');
+    if (empty($api_key)) wp_send_json_error(['message' => 'Not connected']);
+    
+    $agent_id = isset($_POST['agent_id']) ? sanitize_text_field($_POST['agent_id']) : '';
+    if (empty($agent_id)) wp_send_json_error(['message' => 'Agent ID required']);
+    
+    // Build update data - use camelCase keys to match backend expectations
+    $update_data = [];
+    
+    if (isset($_POST['system_prompt']) && $_POST['system_prompt'] !== '') {
+        $update_data['systemPrompt'] = sanitize_textarea_field($_POST['system_prompt']);
+    }
+    if (isset($_POST['first_message']) && $_POST['first_message'] !== '') {
+        $update_data['firstMessage'] = sanitize_text_field($_POST['first_message']);
+    }
+    if (isset($_POST['voice_id']) && $_POST['voice_id'] !== '') {
+        $update_data['voiceId'] = sanitize_text_field($_POST['voice_id']);
+    }
+    if (isset($_POST['voice_speed']) && $_POST['voice_speed'] !== '') {
+        $update_data['voiceSpeed'] = floatval($_POST['voice_speed']);
+    }
+    if (isset($_POST['language']) && $_POST['language'] !== '') {
+        $update_data['agentLanguage'] = sanitize_text_field($_POST['language']);
+    }
+    if (isset($_POST['temperature']) && $_POST['temperature'] !== '') {
+        $update_data['temperature'] = floatval($_POST['temperature']);
+    }
+    if (isset($_POST['max_tokens']) && $_POST['max_tokens'] !== '') {
+        $update_data['maxTokens'] = intval($_POST['max_tokens']);
+    }
+    if (isset($_POST['max_call_duration']) && $_POST['max_call_duration'] !== '') {
+        $update_data['maxCallDuration'] = intval($_POST['max_call_duration']);
+    }
+    
+    // If no data to update, just return success
+    if (empty($update_data)) {
+        wp_send_json_success(['message' => 'No changes to save']);
+    }
+    
+    error_log('TTP Widget: Updating agent ' . $agent_id . ' with data: ' . json_encode($update_data));
+    
+    $response = wp_remote_request(TTP_API_URL . '/api/public/wordpress/agents/' . $agent_id, [
+        'method' => 'PUT',
+        'headers' => ['X-API-Key' => $api_key, 'Content-Type' => 'application/json'],
+        'body' => json_encode($update_data),
+        'timeout' => 30
+    ]);
+    
+    if (is_wp_error($response)) {
+        error_log('TTP Widget: Update failed - ' . $response->get_error_message());
+        wp_send_json_error(['message' => $response->get_error_message()]);
+    }
+    
+    $status_code = wp_remote_retrieve_response_code($response);
+    $body = json_decode(wp_remote_retrieve_body($response), true);
+    
+    if ($status_code !== 200) {
+        error_log('TTP Widget: Update failed - Status ' . $status_code . ' - ' . wp_remote_retrieve_body($response));
+        wp_send_json_error(['message' => isset($body['message']) ? $body['message'] : 'Failed to update agent', 'status' => $status_code]);
+    }
+    
+    error_log('TTP Widget: Agent updated successfully');
+    wp_send_json_success(['message' => 'Agent updated successfully', 'agent' => $body]);
+});
+
+// =============================================================================
+// GENERATE PROMPT FROM SITE CONTENT
+// =============================================================================
+add_action('wp_ajax_ttp_generate_prompt', function() {
+    check_ajax_referer('ttp_ajax_nonce', 'nonce');
+    
+    $api_key = get_option('ttp_api_key');
+    $site_content = ttp_collect_site_content();
+    
+    $stats = [
+        'pages' => count($site_content['pages']),
+        'posts' => count($site_content['posts']),
+        'products' => count($site_content['products']),
+        'menu_items' => count($site_content['menus'])
+    ];
+    
+    // Try backend AI generation if connected
+    $ai_prompt = null;
+    if (!empty($api_key)) {
+        $json_payload = json_encode($site_content, JSON_UNESCAPED_UNICODE);
+        $compressed_payload = gzencode($json_payload, 9);
+        
+        error_log('TTP Widget: Trying AI generation - Raw: ' . strlen($json_payload) . ' bytes, Compressed: ' . strlen($compressed_payload) . ' bytes');
+        
+        $response = wp_remote_post(TTP_API_URL . '/api/public/wordpress/generate-prompt', [
+            'headers' => [
+                'X-API-Key' => $api_key,
+                'Content-Type' => 'application/json',
+                'Content-Encoding' => 'gzip'
+            ],
+            'body' => $compressed_payload,
+            'timeout' => 120
+        ]);
+        
+        if (!is_wp_error($response) && wp_remote_retrieve_response_code($response) === 200) {
+            $body = json_decode(wp_remote_retrieve_body($response), true);
+            if (!empty($body['prompt'])) {
+                $ai_prompt = $body['prompt'];
+                error_log('TTP Widget: AI generation successful');
+            }
+        } else {
+            $err = is_wp_error($response) ? $response->get_error_message() : 'Status ' . wp_remote_retrieve_response_code($response);
+            error_log('TTP Widget: AI generation failed (' . $err . '), falling back to local');
+        }
+    }
+    
+    // Use AI prompt if available, otherwise generate locally
+    if ($ai_prompt) {
+        wp_send_json_success([
+            'prompt' => $ai_prompt,
+            'stats' => $stats,
+            'source' => 'ai'
+        ]);
+        return;
+    }
+    
+    // Fallback: Generate prompt locally
+    $prompt = ttp_generate_local_prompt($site_content);
+    
+    wp_send_json_success([
+        'prompt' => $prompt,
+        'stats' => $stats,
+        'source' => 'local'
+    ]);
+});
+
+// =============================================================================
+// SAVE AGENT SELECTION
+// =============================================================================
+add_action('wp_ajax_ttp_save_agent_selection', function() {
+    check_ajax_referer('ttp_ajax_nonce', 'nonce');
+    
+    $agent_id = isset($_POST['agent_id']) ? sanitize_text_field($_POST['agent_id']) : '';
+    $agent_name = isset($_POST['agent_name']) ? sanitize_text_field($_POST['agent_name']) : '';
+    
+    if (empty($agent_id)) {
+        wp_send_json_error(['message' => 'Agent ID is required']);
+    }
+    
+    // Save the agent selection
+    update_option('ttp_agent_id', $agent_id);
+    update_option('ttp_agent_name', $agent_name);
+    
+    wp_send_json_success(['message' => 'Agent saved successfully', 'agent_id' => $agent_id]);
+});
+
+// =============================================================================
+// GET SIGNED URL (Public - also for non-logged-in users)
+// =============================================================================
+function ttp_get_signed_url() {
+    if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'ttp_widget_nonce')) {
+        wp_send_json_error(['message' => 'Invalid security token']);
+    }
+    
+    $api_key = get_option('ttp_api_key');
+    $app_id = get_option('ttp_app_id');
+    $agent_id = get_option('ttp_agent_id');
+    
+    if (empty($api_key) || empty($agent_id)) wp_send_json_error(['message' => 'Widget not configured']);
+    
+    $response = wp_remote_post(TTP_API_URL . '/api/public/agents/signed-url', [
+        'headers' => ['Authorization' => 'Bearer ' . $api_key, 'Content-Type' => 'application/json'],
+        'body' => json_encode(['agentId' => $agent_id, 'appId' => $app_id, 'allowOverride' => true, 'expirationMs' => 3600000]),
+        'timeout' => 30
+    ]);
+    
+    if (is_wp_error($response)) wp_send_json_error(['message' => $response->get_error_message()]);
+    
+    $status_code = wp_remote_retrieve_response_code($response);
+    $body = json_decode(wp_remote_retrieve_body($response), true);
+    
+    if ($status_code !== 200) {
+        wp_send_json_error(['message' => isset($body['message']) ? $body['message'] : 'Failed to get signed URL', 'code' => $status_code]);
+    }
+    
+    wp_send_json_success(['signedUrl' => $body['signedLink']]);
+}
+add_action('wp_ajax_ttp_get_signed_url', 'ttp_get_signed_url');
+add_action('wp_ajax_nopriv_ttp_get_signed_url', 'ttp_get_signed_url');
+
+// =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
+
+/**
+ * Collect site content for AI prompt generation
+ */
+function ttp_collect_site_content() {
+    $site_language = get_locale();
+    
+    // Collect site info
+    $site_content = [
+        'site' => [
+            'name' => get_bloginfo('name'),
+            'description' => get_bloginfo('description'),
+            'url' => home_url(),
+            'language' => $site_language
+        ],
+        'pages' => [],
+        'posts' => [],
+        'products' => [],
+        'menus' => [],
+        'currency' => '$'
+    ];
+    
+    // Get pages
+    $pages = get_posts([
+        'post_type' => 'page',
+        'post_status' => 'publish',
+        'numberposts' => 50,
+        'orderby' => 'menu_order',
+        'order' => 'ASC'
+    ]);
+    
+    foreach ($pages as $page) {
+        $content = wp_strip_all_tags($page->post_content);
+        $content = preg_replace('/\s+/', ' ', $content);
+        $content = trim($content);
+        
+        if (!empty($content)) {
+            $site_content['pages'][] = [
+                'title' => $page->post_title,
+                'content' => mb_substr($content, 0, 2000)
+            ];
+        }
+    }
+    
+    // Get posts
+    $posts = get_posts([
+        'post_type' => 'post',
+        'post_status' => 'publish',
+        'numberposts' => 10,
+        'orderby' => 'date',
+        'order' => 'DESC'
+    ]);
+    
+    foreach ($posts as $post) {
+        $content = wp_strip_all_tags($post->post_content);
+        $content = preg_replace('/\s+/', ' ', $content);
+        $content = trim($content);
+        
+        if (!empty($content)) {
+            $site_content['posts'][] = [
+                'title' => $post->post_title,
+                'excerpt' => mb_substr($content, 0, 500)
+            ];
+        }
+    }
+    
+    // Get WooCommerce products
+    if (class_exists('WooCommerce')) {
+        $site_content['currency'] = get_woocommerce_currency_symbol();
+        $products = get_posts([
+            'post_type' => 'product',
+            'post_status' => 'publish',
+            'numberposts' => 100,
+            'orderby' => 'title',
+            'order' => 'ASC'
+        ]);
+        
+        foreach ($products as $product) {
+            $wc_product = wc_get_product($product->ID);
+            if ($wc_product) {
+                $site_content['products'][] = [
+                    'name' => $product->post_title,
+                    'price' => $wc_product->get_price(),
+                    'description' => mb_substr(wp_strip_all_tags($product->post_content), 0, 300),
+                    'in_stock' => $wc_product->is_in_stock()
+                ];
+            }
+        }
+    }
+    
+    // Get menus
+    $menu_locations = get_nav_menu_locations();
+    foreach ($menu_locations as $location => $menu_id) {
+        if ($menu_id) {
+            $menu_items = wp_get_nav_menu_items($menu_id);
+            if ($menu_items) {
+                foreach ($menu_items as $item) {
+                    $site_content['menus'][] = $item->title;
+                }
+            }
+        }
+    }
+    $site_content['menus'] = array_unique(array_values($site_content['menus']));
+    
+    return $site_content;
+}
+
+/**
+ * Generate a local prompt (fallback when AI generation fails)
+ */
+function ttp_generate_local_prompt($site_content) {
+    $site_name = $site_content['site']['name'];
+    $site_description = $site_content['site']['description'];
+    $currency_symbol = $site_content['currency'];
+    $pages_content = $site_content['pages'];
+    $posts_content = $site_content['posts'];
+    $products_content = $site_content['products'];
+    $menus = $site_content['menus'];
+    
+    $prompt = "You are a helpful voice assistant for {$site_name}";
+    if (!empty($site_description)) {
+        $prompt .= " - {$site_description}";
+    }
+    $prompt .= ".\n\n";
+    
+    $prompt .= "Your role is to assist visitors with questions about the website, its services, and content. Be friendly, professional, and helpful.\n\n";
+    
+    // Add pages context
+    if (!empty($pages_content)) {
+        $prompt .= "=== WEBSITE PAGES ===\n";
+        foreach ($pages_content as $page) {
+            $prompt .= "\n## {$page['title']}\n";
+            $prompt .= "{$page['content']}\n";
+        }
+        $prompt .= "\n";
+    }
+    
+    // Add products context if WooCommerce
+    if (!empty($products_content)) {
+        $prompt .= "=== PRODUCTS ===\n";
+        foreach ($products_content as $product) {
+            $prompt .= "- {$product['name']}";
+            if (!empty($product['price'])) {
+                $prompt .= " ({$currency_symbol}{$product['price']})";
+            }
+            if (!empty($product['description'])) {
+                $prompt .= ": {$product['description']}";
+            }
+            $prompt .= "\n";
+        }
+        $prompt .= "\n";
+    }
+    
+    // Add blog posts context
+    if (!empty($posts_content)) {
+        $prompt .= "=== RECENT BLOG POSTS ===\n";
+        foreach ($posts_content as $post) {
+            $prompt .= "- {$post['title']}: {$post['excerpt']}\n";
+        }
+        $prompt .= "\n";
+    }
+    
+    // Add navigation context
+    if (!empty($menus)) {
+        $prompt .= "=== MAIN NAVIGATION ===\n";
+        $prompt .= "The website has these main sections: " . implode(', ', array_slice($menus, 0, 15)) . "\n\n";
+    }
+    
+    // Add instructions
+    $prompt .= "=== INSTRUCTIONS ===\n";
+    $prompt .= "- Answer questions based on the website content above\n";
+    $prompt .= "- If asked about something not covered, politely say you don't have that information and suggest contacting the website directly\n";
+    $prompt .= "- Keep responses concise and conversational since this is a voice interface\n";
+    $prompt .= "- Direct visitors to relevant pages when appropriate\n";
+    $prompt .= "- Be warm and welcoming to new visitors\n";
+    
+    return $prompt;
+}
