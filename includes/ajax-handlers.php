@@ -88,14 +88,15 @@ add_action('wp_ajax_ttp_create_agent', function() {
         error_log('TTP Widget: Auto-generating prompt from site content');
         $agent_data['site_content'] = ttp_collect_site_content();
         
-        // Set language from site locale
-        $site_language = get_locale();
-        $lang_code = explode('_', $site_language)[0];
+        // Use detected content language (not WordPress admin locale)
+        $detected_lang = $agent_data['site_content']['site']['language'];
+        $lang_code = explode('_', $detected_lang)[0];
         $agent_data['language'] = $lang_code;
         
         error_log('TTP Widget: Collected site content - pages: ' . count($agent_data['site_content']['pages']) . 
                   ', posts: ' . count($agent_data['site_content']['posts']) . 
-                  ', products: ' . count($agent_data['site_content']['products']));
+                  ', products: ' . count($agent_data['site_content']['products']) .
+                  ', detected language: ' . $detected_lang);
     }
     
     // Prepare request - use gzip if site_content is included
@@ -326,18 +327,68 @@ add_action('wp_ajax_nopriv_ttp_get_signed_url', 'ttp_get_signed_url');
 // =============================================================================
 
 /**
+ * Detect the primary language of text content based on character ranges
+ * Returns locale code (e.g., 'he_IL', 'ru_RU', 'en_US')
+ */
+function ttp_detect_content_language($text) {
+    if (empty($text)) {
+        return get_locale();
+    }
+    
+    // Count characters in different scripts
+    $hebrew_count = preg_match_all('/[\x{0590}-\x{05FF}]/u', $text);
+    $cyrillic_count = preg_match_all('/[\x{0400}-\x{04FF}]/u', $text);
+    $arabic_count = preg_match_all('/[\x{0600}-\x{06FF}]/u', $text);
+    $greek_count = preg_match_all('/[\x{0370}-\x{03FF}]/u', $text);
+    $thai_count = preg_match_all('/[\x{0E00}-\x{0E7F}]/u', $text);
+    $japanese_count = preg_match_all('/[\x{3040}-\x{309F}\x{30A0}-\x{30FF}]/u', $text); // Hiragana + Katakana
+    $korean_count = preg_match_all('/[\x{AC00}-\x{D7AF}\x{1100}-\x{11FF}]/u', $text); // Hangul
+    $chinese_count = preg_match_all('/[\x{4E00}-\x{9FFF}]/u', $text); // CJK
+    $latin_count = preg_match_all('/[a-zA-Z]/u', $text);
+    
+    // Find the dominant script
+    $counts = [
+        'he_IL' => $hebrew_count,
+        'ru_RU' => $cyrillic_count,
+        'ar_SA' => $arabic_count,
+        'el_GR' => $greek_count,
+        'th_TH' => $thai_count,
+        'ja_JP' => $japanese_count,
+        'ko_KR' => $korean_count,
+        'zh_CN' => $chinese_count,
+        'en_US' => $latin_count
+    ];
+    
+    // Get max count
+    $max_lang = 'en_US';
+    $max_count = 0;
+    
+    foreach ($counts as $lang => $count) {
+        if ($count > $max_count) {
+            $max_count = $count;
+            $max_lang = $lang;
+        }
+    }
+    
+    // If Latin is dominant, use WordPress locale for specific language (fr, de, es, etc.)
+    if ($max_lang === 'en_US') {
+        return get_locale();
+    }
+    
+    return $max_lang;
+}
+
+/**
  * Collect site content for AI prompt generation
  */
 function ttp_collect_site_content() {
-    $site_language = get_locale();
-    
-    // Collect site info
+    // Collect site info (language will be detected from content below)
     $site_content = [
         'site' => [
             'name' => get_bloginfo('name'),
             'description' => get_bloginfo('description'),
             'url' => home_url(),
-            'language' => $site_language
+            'language' => get_locale() // Will be overwritten with detected language
         ],
         'pages' => [],
         'posts' => [],
@@ -345,6 +396,9 @@ function ttp_collect_site_content() {
         'menus' => [],
         'currency' => '$'
     ];
+    
+    // Build sample text for language detection
+    $sample_text = $site_content['site']['name'] . ' ' . $site_content['site']['description'];
     
     // Get pages
     $pages = get_posts([
@@ -365,6 +419,8 @@ function ttp_collect_site_content() {
                 'title' => $page->post_title,
                 'content' => mb_substr($content, 0, 2000)
             ];
+            // Add to sample text for language detection
+            $sample_text .= ' ' . $page->post_title . ' ' . mb_substr($content, 0, 500);
         }
     }
     
@@ -387,6 +443,8 @@ function ttp_collect_site_content() {
                 'title' => $post->post_title,
                 'excerpt' => mb_substr($content, 0, 500)
             ];
+            // Add to sample text for language detection
+            $sample_text .= ' ' . $post->post_title;
         }
     }
     
@@ -410,6 +468,8 @@ function ttp_collect_site_content() {
                     'description' => mb_substr(wp_strip_all_tags($product->post_content), 0, 300),
                     'in_stock' => $wc_product->is_in_stock()
                 ];
+                // Add to sample text for language detection
+                $sample_text .= ' ' . $product->post_title;
             }
         }
     }
@@ -422,11 +482,26 @@ function ttp_collect_site_content() {
             if ($menu_items) {
                 foreach ($menu_items as $item) {
                     $site_content['menus'][] = $item->title;
+                    // Add to sample text for language detection
+                    $sample_text .= ' ' . $item->title;
                 }
             }
         }
     }
     $site_content['menus'] = array_unique(array_values($site_content['menus']));
+    
+    // Detect actual content language from collected text
+    $detected_language = ttp_detect_content_language($sample_text);
+    $site_content['site']['language'] = $detected_language;
+    
+    error_log('TTP Widget: Detected content language: ' . $detected_language . ' (WordPress locale: ' . get_locale() . ')');
+    
+    // Ensure all arrays are indexed (not associative) for proper JSON encoding
+    // This prevents PHP from sending {} instead of [] when keys are non-sequential
+    $site_content['pages'] = array_values($site_content['pages']);
+    $site_content['posts'] = array_values($site_content['posts']);
+    $site_content['products'] = array_values($site_content['products']);
+    $site_content['menus'] = array_values($site_content['menus']);
     
     return $site_content;
 }
