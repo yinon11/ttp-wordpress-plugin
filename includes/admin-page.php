@@ -72,10 +72,14 @@ function ttp_settings_page() {
             <?php ttp_render_icon_settings(); ?>
             <?php ttp_render_panel_settings(); ?>
             <?php ttp_render_header_settings(); ?>
+            <?php ttp_render_footer_settings(); ?>
+            <?php ttp_render_landing_settings(); ?>
+            <?php ttp_render_message_settings(); ?>
             <?php ttp_render_voice_settings(); ?>
             <?php ttp_render_text_settings(); ?>
-            <?php ttp_render_message_settings(); ?>
-            <?php ttp_render_landing_settings(); ?>
+            <?php ttp_render_tooltip_settings(); ?>
+            <?php ttp_render_animation_settings(); ?>
+            <?php ttp_render_accessibility_settings(); ?>
             <?php ttp_render_custom_css(); ?>
             
             <?php submit_button('Save Settings'); ?>
@@ -144,7 +148,6 @@ function ttp_render_agent_overrides() {
                             </button>
                             <span id="ttp-generate-prompt-status" style="margin-left: 10px;"></span>
                         </p>
-                        <p class="description">Automatically create a prompt based on your website's pages and content.</p>
                     </td></tr>
                 <tr><th><label for="ttp_override_first_message">First Message</label></th>
                     <td><input type="text" id="ttp_override_first_message" name="ttp_override_first_message" value="<?php echo esc_attr(get_option('ttp_override_first_message')); ?>" class="large-text"></td></tr>
@@ -153,9 +156,7 @@ function ttp_render_agent_overrides() {
                 <tr><th><label for="ttp_override_voice_speed">Voice Speed</label></th>
                     <td><input type="number" id="ttp_override_voice_speed" name="ttp_override_voice_speed" value="<?php echo esc_attr(get_option('ttp_override_voice_speed')); ?>" class="small-text" min="0.5" max="2.0" step="0.1"> <span class="description">0.5 to 2.0</span></td></tr>
                 <tr><th><label for="ttp_override_language">Language</label></th>
-                    <td><select id="ttp_override_language" name="ttp_override_language" class="regular-text">
-                        <option value="">-- All languages --</option>
-                    </select><span id="ttp-language-loading" class="spinner"></span></td></tr>
+                    <td><select id="ttp_override_language" name="ttp_override_language" class="regular-text"><option value="">-- All languages --</option></select><span id="ttp-language-loading" class="spinner"></span></td></tr>
                 <tr><th><label for="ttp_override_temperature">Temperature</label></th>
                     <td><input type="number" id="ttp_override_temperature" name="ttp_override_temperature" value="<?php echo esc_attr(get_option('ttp_override_temperature')); ?>" class="small-text" min="0" max="2" step="0.1"> <span class="description">0 to 2</span></td></tr>
                 <tr><th><label for="ttp_override_max_tokens">Max Tokens</label></th>
@@ -198,7 +199,7 @@ function ttp_render_behavior_settings() {
 function ttp_render_button_settings() {
     ?>
     <div class="ttp-card ttp-collapsible">
-        <h2 class="ttp-collapsible-header">Button Appearance <span class="dashicons dashicons-arrow-down-alt2"></span></h2>
+        <h2 class="ttp-collapsible-header">Floating Button <span class="dashicons dashicons-arrow-down-alt2"></span></h2>
         <div class="ttp-collapsible-content">
             <table class="form-table">
                 <tr><th><label for="ttp_position">Position</label></th>
@@ -227,6 +228,8 @@ function ttp_render_button_settings() {
                     <td><input type="text" id="ttp_button_hover_color" name="ttp_button_hover_color" value="<?php echo esc_attr(get_option('ttp_button_hover_color')); ?>" class="ttp-color-picker" data-default-color="#F5F5F5"></td></tr>
                 <tr><th>Shadow</th>
                     <td><label><input type="checkbox" name="ttp_button_shadow" value="1" <?php checked(get_option('ttp_button_shadow', '1'), '1'); ?>> Enable button shadow</label></td></tr>
+                <tr><th><label for="ttp_button_shadow_color">Shadow Color</label></th>
+                    <td><input type="text" id="ttp_button_shadow_color" name="ttp_button_shadow_color" value="<?php echo esc_attr(get_option('ttp_button_shadow_color', 'rgba(0,0,0,0.15)')); ?>" class="regular-text" placeholder="rgba(0,0,0,0.15)"></td></tr>
             </table>
         </div>
     </div>
@@ -259,6 +262,8 @@ function ttp_render_icon_settings() {
                         <option value="large" <?php selected(get_option('ttp_icon_size'), 'large'); ?>>Large</option>
                         <option value="xl" <?php selected(get_option('ttp_icon_size'), 'xl'); ?>>Extra Large</option>
                     </select></td></tr>
+                <tr><th><label for="ttp_icon_bg_color">Icon Background</label></th>
+                    <td><input type="text" id="ttp_icon_bg_color" name="ttp_icon_bg_color" value="<?php echo esc_attr(get_option('ttp_icon_bg_color')); ?>" class="ttp-color-picker" data-default-color="#FFFFFF"></td></tr>
             </table>
         </div>
     </div>
@@ -279,6 +284,12 @@ function ttp_render_panel_settings() {
                     <td><input type="number" id="ttp_panel_border_radius" name="ttp_panel_border_radius" value="<?php echo esc_attr(get_option('ttp_panel_border_radius', 12)); ?>" class="small-text" min="0" max="30"></td></tr>
                 <tr><th><label for="ttp_panel_bg_color">Background Color</label></th>
                     <td><input type="text" id="ttp_panel_bg_color" name="ttp_panel_bg_color" value="<?php echo esc_attr(get_option('ttp_panel_bg_color')); ?>" class="ttp-color-picker" data-default-color="#FFFFFF"></td></tr>
+                <tr><th><label for="ttp_panel_border">Border</label></th>
+                    <td><input type="text" id="ttp_panel_border" name="ttp_panel_border" value="<?php echo esc_attr(get_option('ttp_panel_border', '1px solid #E5E7EB')); ?>" class="regular-text" placeholder="1px solid #E5E7EB">
+                        <p class="description">CSS border value. Examples: <code>1px solid #E5E7EB</code>, <code>none</code></p></td></tr>
+                <tr><th><label for="ttp_panel_backdrop_filter">Backdrop Filter</label></th>
+                    <td><input type="text" id="ttp_panel_backdrop_filter" name="ttp_panel_backdrop_filter" value="<?php echo esc_attr(get_option('ttp_panel_backdrop_filter')); ?>" class="regular-text" placeholder="blur(10px)">
+                        <p class="description">CSS backdrop-filter. Example: <code>blur(10px)</code></p></td></tr>
             </table>
         </div>
     </div>
@@ -293,6 +304,8 @@ function ttp_render_header_settings() {
             <table class="form-table">
                 <tr><th><label for="ttp_header_title">Title</label></th>
                     <td><input type="text" id="ttp_header_title" name="ttp_header_title" value="<?php echo esc_attr(get_option('ttp_header_title')); ?>" class="regular-text" placeholder="Chat Assistant"></td></tr>
+                <tr><th>Show Title</th>
+                    <td><label><input type="checkbox" name="ttp_header_show_title" value="1" <?php checked(get_option('ttp_header_show_title', '1'), '1'); ?>> Display title in header</label></td></tr>
                 <tr><th><label for="ttp_header_bg_color">Background Color</label></th>
                     <td><input type="text" id="ttp_header_bg_color" name="ttp_header_bg_color" value="<?php echo esc_attr(get_option('ttp_header_bg_color')); ?>" class="ttp-color-picker" data-default-color="#7C3AED"></td></tr>
                 <tr><th><label for="ttp_header_text_color">Text Color</label></th>
@@ -305,58 +318,22 @@ function ttp_render_header_settings() {
     <?php
 }
 
-function ttp_render_voice_settings() {
+function ttp_render_footer_settings() {
     ?>
     <div class="ttp-card ttp-collapsible">
-        <h2 class="ttp-collapsible-header">Voice Interface Colors <span class="dashicons dashicons-arrow-down-alt2"></span></h2>
+        <h2 class="ttp-collapsible-header">Footer Branding <span class="dashicons dashicons-arrow-down-alt2"></span></h2>
         <div class="ttp-collapsible-content">
+            <p class="description"><strong>⚡ Powered by TalkToPC</strong> — Displayed at the bottom of the chat panel.</p>
+            <div class="ttp-footer-preview" style="margin: 15px 0; padding: 8px 16px; background: <?php echo esc_attr(get_option('ttp_footer_bg_color', '#f9fafb')); ?>; border: 1px solid #e5e7eb; border-radius: 4px; text-align: center;">
+                <span style="font-size: 11px; color: <?php echo esc_attr(get_option('ttp_footer_text_color', '#9ca3af')); ?>;">⚡ Powered by <strong>TalkToPC</strong></span>
+            </div>
             <table class="form-table">
-                <tr><th><label for="ttp_voice_mic_color">Mic Button Color</label></th>
-                    <td><input type="text" id="ttp_voice_mic_color" name="ttp_voice_mic_color" value="<?php echo esc_attr(get_option('ttp_voice_mic_color')); ?>" class="ttp-color-picker" data-default-color="#7C3AED"></td></tr>
-                <tr><th><label for="ttp_voice_mic_active_color">Mic Active Color</label></th>
-                    <td><input type="text" id="ttp_voice_mic_active_color" name="ttp_voice_mic_active_color" value="<?php echo esc_attr(get_option('ttp_voice_mic_active_color')); ?>" class="ttp-color-picker" data-default-color="#EF4444"></td></tr>
-                <tr><th><label for="ttp_voice_avatar_color">Avatar Color</label></th>
-                    <td><input type="text" id="ttp_voice_avatar_color" name="ttp_voice_avatar_color" value="<?php echo esc_attr(get_option('ttp_voice_avatar_color')); ?>" class="ttp-color-picker" data-default-color="#667eea"></td></tr>
-                <tr><th><label for="ttp_voice_start_btn_color">Start Call Button</label></th>
-                    <td><input type="text" id="ttp_voice_start_btn_color" name="ttp_voice_start_btn_color" value="<?php echo esc_attr(get_option('ttp_voice_start_btn_color')); ?>" class="ttp-color-picker" data-default-color="#667eea"></td></tr>
-                <tr><th><label for="ttp_voice_end_btn_color">End Call Button</label></th>
-                    <td><input type="text" id="ttp_voice_end_btn_color" name="ttp_voice_end_btn_color" value="<?php echo esc_attr(get_option('ttp_voice_end_btn_color')); ?>" class="ttp-color-picker" data-default-color="#EF4444"></td></tr>
-            </table>
-        </div>
-    </div>
-    <?php
-}
-
-function ttp_render_text_settings() {
-    ?>
-    <div class="ttp-card ttp-collapsible">
-        <h2 class="ttp-collapsible-header">Text Interface <span class="dashicons dashicons-arrow-down-alt2"></span></h2>
-        <div class="ttp-collapsible-content">
-            <table class="form-table">
-                <tr><th><label for="ttp_text_send_btn_color">Send Button Color</label></th>
-                    <td><input type="text" id="ttp_text_send_btn_color" name="ttp_text_send_btn_color" value="<?php echo esc_attr(get_option('ttp_text_send_btn_color')); ?>" class="ttp-color-picker" data-default-color="#7C3AED"></td></tr>
-                <tr><th><label for="ttp_text_input_placeholder">Input Placeholder</label></th>
-                    <td><input type="text" id="ttp_text_input_placeholder" name="ttp_text_input_placeholder" value="<?php echo esc_attr(get_option('ttp_text_input_placeholder')); ?>" class="regular-text" placeholder="Type your message..."></td></tr>
-                <tr><th><label for="ttp_text_input_focus_color">Input Focus Color</label></th>
-                    <td><input type="text" id="ttp_text_input_focus_color" name="ttp_text_input_focus_color" value="<?php echo esc_attr(get_option('ttp_text_input_focus_color')); ?>" class="ttp-color-picker" data-default-color="#7C3AED"></td></tr>
-            </table>
-        </div>
-    </div>
-    <?php
-}
-
-function ttp_render_message_settings() {
-    ?>
-    <div class="ttp-card ttp-collapsible">
-        <h2 class="ttp-collapsible-header">Message Colors <span class="dashicons dashicons-arrow-down-alt2"></span></h2>
-        <div class="ttp-collapsible-content">
-            <table class="form-table">
-                <tr><th><label for="ttp_msg_user_bg">User Message Background</label></th>
-                    <td><input type="text" id="ttp_msg_user_bg" name="ttp_msg_user_bg" value="<?php echo esc_attr(get_option('ttp_msg_user_bg')); ?>" class="ttp-color-picker" data-default-color="#E5E7EB"></td></tr>
-                <tr><th><label for="ttp_msg_agent_bg">Agent Message Background</label></th>
-                    <td><input type="text" id="ttp_msg_agent_bg" name="ttp_msg_agent_bg" value="<?php echo esc_attr(get_option('ttp_msg_agent_bg')); ?>" class="ttp-color-picker" data-default-color="#F3F4F6"></td></tr>
-                <tr><th><label for="ttp_msg_text_color">Message Text Color</label></th>
-                    <td><input type="text" id="ttp_msg_text_color" name="ttp_msg_text_color" value="<?php echo esc_attr(get_option('ttp_msg_text_color')); ?>" class="ttp-color-picker" data-default-color="#1F2937"></td></tr>
+                <tr><th><label for="ttp_footer_bg_color">Background Color</label></th>
+                    <td><input type="text" id="ttp_footer_bg_color" name="ttp_footer_bg_color" value="<?php echo esc_attr(get_option('ttp_footer_bg_color')); ?>" class="ttp-color-picker" data-default-color="#f9fafb"></td></tr>
+                <tr><th><label for="ttp_footer_text_color">Text Color</label></th>
+                    <td><input type="text" id="ttp_footer_text_color" name="ttp_footer_text_color" value="<?php echo esc_attr(get_option('ttp_footer_text_color')); ?>" class="ttp-color-picker" data-default-color="#9ca3af"></td></tr>
+                <tr><th><label for="ttp_footer_hover_color">Hover Color</label></th>
+                    <td><input type="text" id="ttp_footer_hover_color" name="ttp_footer_hover_color" value="<?php echo esc_attr(get_option('ttp_footer_hover_color')); ?>" class="ttp-color-picker" data-default-color="#7C3AED"></td></tr>
             </table>
         </div>
     </div>
@@ -370,12 +347,219 @@ function ttp_render_landing_settings() {
         <div class="ttp-collapsible-content">
             <p class="description">Shown in unified mode when user first opens widget.</p>
             <table class="form-table">
+                <tr><th><label for="ttp_landing_bg_color">Background</label></th>
+                    <td><input type="text" id="ttp_landing_bg_color" name="ttp_landing_bg_color" value="<?php echo esc_attr(get_option('ttp_landing_bg_color')); ?>" class="large-text" placeholder="linear-gradient(180deg, #f8fafc 0%, #e0e7ff 100%)">
+                        <p class="description">CSS color or gradient</p></td></tr>
                 <tr><th><label for="ttp_landing_logo">Logo (emoji/text)</label></th>
                     <td><input type="text" id="ttp_landing_logo" name="ttp_landing_logo" value="<?php echo esc_attr(get_option('ttp_landing_logo')); ?>" class="small-text" placeholder="🤖"></td></tr>
                 <tr><th><label for="ttp_landing_title">Title</label></th>
                     <td><input type="text" id="ttp_landing_title" name="ttp_landing_title" value="<?php echo esc_attr(get_option('ttp_landing_title')); ?>" class="regular-text" placeholder="How would you like to chat?"></td></tr>
                 <tr><th><label for="ttp_landing_title_color">Title Color</label></th>
                     <td><input type="text" id="ttp_landing_title_color" name="ttp_landing_title_color" value="<?php echo esc_attr(get_option('ttp_landing_title_color')); ?>" class="ttp-color-picker" data-default-color="#1e293b"></td></tr>
+            </table>
+            <h4 style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">Mode Selection Cards</h4>
+            <table class="form-table">
+                <tr><th><label for="ttp_landing_card_bg_color">Card Background</label></th>
+                    <td><input type="text" id="ttp_landing_card_bg_color" name="ttp_landing_card_bg_color" value="<?php echo esc_attr(get_option('ttp_landing_card_bg_color')); ?>" class="ttp-color-picker" data-default-color="#FFFFFF"></td></tr>
+                <tr><th><label for="ttp_landing_card_border_color">Card Border</label></th>
+                    <td><input type="text" id="ttp_landing_card_border_color" name="ttp_landing_card_border_color" value="<?php echo esc_attr(get_option('ttp_landing_card_border_color')); ?>" class="ttp-color-picker" data-default-color="#E2E8F0"></td></tr>
+                <tr><th><label for="ttp_landing_card_hover_border_color">Card Hover Border</label></th>
+                    <td><input type="text" id="ttp_landing_card_hover_border_color" name="ttp_landing_card_hover_border_color" value="<?php echo esc_attr(get_option('ttp_landing_card_hover_border_color')); ?>" class="ttp-color-picker" data-default-color="#7C3AED"></td></tr>
+                <tr><th><label for="ttp_landing_card_icon_bg_color">Card Icon Background</label></th>
+                    <td><input type="text" id="ttp_landing_card_icon_bg_color" name="ttp_landing_card_icon_bg_color" value="<?php echo esc_attr(get_option('ttp_landing_card_icon_bg_color')); ?>" class="ttp-color-picker" data-default-color="#7C3AED"></td></tr>
+                <tr><th><label for="ttp_landing_card_title_color">Card Title Color</label></th>
+                    <td><input type="text" id="ttp_landing_card_title_color" name="ttp_landing_card_title_color" value="<?php echo esc_attr(get_option('ttp_landing_card_title_color')); ?>" class="ttp-color-picker" data-default-color="#111827"></td></tr>
+                <tr><th><label for="ttp_landing_voice_icon">Voice Card Icon</label></th>
+                    <td><input type="text" id="ttp_landing_voice_icon" name="ttp_landing_voice_icon" value="<?php echo esc_attr(get_option('ttp_landing_voice_icon', '🎤')); ?>" class="small-text" placeholder="🎤"></td></tr>
+                <tr><th><label for="ttp_landing_text_icon">Text Card Icon</label></th>
+                    <td><input type="text" id="ttp_landing_text_icon" name="ttp_landing_text_icon" value="<?php echo esc_attr(get_option('ttp_landing_text_icon', '💬')); ?>" class="small-text" placeholder="💬"></td></tr>
+            </table>
+        </div>
+    </div>
+    <?php
+}
+
+function ttp_render_message_settings() {
+    ?>
+    <div class="ttp-card ttp-collapsible">
+        <h2 class="ttp-collapsible-header">Message Styling <span class="dashicons dashicons-arrow-down-alt2"></span></h2>
+        <div class="ttp-collapsible-content">
+            <table class="form-table">
+                <tr><th><label for="ttp_msg_user_bg">User Message Background</label></th>
+                    <td><input type="text" id="ttp_msg_user_bg" name="ttp_msg_user_bg" value="<?php echo esc_attr(get_option('ttp_msg_user_bg')); ?>" class="ttp-color-picker" data-default-color="#E5E7EB"></td></tr>
+                <tr><th><label for="ttp_msg_agent_bg">Agent Message Background</label></th>
+                    <td><input type="text" id="ttp_msg_agent_bg" name="ttp_msg_agent_bg" value="<?php echo esc_attr(get_option('ttp_msg_agent_bg')); ?>" class="ttp-color-picker" data-default-color="#F3F4F6"></td></tr>
+                <tr><th><label for="ttp_msg_system_bg">System Message Background</label></th>
+                    <td><input type="text" id="ttp_msg_system_bg" name="ttp_msg_system_bg" value="<?php echo esc_attr(get_option('ttp_msg_system_bg')); ?>" class="ttp-color-picker" data-default-color="#DCFCE7"></td></tr>
+                <tr><th><label for="ttp_msg_error_bg">Error Message Background</label></th>
+                    <td><input type="text" id="ttp_msg_error_bg" name="ttp_msg_error_bg" value="<?php echo esc_attr(get_option('ttp_msg_error_bg')); ?>" class="ttp-color-picker" data-default-color="#FEE2E2"></td></tr>
+                <tr><th><label for="ttp_msg_text_color">Text Color</label></th>
+                    <td><input type="text" id="ttp_msg_text_color" name="ttp_msg_text_color" value="<?php echo esc_attr(get_option('ttp_msg_text_color')); ?>" class="ttp-color-picker" data-default-color="#1F2937"></td></tr>
+                <tr><th><label for="ttp_msg_font_size">Font Size</label></th>
+                    <td><input type="text" id="ttp_msg_font_size" name="ttp_msg_font_size" value="<?php echo esc_attr(get_option('ttp_msg_font_size', '14px')); ?>" class="small-text" placeholder="14px"></td></tr>
+                <tr><th><label for="ttp_msg_border_radius">Border Radius (px)</label></th>
+                    <td><input type="number" id="ttp_msg_border_radius" name="ttp_msg_border_radius" value="<?php echo esc_attr(get_option('ttp_msg_border_radius', 8)); ?>" class="small-text" min="0" max="20"></td></tr>
+            </table>
+        </div>
+    </div>
+    <?php
+}
+
+function ttp_render_voice_settings() {
+    ?>
+    <div class="ttp-card ttp-collapsible">
+        <h2 class="ttp-collapsible-header">Voice Interface <span class="dashicons dashicons-arrow-down-alt2"></span></h2>
+        <div class="ttp-collapsible-content">
+            <h4>Microphone Button</h4>
+            <table class="form-table">
+                <tr><th><label for="ttp_voice_mic_color">Mic Button Color</label></th>
+                    <td><input type="text" id="ttp_voice_mic_color" name="ttp_voice_mic_color" value="<?php echo esc_attr(get_option('ttp_voice_mic_color')); ?>" class="ttp-color-picker" data-default-color="#7C3AED"></td></tr>
+                <tr><th><label for="ttp_voice_mic_active_color">Mic Active Color</label></th>
+                    <td><input type="text" id="ttp_voice_mic_active_color" name="ttp_voice_mic_active_color" value="<?php echo esc_attr(get_option('ttp_voice_mic_active_color')); ?>" class="ttp-color-picker" data-default-color="#EF4444"></td></tr>
+            </table>
+            <h4 style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">Avatar</h4>
+            <table class="form-table">
+                <tr><th><label for="ttp_voice_avatar_color">Avatar Background</label></th>
+                    <td><input type="text" id="ttp_voice_avatar_color" name="ttp_voice_avatar_color" value="<?php echo esc_attr(get_option('ttp_voice_avatar_color')); ?>" class="ttp-color-picker" data-default-color="#667eea"></td></tr>
+                <tr><th><label for="ttp_voice_avatar_active_color">Avatar Active Background</label></th>
+                    <td><input type="text" id="ttp_voice_avatar_active_color" name="ttp_voice_avatar_active_color" value="<?php echo esc_attr(get_option('ttp_voice_avatar_active_color')); ?>" class="ttp-color-picker" data-default-color="#667eea"></td></tr>
+            </table>
+            <h4 style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">Status Text</h4>
+            <table class="form-table">
+                <tr><th><label for="ttp_voice_status_title_color">Status Title Color</label></th>
+                    <td><input type="text" id="ttp_voice_status_title_color" name="ttp_voice_status_title_color" value="<?php echo esc_attr(get_option('ttp_voice_status_title_color')); ?>" class="ttp-color-picker" data-default-color="#1e293b"></td></tr>
+                <tr><th><label for="ttp_voice_status_subtitle_color">Status Subtitle Color</label></th>
+                    <td><input type="text" id="ttp_voice_status_subtitle_color" name="ttp_voice_status_subtitle_color" value="<?php echo esc_attr(get_option('ttp_voice_status_subtitle_color')); ?>" class="ttp-color-picker" data-default-color="#64748b"></td></tr>
+            </table>
+            <h4 style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">Start Call Button</h4>
+            <table class="form-table">
+                <tr><th><label for="ttp_voice_start_title">Title Text</label></th>
+                    <td><input type="text" id="ttp_voice_start_title" name="ttp_voice_start_title" value="<?php echo esc_attr(get_option('ttp_voice_start_title')); ?>" class="regular-text" placeholder="Ready to chat?"></td></tr>
+                <tr><th><label for="ttp_voice_start_subtitle">Subtitle Text</label></th>
+                    <td><input type="text" id="ttp_voice_start_subtitle" name="ttp_voice_start_subtitle" value="<?php echo esc_attr(get_option('ttp_voice_start_subtitle')); ?>" class="regular-text" placeholder="Speak naturally"></td></tr>
+                <tr><th><label for="ttp_voice_start_btn_text">Button Text</label></th>
+                    <td><input type="text" id="ttp_voice_start_btn_text" name="ttp_voice_start_btn_text" value="<?php echo esc_attr(get_option('ttp_voice_start_btn_text')); ?>" class="regular-text" placeholder="Start Call"></td></tr>
+                <tr><th><label for="ttp_voice_start_btn_color">Button Color</label></th>
+                    <td><input type="text" id="ttp_voice_start_btn_color" name="ttp_voice_start_btn_color" value="<?php echo esc_attr(get_option('ttp_voice_start_btn_color')); ?>" class="ttp-color-picker" data-default-color="#667eea"></td></tr>
+                <tr><th><label for="ttp_voice_start_btn_text_color">Button Text Color</label></th>
+                    <td><input type="text" id="ttp_voice_start_btn_text_color" name="ttp_voice_start_btn_text_color" value="<?php echo esc_attr(get_option('ttp_voice_start_btn_text_color')); ?>" class="ttp-color-picker" data-default-color="#FFFFFF"></td></tr>
+            </table>
+            <h4 style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">Transcript</h4>
+            <table class="form-table">
+                <tr><th><label for="ttp_voice_transcript_bg_color">Background</label></th>
+                    <td><input type="text" id="ttp_voice_transcript_bg_color" name="ttp_voice_transcript_bg_color" value="<?php echo esc_attr(get_option('ttp_voice_transcript_bg_color')); ?>" class="ttp-color-picker" data-default-color="#FFFFFF"></td></tr>
+                <tr><th><label for="ttp_voice_transcript_text_color">Text Color</label></th>
+                    <td><input type="text" id="ttp_voice_transcript_text_color" name="ttp_voice_transcript_text_color" value="<?php echo esc_attr(get_option('ttp_voice_transcript_text_color')); ?>" class="ttp-color-picker" data-default-color="#1e293b"></td></tr>
+                <tr><th><label for="ttp_voice_transcript_label_color">Label Color</label></th>
+                    <td><input type="text" id="ttp_voice_transcript_label_color" name="ttp_voice_transcript_label_color" value="<?php echo esc_attr(get_option('ttp_voice_transcript_label_color')); ?>" class="ttp-color-picker" data-default-color="#94a3b8"></td></tr>
+            </table>
+            <h4 style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">Control Buttons</h4>
+            <table class="form-table">
+                <tr><th><label for="ttp_voice_control_btn_color">Control Button Color</label></th>
+                    <td><input type="text" id="ttp_voice_control_btn_color" name="ttp_voice_control_btn_color" value="<?php echo esc_attr(get_option('ttp_voice_control_btn_color')); ?>" class="ttp-color-picker" data-default-color="#FFFFFF"></td></tr>
+                <tr><th><label for="ttp_voice_control_btn_secondary_color">Secondary Color</label></th>
+                    <td><input type="text" id="ttp_voice_control_btn_secondary_color" name="ttp_voice_control_btn_secondary_color" value="<?php echo esc_attr(get_option('ttp_voice_control_btn_secondary_color')); ?>" class="ttp-color-picker" data-default-color="#64748b"></td></tr>
+                <tr><th><label for="ttp_voice_end_btn_color">End Call Button</label></th>
+                    <td><input type="text" id="ttp_voice_end_btn_color" name="ttp_voice_end_btn_color" value="<?php echo esc_attr(get_option('ttp_voice_end_btn_color')); ?>" class="ttp-color-picker" data-default-color="#EF4444"></td></tr>
+            </table>
+        </div>
+    </div>
+    <?php
+}
+
+function ttp_render_text_settings() {
+    ?>
+    <div class="ttp-card ttp-collapsible">
+        <h2 class="ttp-collapsible-header">Text Interface <span class="dashicons dashicons-arrow-down-alt2"></span></h2>
+        <div class="ttp-collapsible-content">
+            <h4>Send Button</h4>
+            <table class="form-table">
+                <tr><th><label for="ttp_text_send_btn_color">Button Color</label></th>
+                    <td><input type="text" id="ttp_text_send_btn_color" name="ttp_text_send_btn_color" value="<?php echo esc_attr(get_option('ttp_text_send_btn_color')); ?>" class="ttp-color-picker" data-default-color="#7C3AED"></td></tr>
+                <tr><th><label for="ttp_text_send_btn_hover_color">Hover Color</label></th>
+                    <td><input type="text" id="ttp_text_send_btn_hover_color" name="ttp_text_send_btn_hover_color" value="<?php echo esc_attr(get_option('ttp_text_send_btn_hover_color')); ?>" class="ttp-color-picker" data-default-color="#6D28D9"></td></tr>
+                <tr><th><label for="ttp_text_send_btn_text">Button Text</label></th>
+                    <td><input type="text" id="ttp_text_send_btn_text" name="ttp_text_send_btn_text" value="<?php echo esc_attr(get_option('ttp_text_send_btn_text', '➤')); ?>" class="small-text" placeholder="➤"></td></tr>
+                <tr><th><label for="ttp_text_send_btn_text_color">Text Color</label></th>
+                    <td><input type="text" id="ttp_text_send_btn_text_color" name="ttp_text_send_btn_text_color" value="<?php echo esc_attr(get_option('ttp_text_send_btn_text_color')); ?>" class="ttp-color-picker" data-default-color="#FFFFFF"></td></tr>
+            </table>
+            <h4 style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">Input Field</h4>
+            <table class="form-table">
+                <tr><th><label for="ttp_text_input_placeholder">Placeholder</label></th>
+                    <td><input type="text" id="ttp_text_input_placeholder" name="ttp_text_input_placeholder" value="<?php echo esc_attr(get_option('ttp_text_input_placeholder')); ?>" class="regular-text" placeholder="Type your message..."></td></tr>
+                <tr><th><label for="ttp_text_input_bg_color">Background Color</label></th>
+                    <td><input type="text" id="ttp_text_input_bg_color" name="ttp_text_input_bg_color" value="<?php echo esc_attr(get_option('ttp_text_input_bg_color')); ?>" class="ttp-color-picker" data-default-color="#FFFFFF"></td></tr>
+                <tr><th><label for="ttp_text_input_text_color">Text Color</label></th>
+                    <td><input type="text" id="ttp_text_input_text_color" name="ttp_text_input_text_color" value="<?php echo esc_attr(get_option('ttp_text_input_text_color')); ?>" class="ttp-color-picker" data-default-color="#1F2937"></td></tr>
+                <tr><th><label for="ttp_text_input_border_color">Border Color</label></th>
+                    <td><input type="text" id="ttp_text_input_border_color" name="ttp_text_input_border_color" value="<?php echo esc_attr(get_option('ttp_text_input_border_color')); ?>" class="ttp-color-picker" data-default-color="#E5E7EB"></td></tr>
+                <tr><th><label for="ttp_text_input_focus_color">Focus Color</label></th>
+                    <td><input type="text" id="ttp_text_input_focus_color" name="ttp_text_input_focus_color" value="<?php echo esc_attr(get_option('ttp_text_input_focus_color')); ?>" class="ttp-color-picker" data-default-color="#7C3AED"></td></tr>
+                <tr><th><label for="ttp_text_input_border_radius">Border Radius (px)</label></th>
+                    <td><input type="number" id="ttp_text_input_border_radius" name="ttp_text_input_border_radius" value="<?php echo esc_attr(get_option('ttp_text_input_border_radius', 20)); ?>" class="small-text" min="0" max="30"></td></tr>
+            </table>
+        </div>
+    </div>
+    <?php
+}
+
+function ttp_render_tooltip_settings() {
+    ?>
+    <div class="ttp-card ttp-collapsible">
+        <h2 class="ttp-collapsible-header">Tooltips <span class="dashicons dashicons-arrow-down-alt2"></span></h2>
+        <div class="ttp-collapsible-content">
+            <p class="description">Custom tooltip text for buttons. Leave empty to use defaults.</p>
+            <table class="form-table">
+                <tr><th><label for="ttp_tooltip_new_chat">New Chat</label></th>
+                    <td><input type="text" id="ttp_tooltip_new_chat" name="ttp_tooltip_new_chat" value="<?php echo esc_attr(get_option('ttp_tooltip_new_chat')); ?>" class="regular-text" placeholder="New Chat"></td></tr>
+                <tr><th><label for="ttp_tooltip_back">Back</label></th>
+                    <td><input type="text" id="ttp_tooltip_back" name="ttp_tooltip_back" value="<?php echo esc_attr(get_option('ttp_tooltip_back')); ?>" class="regular-text" placeholder="Back"></td></tr>
+                <tr><th><label for="ttp_tooltip_close">Close</label></th>
+                    <td><input type="text" id="ttp_tooltip_close" name="ttp_tooltip_close" value="<?php echo esc_attr(get_option('ttp_tooltip_close')); ?>" class="regular-text" placeholder="Close"></td></tr>
+                <tr><th><label for="ttp_tooltip_mute">Mute</label></th>
+                    <td><input type="text" id="ttp_tooltip_mute" name="ttp_tooltip_mute" value="<?php echo esc_attr(get_option('ttp_tooltip_mute')); ?>" class="regular-text" placeholder="Mute"></td></tr>
+                <tr><th><label for="ttp_tooltip_speaker">Speaker</label></th>
+                    <td><input type="text" id="ttp_tooltip_speaker" name="ttp_tooltip_speaker" value="<?php echo esc_attr(get_option('ttp_tooltip_speaker')); ?>" class="regular-text" placeholder="Speaker"></td></tr>
+                <tr><th><label for="ttp_tooltip_end_call">End Call</label></th>
+                    <td><input type="text" id="ttp_tooltip_end_call" name="ttp_tooltip_end_call" value="<?php echo esc_attr(get_option('ttp_tooltip_end_call')); ?>" class="regular-text" placeholder="End Call"></td></tr>
+            </table>
+        </div>
+    </div>
+    <?php
+}
+
+function ttp_render_animation_settings() {
+    ?>
+    <div class="ttp-card ttp-collapsible">
+        <h2 class="ttp-collapsible-header">Animation <span class="dashicons dashicons-arrow-down-alt2"></span></h2>
+        <div class="ttp-collapsible-content">
+            <table class="form-table">
+                <tr><th>Enable Hover</th>
+                    <td><label><input type="checkbox" name="ttp_anim_enable_hover" value="1" <?php checked(get_option('ttp_anim_enable_hover', '1'), '1'); ?>> Enable hover animations</label></td></tr>
+                <tr><th>Enable Pulse</th>
+                    <td><label><input type="checkbox" name="ttp_anim_enable_pulse" value="1" <?php checked(get_option('ttp_anim_enable_pulse', '1'), '1'); ?>> Enable pulse animation when recording</label></td></tr>
+                <tr><th>Enable Slide</th>
+                    <td><label><input type="checkbox" name="ttp_anim_enable_slide" value="1" <?php checked(get_option('ttp_anim_enable_slide', '1'), '1'); ?>> Enable slide animations</label></td></tr>
+                <tr><th><label for="ttp_anim_duration">Duration (seconds)</label></th>
+                    <td><input type="number" id="ttp_anim_duration" name="ttp_anim_duration" value="<?php echo esc_attr(get_option('ttp_anim_duration', '0.3')); ?>" class="small-text" min="0.1" max="1" step="0.1"></td></tr>
+            </table>
+        </div>
+    </div>
+    <?php
+}
+
+function ttp_render_accessibility_settings() {
+    ?>
+    <div class="ttp-card ttp-collapsible">
+        <h2 class="ttp-collapsible-header">Accessibility <span class="dashicons dashicons-arrow-down-alt2"></span></h2>
+        <div class="ttp-collapsible-content">
+            <table class="form-table">
+                <tr><th><label for="ttp_a11y_aria_label">Aria Label</label></th>
+                    <td><input type="text" id="ttp_a11y_aria_label" name="ttp_a11y_aria_label" value="<?php echo esc_attr(get_option('ttp_a11y_aria_label')); ?>" class="regular-text" placeholder="Chat Assistant"></td></tr>
+                <tr><th><label for="ttp_a11y_aria_description">Aria Description</label></th>
+                    <td><input type="text" id="ttp_a11y_aria_description" name="ttp_a11y_aria_description" value="<?php echo esc_attr(get_option('ttp_a11y_aria_description')); ?>" class="large-text" placeholder="Click to open chat assistant"></td></tr>
+                <tr><th>Keyboard Navigation</th>
+                    <td><label><input type="checkbox" name="ttp_a11y_keyboard_nav" value="1" <?php checked(get_option('ttp_a11y_keyboard_nav', '1'), '1'); ?>> Enable keyboard navigation (ESC to close)</label></td></tr>
             </table>
         </div>
     </div>
@@ -403,6 +587,7 @@ function ttp_render_admin_styles() {
         .ttp-settings-wrap { max-width: 800px; }
         .ttp-card { background: #fff; border: 1px solid #ccd0d4; border-radius: 4px; padding: 20px; margin: 20px 0; }
         .ttp-card h2 { margin-top: 0; padding-bottom: 10px; border-bottom: 1px solid #eee; }
+        .ttp-card h4 { margin: 0 0 10px 0; color: #1d2327; font-size: 13px; }
         .ttp-connected-status { display: flex; align-items: center; gap: 5px; }
         .ttp-email { color: #666; }
         .ttp-collapsible-header { cursor: pointer; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0 !important; border-bottom: none !important; }
@@ -411,10 +596,7 @@ function ttp_render_admin_styles() {
         .ttp-collapsible.open .dashicons { transform: rotate(180deg); }
         .ttp-status-card { display: flex; align-items: center; gap: 8px; background: #d4edda; border-color: #c3e6cb; }
         .form-table th { width: 200px; }
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .dashicons.spin { display: inline-block; }
     </style>
     <?php
@@ -619,35 +801,21 @@ function ttp_render_admin_scripts($current_agent_id) {
             if (!name) { alert('Enter agent name'); return; }
             var $btn = $(this).prop('disabled', true).text('Creating...');
             
-            // Build request data with optional fields
-            var postData = {
-                action: 'ttp_create_agent',
-                nonce: ajaxNonce,
-                agent_name: name
-            };
-            
-            // Add optional fields if they have values
+            var postData = { action: 'ttp_create_agent', nonce: ajaxNonce, agent_name: name };
             var voiceId = $('#ttp_override_voice').val();
             if (voiceId) postData.voice_id = voiceId;
-            
             var voiceSpeed = $('#ttp_override_voice_speed').val();
             if (voiceSpeed) postData.voice_speed = voiceSpeed;
-            
             var language = $('#ttp_override_language').val();
             if (language) postData.language = language;
-            
             var temperature = $('#ttp_override_temperature').val();
             if (temperature) postData.temperature = temperature;
-            
             var maxTokens = $('#ttp_override_max_tokens').val();
             if (maxTokens) postData.max_tokens = maxTokens;
-            
             var maxCallDuration = $('#ttp_override_max_call_duration').val();
             if (maxCallDuration) postData.max_call_duration = maxCallDuration;
-            
             var systemPrompt = $('#ttp_override_prompt').val();
             if (systemPrompt) postData.system_prompt = systemPrompt;
-            
             var firstMessage = $('#ttp_override_first_message').val();
             if (firstMessage) postData.first_message = firstMessage;
             
