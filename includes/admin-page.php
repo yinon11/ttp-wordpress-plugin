@@ -38,11 +38,14 @@ function ttp_settings_page() {
     
     ?>
     <div class="wrap ttp-settings-wrap">
-        <h1><?php esc_html_e('TalkToPC Voice Widget', 'ttp-voice-widget'); ?> <small style="font-size: 12px; color: #666;">v<?php echo TTP_VERSION; ?></small></h1>
+        <h1><?php esc_html_e('TalkToPC Voice Widget', 'ttp-voice-widget'); ?> <small style="font-size: 12px; color: #666;">v<?php echo esc_html(TTP_VERSION); ?></small></h1>
         
         <?php settings_errors(); ?>
+        <?php // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only flag ?>
         <?php if (isset($_GET['settings-updated'])): ?><div class="notice notice-success is-dismissible"><p>Settings saved!</p></div><?php endif; ?>
+        <?php // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only flag ?>
         <?php if (isset($_GET['connected'])): ?><div class="notice notice-success is-dismissible"><p>Connected to TalkToPC!</p></div><?php endif; ?>
+        <?php // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only flag ?>
         <?php if (isset($_GET['disconnected'])): ?><div class="notice notice-info is-dismissible"><p>Disconnected.</p></div><?php endif; ?>
         
         <!-- Connection Card -->
@@ -620,7 +623,7 @@ function ttp_render_admin_scripts($current_agent_id) {
     var languageMap = {};
     
     jQuery(document).ready(function($) {
-        var ajaxNonce = '<?php echo wp_create_nonce("ttp_ajax_nonce"); ?>';
+        var ajaxNonce = '<?php echo esc_js(wp_create_nonce("ttp_ajax_nonce")); ?>';
         var currentAgentId = '<?php echo esc_js($current_agent_id); ?>';
         var currentVoice = '<?php echo esc_js($current_voice); ?>';
         var currentLanguage = '<?php echo esc_js($current_language); ?>';

@@ -264,8 +264,6 @@ function ttp_sync_agent_to_backend() {
         return;
     }
     
-    error_log('TTP Widget: Syncing agent ' . $agent_id . ' to backend with data: ' . json_encode($update_data));
-    
     $response = wp_remote_request(TTP_API_URL . '/api/public/wordpress/agents/' . $agent_id, [
         'method' => 'PUT',
         'headers' => ['X-API-Key' => $api_key, 'Content-Type' => 'application/json'],
@@ -274,13 +272,10 @@ function ttp_sync_agent_to_backend() {
     ]);
     
     if (is_wp_error($response)) {
-        error_log('TTP Widget: Backend sync failed - ' . $response->get_error_message());
     } else {
         $status_code = wp_remote_retrieve_response_code($response);
         if ($status_code === 200) {
-            error_log('TTP Widget: Backend sync successful');
         } else {
-            error_log('TTP Widget: Backend sync failed - Status ' . $status_code . ' - ' . wp_remote_retrieve_body($response));
         }
     }
 }

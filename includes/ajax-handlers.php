@@ -56,7 +56,7 @@ add_action('wp_ajax_ttp_create_agent', function() {
     $api_key = get_option('ttp_api_key');
     if (empty($api_key)) wp_send_json_error(['message' => 'Not connected']);
     
-    $agent_name = isset($_POST['agent_name']) ? sanitize_text_field($_POST['agent_name']) : '';
+    $agent_name = isset($_POST['agent_name']) ? sanitize_text_field(wp_unslash($_POST['agent_name'])) : '';
     if (empty($agent_name)) wp_send_json_error(['message' => 'Agent name required']);
     
     // Check if we should auto-generate prompt from site content
@@ -71,19 +71,19 @@ add_action('wp_ajax_ttp_create_agent', function() {
     
     // Optional configuration fields (used for manual creation)
     if (!empty($_POST['first_message'])) {
-        $agent_data['first_message'] = sanitize_text_field($_POST['first_message']);
+        $agent_data['first_message'] = sanitize_text_field(wp_unslash($_POST['first_message']));
     }
     if (!empty($_POST['system_prompt'])) {
-        $agent_data['system_prompt'] = sanitize_textarea_field($_POST['system_prompt']);
+        $agent_data['system_prompt'] = sanitize_textarea_field(wp_unslash($_POST['system_prompt']));
     }
     if (!empty($_POST['voice_id'])) {
-        $agent_data['voice_id'] = sanitize_text_field($_POST['voice_id']);
+        $agent_data['voice_id'] = sanitize_text_field(wp_unslash($_POST['voice_id']));
     }
     if (isset($_POST['voice_speed']) && $_POST['voice_speed'] !== '') {
         $agent_data['voice_speed'] = floatval($_POST['voice_speed']);
     }
     if (!empty($_POST['language'])) {
-        $agent_data['language'] = sanitize_text_field($_POST['language']);
+        $agent_data['language'] = sanitize_text_field(wp_unslash($_POST['language']));
     }
     if (isset($_POST['temperature']) && $_POST['temperature'] !== '') {
         $agent_data['temperature'] = floatval($_POST['temperature']);
@@ -97,18 +97,12 @@ add_action('wp_ajax_ttp_create_agent', function() {
     
     // If auto-generate, collect site content for AI prompt generation
     if ($auto_generate) {
-        error_log('TTP Widget: Auto-generating prompt from site content');
         $agent_data['site_content'] = ttp_collect_site_content();
         
         // Use detected content language (not WordPress admin locale)
         $detected_lang = $agent_data['site_content']['site']['language'];
         $lang_code = explode('_', $detected_lang)[0];
         $agent_data['language'] = $lang_code;
-        
-        error_log('TTP Widget: Collected site content - pages: ' . count($agent_data['site_content']['pages']) . 
-                  ', posts: ' . count($agent_data['site_content']['posts']) . 
-                  ', products: ' . count($agent_data['site_content']['products']) .
-                  ', detected language: ' . $detected_lang);
     }
     
     // Prepare request - use gzip if site_content is included
@@ -122,7 +116,6 @@ add_action('wp_ajax_ttp_create_agent', function() {
         $body = gzencode($json_body, 9);
         $headers['Content-Encoding'] = 'gzip';
         $timeout = 120; // Longer timeout for AI generation
-        error_log('TTP Widget: Sending gzipped request - raw: ' . strlen($json_body) . ' bytes, compressed: ' . strlen($body) . ' bytes');
     }
     
     $response = wp_remote_post(TTP_API_URL . '/api/public/wordpress/agents', [
@@ -137,7 +130,6 @@ add_action('wp_ajax_ttp_create_agent', function() {
     $response_body = json_decode(wp_remote_retrieve_body($response), true);
     
     if ($status_code !== 200) {
-        error_log('TTP Widget: Create agent failed - Status: ' . $status_code . ', Body: ' . wp_remote_retrieve_body($response));
         wp_send_json_error(['message' => $response_body['error'] ?? 'Failed to create agent']);
     }
     
@@ -152,26 +144,26 @@ add_action('wp_ajax_ttp_update_agent', function() {
     $api_key = get_option('ttp_api_key');
     if (empty($api_key)) wp_send_json_error(['message' => 'Not connected']);
     
-    $agent_id = isset($_POST['agent_id']) ? sanitize_text_field($_POST['agent_id']) : '';
+    $agent_id = isset($_POST['agent_id']) ? sanitize_text_field(wp_unslash($_POST['agent_id'])) : '';
     if (empty($agent_id)) wp_send_json_error(['message' => 'Agent ID required']);
     
     // Build update data - use camelCase keys to match backend expectations
     $update_data = [];
     
     if (isset($_POST['system_prompt']) && $_POST['system_prompt'] !== '') {
-        $update_data['systemPrompt'] = sanitize_textarea_field($_POST['system_prompt']);
+        $update_data['systemPrompt'] = sanitize_textarea_field(wp_unslash($_POST['system_prompt']));
     }
     if (isset($_POST['first_message']) && $_POST['first_message'] !== '') {
-        $update_data['firstMessage'] = sanitize_text_field($_POST['first_message']);
+        $update_data['firstMessage'] = sanitize_text_field(wp_unslash($_POST['first_message']));
     }
     if (isset($_POST['voice_id']) && $_POST['voice_id'] !== '') {
-        $update_data['voiceId'] = sanitize_text_field($_POST['voice_id']);
+        $update_data['voiceId'] = sanitize_text_field(wp_unslash($_POST['voice_id']));
     }
     if (isset($_POST['voice_speed']) && $_POST['voice_speed'] !== '') {
         $update_data['voiceSpeed'] = floatval($_POST['voice_speed']);
     }
     if (isset($_POST['language']) && $_POST['language'] !== '') {
-        $update_data['agentLanguage'] = sanitize_text_field($_POST['language']);
+        $update_data['agentLanguage'] = sanitize_text_field(wp_unslash($_POST['language']));
     }
     if (isset($_POST['temperature']) && $_POST['temperature'] !== '') {
         $update_data['temperature'] = floatval($_POST['temperature']);
@@ -188,8 +180,6 @@ add_action('wp_ajax_ttp_update_agent', function() {
         wp_send_json_success(['message' => 'No changes to save']);
     }
     
-    error_log('TTP Widget: Updating agent ' . $agent_id . ' with data: ' . json_encode($update_data));
-    
     $response = wp_remote_request(TTP_API_URL . '/api/public/wordpress/agents/' . $agent_id, [
         'method' => 'PUT',
         'headers' => ['X-API-Key' => $api_key, 'Content-Type' => 'application/json'],
@@ -198,7 +188,6 @@ add_action('wp_ajax_ttp_update_agent', function() {
     ]);
     
     if (is_wp_error($response)) {
-        error_log('TTP Widget: Update failed - ' . $response->get_error_message());
         wp_send_json_error(['message' => $response->get_error_message()]);
     }
     
@@ -206,11 +195,9 @@ add_action('wp_ajax_ttp_update_agent', function() {
     $body = json_decode(wp_remote_retrieve_body($response), true);
     
     if ($status_code !== 200) {
-        error_log('TTP Widget: Update failed - Status ' . $status_code . ' - ' . wp_remote_retrieve_body($response));
         wp_send_json_error(['message' => isset($body['message']) ? $body['message'] : 'Failed to update agent', 'status' => $status_code]);
     }
     
-    error_log('TTP Widget: Agent updated successfully');
     wp_send_json_success(['message' => 'Agent updated successfully', 'agent' => $body]);
 });
 
@@ -236,8 +223,6 @@ add_action('wp_ajax_ttp_generate_prompt', function() {
         $json_payload = json_encode($site_content, JSON_UNESCAPED_UNICODE);
         $compressed_payload = gzencode($json_payload, 9);
         
-        error_log('TTP Widget: Trying AI generation - Raw: ' . strlen($json_payload) . ' bytes, Compressed: ' . strlen($compressed_payload) . ' bytes');
-        
         $response = wp_remote_post(TTP_API_URL . '/api/public/wordpress/generate-prompt', [
             'headers' => [
                 'X-API-Key' => $api_key,
@@ -252,11 +237,7 @@ add_action('wp_ajax_ttp_generate_prompt', function() {
             $body = json_decode(wp_remote_retrieve_body($response), true);
             if (!empty($body['prompt'])) {
                 $ai_prompt = $body['prompt'];
-                error_log('TTP Widget: AI generation successful');
             }
-        } else {
-            $err = is_wp_error($response) ? $response->get_error_message() : 'Status ' . wp_remote_retrieve_response_code($response);
-            error_log('TTP Widget: AI generation failed (' . $err . '), falling back to local');
         }
     }
     
@@ -286,8 +267,8 @@ add_action('wp_ajax_ttp_generate_prompt', function() {
 add_action('wp_ajax_ttp_save_agent_selection', function() {
     check_ajax_referer('ttp_ajax_nonce', 'nonce');
     
-    $agent_id = isset($_POST['agent_id']) ? sanitize_text_field($_POST['agent_id']) : '';
-    $agent_name = isset($_POST['agent_name']) ? sanitize_text_field($_POST['agent_name']) : '';
+    $agent_id = isset($_POST['agent_id']) ? sanitize_text_field(wp_unslash($_POST['agent_id'])) : '';
+    $agent_name = isset($_POST['agent_name']) ? sanitize_text_field(wp_unslash($_POST['agent_name'])) : '';
     
     if (empty($agent_id)) {
         wp_send_json_error(['message' => 'Agent ID is required']);
@@ -304,7 +285,7 @@ add_action('wp_ajax_ttp_save_agent_selection', function() {
 // GET SIGNED URL (Public - also for non-logged-in users)
 // =============================================================================
 function ttp_get_signed_url() {
-    if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'ttp_widget_nonce')) {
+    if (!isset($_POST['nonce']) || !wp_verify_nonce(wp_unslash($_POST['nonce']), 'ttp_widget_nonce')) {
         wp_send_json_error(['message' => 'Invalid security token']);
     }
     
@@ -505,8 +486,6 @@ function ttp_collect_site_content() {
     // Detect actual content language from collected text
     $detected_language = ttp_detect_content_language($sample_text);
     $site_content['site']['language'] = $detected_language;
-    
-    error_log('TTP Widget: Detected content language: ' . $detected_language . ' (WordPress locale: ' . get_locale() . ')');
     
     // Ensure all arrays are indexed (not associative) for proper JSON encoding
     // This prevents PHP from sending {} instead of [] when keys are non-sequential

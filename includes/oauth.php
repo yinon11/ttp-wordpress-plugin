@@ -23,7 +23,7 @@ add_action('admin_init', function() {
     // ==========================================================================
     if (isset($_GET['api_key']) && isset($_GET['state'])) {
         // Verify security nonce
-        if (!wp_verify_nonce($_GET['state'], 'ttp_connect')) {
+        if (!wp_verify_nonce(wp_unslash($_GET['state']), 'ttp_connect')) {
             add_settings_error('ttp_settings', 'invalid_state', 'Invalid security token. Please try again.');
             return;
         }
@@ -31,9 +31,9 @@ add_action('admin_init', function() {
         // The API key from the authorization flow is already site-specific
         // It was created by the React frontend with created_for = this site's hostname
         // No need to create another one - just use it directly
-        $api_key = sanitize_text_field($_GET['api_key']);
-        $app_id = isset($_GET['app_id']) ? sanitize_text_field($_GET['app_id']) : '';
-        $user_email = isset($_GET['email']) ? sanitize_email($_GET['email']) : '';
+        $api_key = sanitize_text_field(wp_unslash($_GET['api_key']));
+        $app_id = isset($_GET['app_id']) ? sanitize_text_field(wp_unslash($_GET['app_id'])) : '';
+        $user_email = isset($_GET['email']) ? sanitize_email(wp_unslash($_GET['email'])) : '';
         
         // Save connection details
         update_option('ttp_api_key', $api_key);
@@ -41,7 +41,7 @@ add_action('admin_init', function() {
         if ($user_email) update_option('ttp_user_email', $user_email);
         
         // Redirect to settings page with success message
-        wp_redirect(admin_url('admin.php?page=ttp-voice-widget&connected=1'));
+        wp_safe_redirect(admin_url('admin.php?page=ttp-voice-widget&connected=1'));
         exit;
     }
     
@@ -50,7 +50,7 @@ add_action('admin_init', function() {
     // ==========================================================================
     if (isset($_GET['action']) && $_GET['action'] === 'disconnect') {
         // Verify security nonce
-        if (!wp_verify_nonce($_GET['_wpnonce'], 'ttp_disconnect')) {
+        if (!wp_verify_nonce(wp_unslash($_GET['_wpnonce']), 'ttp_disconnect')) {
             add_settings_error('ttp_settings', 'invalid_nonce', 'Invalid security token.');
             return;
         }
@@ -64,7 +64,7 @@ add_action('admin_init', function() {
         }
         
         // Redirect to settings page with disconnected message
-        wp_redirect(admin_url('admin.php?page=ttp-voice-widget&disconnected=1'));
+        wp_safe_redirect(admin_url('admin.php?page=ttp-voice-widget&disconnected=1'));
         exit;
     }
 });
