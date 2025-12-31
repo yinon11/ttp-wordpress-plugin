@@ -55,8 +55,9 @@ else
     echo "Updated version in $PLUGIN_FILE"
 fi
 
-# Set zip filename with version
-ZIP_NAME="ttp-voice-widget-${NEW_VERSION}.zip"
+# Set zip filename and folder name (matching text domain)
+ZIP_NAME="talktopc-voice-widget-${NEW_VERSION}.zip"
+PLUGIN_FOLDER_NAME="talktopc-voice-widget"
 
 # Remove old zip from Downloads if exists
 if [ -f "$DEST_DIR/$ZIP_NAME" ]; then
@@ -64,11 +65,26 @@ if [ -f "$DEST_DIR/$ZIP_NAME" ]; then
     echo "Removed old zip file from Downloads"
 fi
 
-# Create zip file directly in Downloads (exclude .git and existing zip files)
+# Create temporary directory with correct folder name for WordPress.org
+TEMP_DIR=$(mktemp -d)
+PLUGIN_TEMP_DIR="$TEMP_DIR/$PLUGIN_FOLDER_NAME"
+mkdir -p "$PLUGIN_TEMP_DIR"
+
+echo "Creating temporary plugin directory: $PLUGIN_TEMP_DIR"
+
+# Copy all files except .git, zip files, and the deploy script
 cd "$PLUGIN_DIR"
-zip -r "$DEST_DIR/$ZIP_NAME" . -x "*.git*" -x "*.zip" -x "production_deploy.sh" > /dev/null
+rsync -a --exclude='.git' --exclude='*.zip' --exclude='production_deploy.sh' --exclude='.gitignore' --exclude='.gitattributes' . "$PLUGIN_TEMP_DIR/"
+
+# Create zip file from temp directory (ensures correct folder structure)
+cd "$TEMP_DIR"
+zip -r "$DEST_DIR/$ZIP_NAME" "$PLUGIN_FOLDER_NAME" > /dev/null
+
+# Clean up temporary directory
+rm -rf "$TEMP_DIR"
 
 echo "Created zip file: $DEST_DIR/$ZIP_NAME"
+echo "  Folder structure: $PLUGIN_FOLDER_NAME/ (correct for WordPress.org)"
 
 # Show file size
 ZIP_SIZE=$(ls -lh "$DEST_DIR/$ZIP_NAME" | awk '{print $5}')

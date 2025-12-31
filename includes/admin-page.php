@@ -38,7 +38,7 @@ function ttp_settings_page() {
     
     ?>
     <div class="wrap ttp-settings-wrap">
-        <h1><?php esc_html_e('TalkToPC Voice Widget', 'ttp-voice-widget'); ?> <small style="font-size: 12px; color: #666;">v<?php echo esc_html(TTP_VERSION); ?></small></h1>
+        <h1><?php esc_html_e('TalkToPC Voice Widget', 'talktopc-voice-widget'); ?> <small style="font-size: 12px; color: #666;">v<?php echo esc_html(TTP_VERSION); ?></small></h1>
         
         <?php settings_errors(); ?>
         <?php // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only flag ?>
