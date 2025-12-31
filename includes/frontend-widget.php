@@ -43,6 +43,10 @@ add_action('wp_enqueue_scripts', function() {
 function ttp_build_widget_config() {
     $config = [];
     
+    // Required for SDK to work
+    $config['appId'] = get_option('ttp_app_id');
+    $config['agentId'] = get_option('ttp_agent_id');
+    
     // Direction & Language
     if ($v = get_option('ttp_direction')) $config['direction'] = $v;
     if ($v = get_option('ttp_override_language')) $config['language'] = $v;
