@@ -139,7 +139,9 @@ function ttp_build_widget_config() {
     if ($v = get_option('ttp_landing_card_icon_bg_color')) $landing['modeCardIconBackgroundColor'] = $v;
     if ($v = get_option('ttp_landing_card_title_color')) $landing['modeCardTitleColor'] = $v;
     if ($v = get_option('ttp_landing_voice_icon')) $landing['voiceCardIcon'] = $v;
+    if ($v = get_option('ttp_landing_voice_title')) $landing['voiceCardTitle'] = $v;
     if ($v = get_option('ttp_landing_text_icon')) $landing['textCardIcon'] = $v;
+    if ($v = get_option('ttp_landing_text_title')) $landing['textCardTitle'] = $v;
     if (!empty($landing)) $config['landing'] = $landing;
     
     // ==========================================================================

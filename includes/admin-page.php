@@ -371,8 +371,12 @@ function ttp_render_landing_settings() {
                     <td><input type="text" id="ttp_landing_card_title_color" name="ttp_landing_card_title_color" value="<?php echo esc_attr(get_option('ttp_landing_card_title_color')); ?>" class="ttp-color-picker" data-default-color="#111827"></td></tr>
                 <tr><th><label for="ttp_landing_voice_icon">Voice Card Icon</label></th>
                     <td><input type="text" id="ttp_landing_voice_icon" name="ttp_landing_voice_icon" value="<?php echo esc_attr(get_option('ttp_landing_voice_icon', '🎤')); ?>" class="small-text" placeholder="🎤"></td></tr>
+                <tr><th><label for="ttp_landing_voice_title">Voice Card Title</label></th>
+                    <td><input type="text" id="ttp_landing_voice_title" name="ttp_landing_voice_title" value="<?php echo esc_attr(get_option('ttp_landing_voice_title')); ?>" class="regular-text" placeholder="Voice Call"></td></tr>
                 <tr><th><label for="ttp_landing_text_icon">Text Card Icon</label></th>
                     <td><input type="text" id="ttp_landing_text_icon" name="ttp_landing_text_icon" value="<?php echo esc_attr(get_option('ttp_landing_text_icon', '💬')); ?>" class="small-text" placeholder="💬"></td></tr>
+                <tr><th><label for="ttp_landing_text_title">Text Card Title</label></th>
+                    <td><input type="text" id="ttp_landing_text_title" name="ttp_landing_text_title" value="<?php echo esc_attr(get_option('ttp_landing_text_title')); ?>" class="regular-text" placeholder="Text Chat"></td></tr>
             </table>
         </div>
     </div>

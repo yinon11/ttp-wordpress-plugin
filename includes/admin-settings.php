@@ -136,6 +136,8 @@ add_action('admin_init', function() {
     register_setting('ttp_settings', 'ttp_landing_card_title_color', ['sanitize_callback' => 'sanitize_hex_color']);
     register_setting('ttp_settings', 'ttp_landing_voice_icon', ['sanitize_callback' => 'sanitize_text_field']);
     register_setting('ttp_settings', 'ttp_landing_text_icon', ['sanitize_callback' => 'sanitize_text_field']);
+    register_setting('ttp_settings', 'ttp_landing_voice_title', ['sanitize_callback' => 'sanitize_text_field']);
+    register_setting('ttp_settings', 'ttp_landing_text_title', ['sanitize_callback' => 'sanitize_text_field']);
     
     // =========================================================================
     // VOICE INTERFACE
