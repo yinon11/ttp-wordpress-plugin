@@ -285,7 +285,8 @@ add_action('wp_ajax_ttp_save_agent_selection', function() {
 // GET SIGNED URL (Public - also for non-logged-in users)
 // =============================================================================
 function ttp_get_signed_url() {
-    if (!isset($_POST['nonce']) || !wp_verify_nonce(wp_unslash($_POST['nonce']), 'ttp_widget_nonce')) {
+    $nonce = isset($_POST['nonce']) ? sanitize_text_field(wp_unslash($_POST['nonce'])) : '';
+    if (empty($nonce) || !wp_verify_nonce($nonce, 'ttp_widget_nonce')) {
         wp_send_json_error(['message' => 'Invalid security token']);
     }
     

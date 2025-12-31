@@ -617,7 +617,7 @@ function ttp_render_admin_scripts($current_agent_id) {
     $current_language = get_option('ttp_override_language');
     ?>
     <script>
-    console.log('🔧 TTP Voice Widget v<?php echo TTP_VERSION; ?> loaded');
+    console.log('🔧 TTP Voice Widget v<?php echo esc_js(TTP_VERSION); ?> loaded');
     var agentsData = {};
     var voicesData = [];
     var languageMap = {};

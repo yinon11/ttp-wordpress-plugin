@@ -23,7 +23,7 @@ add_action('admin_init', function() {
     // ==========================================================================
     if (isset($_GET['api_key']) && isset($_GET['state'])) {
         // Verify security nonce
-        if (!wp_verify_nonce(wp_unslash($_GET['state']), 'ttp_connect')) {
+        if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_GET['state'])), 'ttp_connect')) {
             add_settings_error('ttp_settings', 'invalid_state', 'Invalid security token. Please try again.');
             return;
         }
@@ -50,7 +50,7 @@ add_action('admin_init', function() {
     // ==========================================================================
     if (isset($_GET['action']) && $_GET['action'] === 'disconnect') {
         // Verify security nonce
-        if (!wp_verify_nonce(wp_unslash($_GET['_wpnonce']), 'ttp_disconnect')) {
+        if (!wp_verify_nonce(isset($_GET['_wpnonce']) ? sanitize_text_field(wp_unslash($_GET['_wpnonce'])) : '', 'ttp_disconnect')) {
             add_settings_error('ttp_settings', 'invalid_nonce', 'Invalid security token.');
             return;
         }

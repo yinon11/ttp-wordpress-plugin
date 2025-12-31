@@ -1,9 +1,16 @@
 #!/bin/bash
 
 # Script to upgrade plugin version (minor), create zip, and save to Downloads
-# Usage: ./build-plugin.sh
+# Usage: ./production_deploy.sh [--no-version-bump]
+#   --no-version-bump: Skip version increment and use current version
 
 set -e
+
+# Check for --no-version-bump flag
+NO_VERSION_BUMP=false
+if [ "$1" == "--no-version-bump" ] || [ "$1" == "-n" ]; then
+    NO_VERSION_BUMP=true
+fi
 
 PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_FILE="$PLUGIN_DIR/ttp-voice-widget.php"
@@ -24,26 +31,32 @@ fi
 
 echo "Current version: $CURRENT_VERSION"
 
-# Increment minor version (e.g., 1.9.1 -> 1.9.2)
-IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
-MAJOR="${VERSION_PARTS[0]}"
-MINOR="${VERSION_PARTS[1]}"
-PATCH="${VERSION_PARTS[2]}"
-
-# Increment patch version (minor upgrade)
-NEW_PATCH=$((PATCH + 1))
-NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
-
-echo "New version: $NEW_VERSION"
+# Determine version to use
+if [ "$NO_VERSION_BUMP" = true ]; then
+    NEW_VERSION="$CURRENT_VERSION"
+    echo "Skipping version bump - using current version: $NEW_VERSION"
+else
+    # Increment minor version (e.g., 1.9.1 -> 1.9.2)
+    IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
+    MAJOR="${VERSION_PARTS[0]}"
+    MINOR="${VERSION_PARTS[1]}"
+    PATCH="${VERSION_PARTS[2]}"
+    
+    # Increment patch version (minor upgrade)
+    NEW_PATCH=$((PATCH + 1))
+    NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
+    
+    echo "New version: $NEW_VERSION"
+    
+    # Update version in plugin file (two places: header comment and TTP_VERSION constant)
+    sed -i "s/^ \* Version: $CURRENT_VERSION/ * Version: $NEW_VERSION/" "$PLUGIN_FILE"
+    sed -i "s/define('TTP_VERSION', '$CURRENT_VERSION');/define('TTP_VERSION', '$NEW_VERSION');/" "$PLUGIN_FILE"
+    
+    echo "Updated version in $PLUGIN_FILE"
+fi
 
 # Set zip filename with version
 ZIP_NAME="ttp-voice-widget-${NEW_VERSION}.zip"
-
-# Update version in plugin file (two places: header comment and TTP_VERSION constant)
-sed -i "s/^ \* Version: $CURRENT_VERSION/ * Version: $NEW_VERSION/" "$PLUGIN_FILE"
-sed -i "s/define('TTP_VERSION', '$CURRENT_VERSION');/define('TTP_VERSION', '$NEW_VERSION');/" "$PLUGIN_FILE"
-
-echo "Updated version in $PLUGIN_FILE"
 
 # Remove old zip from Downloads if exists
 if [ -f "$DEST_DIR/$ZIP_NAME" ]; then
@@ -63,7 +76,11 @@ echo "Zip file size: $ZIP_SIZE"
 
 echo ""
 echo "✓ Build complete!"
-echo "  Version upgraded: $CURRENT_VERSION -> $NEW_VERSION"
+if [ "$NO_VERSION_BUMP" = true ]; then
+    echo "  Version: $NEW_VERSION (no change)"
+else
+    echo "  Version upgraded: $CURRENT_VERSION -> $NEW_VERSION"
+fi
 echo "  Zip file: $DEST_DIR/$ZIP_NAME"
 echo ""
 echo "Ready to upload to WordPress!"
