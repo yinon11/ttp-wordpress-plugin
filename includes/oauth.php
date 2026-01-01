@@ -6,6 +6,7 @@
  * 1. User clicks "Connect" → generates secret, stores in transient, redirects to TalkToPC
  * 2. User authorizes on TalkToPC → TalkToPC POSTs credentials to our endpoint
  * 3. We verify the secret matches, store credentials
+ * 4. Auto-fetch agents and create one if none exist
  * 
  * Security:
  * - One-time secret prevents unauthorized credential injection
@@ -94,8 +95,197 @@ function ttp_receive_credentials() {
     }
     update_option('ttp_connected_at', current_time('mysql'));
     
-    // Return success
-    wp_send_json_success(['message' => 'Credentials stored successfully']);
+    // =================================================================
+    // AUTO-SETUP: Fetch agents and create one if none exist
+    // =================================================================
+    $setup_result = ttp_auto_setup_agent($api_key);
+    
+    // Return success with setup info
+    wp_send_json_success([
+        'message' => 'Credentials stored successfully',
+        'setup' => $setup_result
+    ]);
+}
+
+// =============================================================================
+// AUTO-SETUP AGENT - Fetch agents, create if none exist
+// =============================================================================
+function ttp_auto_setup_agent($api_key) {
+    $result = [
+        'agents_fetched' => false,
+        'agent_created' => false,
+        'agent_id' => null,
+        'agent_name' => null,
+        'error' => null
+    ];
+    
+    // Step 1: Fetch existing agents
+    $agents = ttp_fetch_agents_sync($api_key);
+    
+    if ($agents === false) {
+        $result['error'] = 'Failed to fetch agents';
+        return $result;
+    }
+    
+    $result['agents_fetched'] = true;
+    
+    // Step 2: If agents exist, use the first one
+    if (!empty($agents)) {
+        $first_agent = $agents[0];
+        $agent_id = $first_agent['agentId'] ?? $first_agent['id'] ?? null;
+        $agent_name = $first_agent['name'] ?? 'Agent';
+        
+        if ($agent_id) {
+            update_option('ttp_agent_id', $agent_id);
+            update_option('ttp_agent_name', $agent_name);
+            
+            $result['agent_id'] = $agent_id;
+            $result['agent_name'] = $agent_name;
+        }
+        
+        return $result;
+    }
+    
+    // Step 3: No agents exist - create one with AI-generated prompt
+    $agent_name = get_bloginfo('name') . ' Assistant';
+    $created_agent = ttp_create_agent_sync($api_key, $agent_name, true);
+    
+    if ($created_agent === false) {
+        $result['error'] = 'Failed to create agent';
+        return $result;
+    }
+    
+    $result['agent_created'] = true;
+    
+    $agent_id = $created_agent['agentId'] ?? $created_agent['id'] ?? null;
+    $agent_name = $created_agent['name'] ?? $agent_name;
+    
+    if ($agent_id) {
+        update_option('ttp_agent_id', $agent_id);
+        update_option('ttp_agent_name', $agent_name);
+        
+        $result['agent_id'] = $agent_id;
+        $result['agent_name'] = $agent_name;
+    }
+    
+    return $result;
+}
+
+// =============================================================================
+// SYNC API HELPERS - Same logic as AJAX handlers but synchronous
+// =============================================================================
+
+/**
+ * Fetch agents from TalkToPC API (synchronous)
+ * 
+ * @param string $api_key The API key
+ * @return array|false Array of agents or false on error
+ */
+function ttp_fetch_agents_sync($api_key) {
+    $response = wp_remote_get(TTP_API_URL . '/api/public/wordpress/agents', [
+        'headers' => [
+            'X-API-Key' => $api_key,
+            'Content-Type' => 'application/json'
+        ],
+        'timeout' => 30
+    ]);
+    
+    if (is_wp_error($response)) {
+        error_log('TTP OAuth: Failed to fetch agents - ' . $response->get_error_message());
+        return false;
+    }
+    
+    $status_code = wp_remote_retrieve_response_code($response);
+    if ($status_code !== 200) {
+        error_log('TTP OAuth: Failed to fetch agents - HTTP ' . $status_code);
+        return false;
+    }
+    
+    $body = json_decode(wp_remote_retrieve_body($response), true);
+    
+    // Handle different response formats
+    if (is_array($body)) {
+        // Direct array of agents
+        if (isset($body[0])) {
+            return $body;
+        }
+        // Wrapped in data key
+        if (isset($body['data']) && is_array($body['data'])) {
+            return $body['data'];
+        }
+    }
+    
+    return [];
+}
+
+/**
+ * Create agent via TalkToPC API (synchronous)
+ * 
+ * @param string $api_key The API key
+ * @param string $agent_name Name for the agent
+ * @param bool $auto_generate Whether to auto-generate prompt from site content
+ * @return array|false Created agent data or false on error
+ */
+function ttp_create_agent_sync($api_key, $agent_name, $auto_generate = true) {
+    // Build agent data
+    $agent_data = [
+        'name' => $agent_name,
+        'site_url' => home_url(),
+        'site_name' => get_bloginfo('name')
+    ];
+    
+    // Collect site content for AI prompt generation
+    if ($auto_generate && function_exists('ttp_collect_site_content')) {
+        $agent_data['site_content'] = ttp_collect_site_content();
+        
+        // Use detected content language
+        $detected_lang = $agent_data['site_content']['site']['language'] ?? 'en_US';
+        $lang_code = explode('_', $detected_lang)[0];
+        $agent_data['language'] = $lang_code;
+    }
+    
+    // Prepare request
+    $json_body = json_encode($agent_data, JSON_UNESCAPED_UNICODE);
+    $headers = [
+        'X-API-Key' => $api_key,
+        'Content-Type' => 'application/json'
+    ];
+    $body = $json_body;
+    $timeout = 30;
+    
+    // Use gzip compression for large payloads
+    if ($auto_generate && !empty($agent_data['site_content'])) {
+        $body = gzencode($json_body, 9);
+        $headers['Content-Encoding'] = 'gzip';
+        $timeout = 120; // Longer timeout for AI generation
+    }
+    
+    $response = wp_remote_post(TTP_API_URL . '/api/public/wordpress/agents', [
+        'headers' => $headers,
+        'body' => $body,
+        'timeout' => $timeout
+    ]);
+    
+    if (is_wp_error($response)) {
+        error_log('TTP OAuth: Failed to create agent - ' . $response->get_error_message());
+        return false;
+    }
+    
+    $status_code = wp_remote_retrieve_response_code($response);
+    $response_body = json_decode(wp_remote_retrieve_body($response), true);
+    
+    if ($status_code !== 200) {
+        $error_msg = $response_body['error'] ?? 'Unknown error';
+        error_log('TTP OAuth: Failed to create agent - HTTP ' . $status_code . ' - ' . $error_msg);
+        return false;
+    }
+    
+    // Handle different response formats
+    if (isset($response_body['data'])) {
+        return $response_body['data'];
+    }
+    
+    return $response_body;
 }
 
 // =============================================================================
