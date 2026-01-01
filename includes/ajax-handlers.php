@@ -49,6 +49,24 @@ add_action('wp_ajax_ttp_fetch_voices', function() {
 });
 
 // =============================================================================
+// GET SETUP STATUS - Check if agent creation is in progress
+// =============================================================================
+add_action('wp_ajax_ttp_get_setup_status', function() {
+    check_ajax_referer('ttp_ajax_nonce', 'nonce');
+    
+    $is_creating = (bool) get_transient('ttp_agent_creating');
+    $agent_id = get_option('ttp_agent_id', '');
+    $agent_name = get_option('ttp_agent_name', '');
+    
+    wp_send_json_success([
+        'creating' => $is_creating,
+        'agent_id' => $agent_id,
+        'agent_name' => $agent_name,
+        'ready' => !$is_creating && !empty($agent_id)
+    ]);
+});
+
+// =============================================================================
 // CREATE AGENT
 // =============================================================================
 add_action('wp_ajax_ttp_create_agent', function() {

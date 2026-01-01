@@ -146,9 +146,14 @@ function ttp_auto_setup_agent($api_key) {
         return $result;
     }
     
-    // Step 3: No agents exist - create one with AI-generated prompt
+    // Step 3: No agents exist - set flag and create one with AI-generated prompt
+    set_transient('ttp_agent_creating', true, 180); // 3 minute timeout
+    
     $agent_name = get_bloginfo('name') . ' Assistant';
     $created_agent = ttp_create_agent_sync($api_key, $agent_name, true);
+    
+    // Clear flag when done
+    delete_transient('ttp_agent_creating');
     
     if ($created_agent === false) {
         $result['error'] = 'Failed to create agent';
@@ -312,6 +317,10 @@ add_action('admin_init', function() {
         foreach ($all_options as $option) {
             delete_option($option);
         }
+        
+        // Also clear any setup transients
+        delete_transient('ttp_agent_creating');
+        delete_transient('ttp_connect_secret');
         
         // Redirect to settings page with disconnected message
         wp_safe_redirect(admin_url('admin.php?page=ttp-voice-widget&disconnected=1'));

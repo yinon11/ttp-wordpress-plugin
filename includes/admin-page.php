@@ -597,7 +597,58 @@ function ttp_render_admin_styles() {
         .ttp-status-card { display: flex; align-items: center; gap: 8px; background: #d4edda; border-color: #c3e6cb; }
         .form-table th { width: 200px; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .dashicons.spin { display: inline-block; }
+        .dashicons.spin { display: inline-block; animation: spin 1s linear infinite; }
+        
+        /* Setup in progress overlay */
+        .ttp-setup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100000;
+        }
+        
+        .ttp-setup-modal {
+            background: #fff;
+            padding: 40px 50px;
+            border-radius: 8px;
+            text-align: center;
+            max-width: 400px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .ttp-setup-modal h2 {
+            margin: 20px 0 10px;
+            color: #1d2327;
+            border: none;
+            padding: 0;
+        }
+        
+        .ttp-setup-modal p {
+            color: #666;
+            margin: 0;
+            line-height: 1.5;
+        }
+        
+        .ttp-setup-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #7C3AED;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        .ttp-disabled {
+            pointer-events: none;
+            opacity: 0.5;
+        }
     </style>
     <?php
 }
@@ -634,8 +685,61 @@ function ttp_render_admin_scripts($current_agent_id) {
             else if (type === 'text') $('.ttp-icon-text-row').show();
         }).trigger('change');
         
-        // Load data
-        fetchVoices(function() { fetchAgents(); });
+        // Check setup status first before loading data
+        checkSetupStatus();
+        
+        // === SETUP STATUS CHECK ===
+        function checkSetupStatus() {
+            $.post(ajaxurl, { action: 'ttp_get_setup_status', nonce: ajaxNonce }, function(r) {
+                if (r.success && r.data.creating) {
+                    // Still creating agent - show overlay and poll
+                    showSetupInProgress();
+                } else {
+                    // Not creating - load data normally
+                    hideSetupInProgress();
+                    fetchVoices(function() { fetchAgents(); });
+                }
+            }).fail(function() {
+                // On error, just load normally
+                fetchVoices(function() { fetchAgents(); });
+            });
+        }
+        
+        function showSetupInProgress() {
+            // Show overlay if not exists
+            if ($('#ttp-setup-overlay').length === 0) {
+                var overlay = $(
+                    '<div id="ttp-setup-overlay" class="ttp-setup-overlay">' +
+                        '<div class="ttp-setup-modal">' +
+                            '<div class="ttp-setup-spinner"></div>' +
+                            '<h2>Setting up your AI assistant...</h2>' +
+                            '<p>This may take up to 2 minutes.<br>Please wait.</p>' +
+                        '</div>' +
+                    '</div>'
+                );
+                $('body').append(overlay);
+            }
+            
+            // Poll every 3 seconds
+            setTimeout(function() {
+                $.post(ajaxurl, { action: 'ttp_get_setup_status', nonce: ajaxNonce }, function(r) {
+                    if (r.success && r.data.creating) {
+                        // Still creating - keep polling
+                        showSetupInProgress();
+                    } else {
+                        // Done - reload page to show everything fresh
+                        window.location.reload();
+                    }
+                }).fail(function() {
+                    // On error, reload anyway
+                    window.location.reload();
+                });
+            }, 3000);
+        }
+        
+        function hideSetupInProgress() {
+            $('#ttp-setup-overlay').remove();
+        }
         
         // === AGENTS ===
         function fetchAgents() {
@@ -643,39 +747,9 @@ function ttp_render_admin_scripts($current_agent_id) {
             $.post(ajaxurl, { action: 'ttp_fetch_agents', nonce: ajaxNonce }, function(r) {
                 var agents = r.success && r.data ? (Array.isArray(r.data) ? r.data : (r.data.data || [])) : [];
                 $('#ttp-agents-loading').removeClass('is-active');
-                if (agents.length === 0) { createDefaultAgent(); return; }
-                populateAgentsDropdown(agents);
-            });
-        }
-        
-        function createDefaultAgent() {
-            $('#ttp-agents-loading').addClass('is-active');
-            var $status = $('<div id="ttp-generating-status" style="margin-top: 10px; padding: 10px; background: #f0f6fc; border-left: 4px solid #2271b1; font-style: italic;">🤖 Creating your AI assistant...</div>');
-            $('#ttp-agents-loading').after($status);
-            
-            $.post(ajaxurl, {
-                action: 'ttp_create_agent', nonce: ajaxNonce,
-                agent_name: '<?php echo esc_js(get_bloginfo("name")); ?>' + ' Assistant',
-                auto_generate_prompt: 'true'
-            }, function(r) {
-                $('#ttp-agents-loading').removeClass('is-active');
-                $('#ttp-generating-status').remove();
                 
-                if (r.success && r.data) {
-                    var agent = r.data.data || r.data;
-                    var agentId = agent.agentId || agent.id;
-                    agentsData[agentId] = agent;
-                    
-                    var $s = $('#ttp_agent_select').empty().append('<option value="">-- Select an agent --</option>');
-                    $s.append('<option value="'+agentId+'" selected>'+agent.name+'</option>');
-                    currentAgentId = agentId;
-                    $('#ttp_agent_name').val(agent.name);
-                    populateAgentSettings(agent);
-                    $('#ttp-create-agent').show();
-                    autoSaveSettings(agentId, agent.name);
-                } else {
-                    populateAgentsDropdown([]);
-                }
+                // Just populate dropdown - don't auto-create
+                populateAgentsDropdown(agents);
             });
         }
         
@@ -684,6 +758,14 @@ function ttp_render_admin_scripts($current_agent_id) {
             agents.forEach(function(a) { var id = a.agentId || a.id; agentsData[id] = a; });
             
             var $s = $('#ttp_agent_select').empty().append('<option value="">-- Select an agent --</option>');
+            
+            if (agents.length === 0) {
+                // No agents yet - show message and create button
+                $s.append('<option value="" disabled>No agents yet - create one below</option>');
+                $('#ttp-create-agent').show();
+                return;
+            }
+            
             agents.forEach(function(a) {
                 var id = a.agentId || a.id;
                 $s.append('<option value="'+id+'"'+(id===currentAgentId?' selected':'')+'>'+a.name+'</option>');
@@ -697,7 +779,8 @@ function ttp_render_admin_scripts($current_agent_id) {
             
             if (currentAgentId && agentsData[currentAgentId]) {
                 populateAgentSettings(agentsData[currentAgentId]);
-            } else if (agents.length > 0) {
+            } else if (agents.length > 0 && !currentAgentId) {
+                // Auto-select first agent if none selected
                 var first = agents[0], firstId = first.agentId || first.id;
                 $s.val(firstId);
                 $('#ttp_agent_name').val(first.name);
