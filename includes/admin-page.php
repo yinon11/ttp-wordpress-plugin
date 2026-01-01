@@ -22,14 +22,7 @@ function ttp_settings_page() {
     $current_agent_name = get_option('ttp_agent_name', '');
     
     // Build OAuth URLs
-    $state = wp_create_nonce('ttp_connect');
-    $redirect_uri = admin_url('admin.php?page=ttp-voice-widget');
-    $connect_url = TTP_CONNECT_URL . '?' . http_build_query([
-        'redirect_uri' => $redirect_uri,
-        'state' => $state,
-        'site_url' => home_url(),
-        'site_name' => get_bloginfo('name')
-    ]);
+    $connect_url = admin_url('admin-post.php?action=ttp_connect');
     $disconnect_url = wp_nonce_url(admin_url('admin.php?page=ttp-voice-widget&action=disconnect'), 'ttp_disconnect');
     
     // Enqueue WordPress color picker

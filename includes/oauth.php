@@ -1,53 +1,109 @@
 <?php
 /**
- * OAuth Callback & Disconnect Handlers
+ * OAuth Handlers
  * 
- * Handles:
- * - OAuth callback from TalkToPC (receives API key)
- * - Disconnect action (clears all settings)
+ * Secure OAuth flow:
+ * 1. User clicks "Connect" → generates secret, stores in transient, redirects to TalkToPC
+ * 2. User authorizes on TalkToPC → TalkToPC POSTs credentials to our endpoint
+ * 3. We verify the secret matches, store credentials
  * 
- * Flow:
- * 1. User clicks "Connect to TalkToPC" → redirects to talktopc.com/connect/wordpress
- * 2. User authorizes → React frontend creates API key via /api/developers/api-keys
- * 3. Redirects back here with api_key in URL
- * 4. We save the key directly (no secondary key creation needed)
+ * Security:
+ * - One-time secret prevents unauthorized credential injection
+ * - Secret expires after 5 minutes
+ * - hash_equals() prevents timing attacks
  */
 
 if (!defined('ABSPATH')) exit;
 
+// =============================================================================
+// CONNECT - Generate secret and redirect to TalkToPC
+// =============================================================================
+add_action('admin_post_ttp_connect', 'ttp_handle_connect');
+
+function ttp_handle_connect() {
+    // Verify user has admin permissions
+    if (!current_user_can('manage_options')) {
+        wp_die('Unauthorized', 'Error', ['response' => 403]);
+    }
+    
+    // Generate one-time secret (32 chars, alphanumeric)
+    $secret = wp_generate_password(32, false);
+    
+    // Store secret in transient (expires in 5 minutes)
+    set_transient('ttp_connect_secret', $secret, 300);
+    
+    // Build redirect URI (where TalkToPC will POST the credentials)
+    $redirect_uri = admin_url('admin-ajax.php?action=ttp_receive_credentials');
+    
+    // Build TalkToPC authorization URL
+    $connect_url = TTP_CONNECT_URL . '?' . http_build_query([
+        'redirect_uri' => $redirect_uri,
+        'secret'       => $secret,
+        'site_url'     => home_url(),
+        'site_name'    => get_bloginfo('name'),
+    ]);
+    
+    // Redirect to TalkToPC
+    wp_redirect($connect_url);
+    exit;
+}
+
+// =============================================================================
+// RECEIVE CREDENTIALS - Endpoint for TalkToPC to POST credentials
+// =============================================================================
+add_action('wp_ajax_ttp_receive_credentials', 'ttp_receive_credentials');
+add_action('wp_ajax_nopriv_ttp_receive_credentials', 'ttp_receive_credentials');
+
+function ttp_receive_credentials() {
+    // Only accept POST requests
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        wp_send_json_error(['message' => 'Method not allowed'], 405);
+    }
+    
+    // Get POST data
+    $received_secret = isset($_POST['secret']) ? sanitize_text_field(wp_unslash($_POST['secret'])) : '';
+    $api_key         = isset($_POST['api_key']) ? sanitize_text_field(wp_unslash($_POST['api_key'])) : '';
+    $app_id          = isset($_POST['app_id']) ? sanitize_text_field(wp_unslash($_POST['app_id'])) : '';
+    $email           = isset($_POST['email']) ? sanitize_email(wp_unslash($_POST['email'])) : '';
+    
+    // Validate required fields
+    if (empty($received_secret) || empty($api_key) || empty($app_id)) {
+        wp_send_json_error(['message' => 'Missing required fields'], 400);
+    }
+    
+    // Get stored secret
+    $stored_secret = get_transient('ttp_connect_secret');
+    
+    if (!$stored_secret) {
+        wp_send_json_error(['message' => 'No pending connection or secret expired'], 400);
+    }
+    
+    // Constant-time comparison to prevent timing attacks
+    if (!hash_equals($stored_secret, $received_secret)) {
+        wp_send_json_error(['message' => 'Invalid secret'], 403);
+    }
+    
+    // Delete transient immediately (one-time use)
+    delete_transient('ttp_connect_secret');
+    
+    // Store credentials securely
+    update_option('ttp_api_key', $api_key);
+    update_option('ttp_app_id', $app_id);
+    if ($email) {
+        update_option('ttp_user_email', $email);
+    }
+    update_option('ttp_connected_at', current_time('mysql'));
+    
+    // Return success
+    wp_send_json_success(['message' => 'Credentials stored successfully']);
+}
+
+// =============================================================================
+// DISCONNECT - Clear all settings
+// =============================================================================
 add_action('admin_init', function() {
     if (!isset($_GET['page']) || $_GET['page'] !== 'ttp-voice-widget') return;
     
-    // ==========================================================================
-    // OAUTH CALLBACK
-    // ==========================================================================
-    if (isset($_GET['api_key']) && isset($_GET['state'])) {
-        // Verify security nonce
-        if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_GET['state'])), 'ttp_connect')) {
-            add_settings_error('ttp_settings', 'invalid_state', 'Invalid security token. Please try again.');
-            return;
-        }
-        
-        // The API key from the authorization flow is already site-specific
-        // It was created by the React frontend with created_for = this site's hostname
-        // No need to create another one - just use it directly
-        $api_key = sanitize_text_field(wp_unslash($_GET['api_key']));
-        $app_id = isset($_GET['app_id']) ? sanitize_text_field(wp_unslash($_GET['app_id'])) : '';
-        $user_email = isset($_GET['email']) ? sanitize_email(wp_unslash($_GET['email'])) : '';
-        
-        // Save connection details
-        update_option('ttp_api_key', $api_key);
-        if ($app_id) update_option('ttp_app_id', $app_id);
-        if ($user_email) update_option('ttp_user_email', $user_email);
-        
-        // Redirect to settings page with success message
-        wp_safe_redirect(admin_url('admin.php?page=ttp-voice-widget&connected=1'));
-        exit;
-    }
-    
-    // ==========================================================================
-    // DISCONNECT
-    // ==========================================================================
     if (isset($_GET['action']) && $_GET['action'] === 'disconnect') {
         // Verify security nonce
         if (!wp_verify_nonce(isset($_GET['_wpnonce']) ? sanitize_text_field(wp_unslash($_GET['_wpnonce'])) : '', 'ttp_disconnect')) {
@@ -55,9 +111,13 @@ add_action('admin_init', function() {
             return;
         }
         
+        // Verify user has admin permissions
+        if (!current_user_can('manage_options')) {
+            add_settings_error('ttp_settings', 'unauthorized', 'Unauthorized.');
+            return;
+        }
+        
         // Delete ALL plugin settings for clean slate on reconnect
-        // The API key on the backend will be automatically replaced on next connect
-        // (createApiKey in backend deletes existing key with same created_for)
         $all_options = ttp_get_all_option_names();
         foreach ($all_options as $option) {
             delete_option($option);
