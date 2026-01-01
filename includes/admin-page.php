@@ -618,7 +618,7 @@ function ttp_render_admin_styles() {
             padding: 40px 50px;
             border-radius: 8px;
             text-align: center;
-            max-width: 400px;
+            max-width: 450px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
         }
         
@@ -631,8 +631,14 @@ function ttp_render_admin_styles() {
         
         .ttp-setup-modal p {
             color: #666;
-            margin: 0;
+            margin: 0 0 10px;
             line-height: 1.5;
+        }
+        
+        .ttp-setup-modal .ttp-setup-note {
+            font-size: 12px;
+            color: #999;
+            margin-top: 15px;
         }
         
         .ttp-setup-spinner {
@@ -645,9 +651,49 @@ function ttp_render_admin_styles() {
             margin: 0 auto;
         }
         
+        .ttp-setup-modal .button {
+            margin-top: 20px;
+        }
+        
         .ttp-disabled {
             pointer-events: none;
             opacity: 0.5;
+        }
+        
+        /* Background setup banner */
+        .ttp-background-setup-banner {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            padding: 15px 20px;
+            border-radius: 4px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .ttp-background-setup-banner .ttp-banner-spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top: 3px solid #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            flex-shrink: 0;
+        }
+        
+        .ttp-background-setup-banner .ttp-banner-text {
+            flex: 1;
+        }
+        
+        .ttp-background-setup-banner .ttp-banner-text strong {
+            display: block;
+            margin-bottom: 2px;
+        }
+        
+        .ttp-background-setup-banner .ttp-banner-text span {
+            font-size: 12px;
+            opacity: 0.9;
         }
     </style>
     <?php
@@ -665,6 +711,7 @@ function ttp_render_admin_scripts($current_agent_id) {
     var agentsData = {};
     var voicesData = [];
     var languageMap = {};
+    var isBackgroundSetup = false;
     
     jQuery(document).ready(function($) {
         var ajaxNonce = '<?php echo esc_js(wp_create_nonce("ttp_ajax_nonce")); ?>';
@@ -706,18 +753,33 @@ function ttp_render_admin_scripts($current_agent_id) {
         }
         
         function showSetupInProgress() {
-            // Show overlay if not exists
-            if ($('#ttp-setup-overlay').length === 0) {
+            // Show overlay if not exists and not in background mode
+            if ($('#ttp-setup-overlay').length === 0 && !isBackgroundSetup) {
                 var overlay = $(
                     '<div id="ttp-setup-overlay" class="ttp-setup-overlay">' +
                         '<div class="ttp-setup-modal">' +
                             '<div class="ttp-setup-spinner"></div>' +
-                            '<h2>Setting up your AI assistant...</h2>' +
-                            '<p>This may take up to 2 minutes.<br>Please wait.</p>' +
+                            '<h2>🤖 Creating your AI assistant...</h2>' +
+                            '<p>We\'re analyzing your website content and generating a personalized AI assistant.</p>' +
+                            '<p class="ttp-setup-note">This usually takes 30-60 seconds.</p>' +
+                            '<button type="button" class="button" id="ttp-run-background-btn">Run in Background</button>' +
                         '</div>' +
                     '</div>'
                 );
                 $('body').append(overlay);
+                
+                // Handle "Run in Background" button
+                $('#ttp-run-background-btn').on('click', function() {
+                    isBackgroundSetup = true;
+                    $('#ttp-setup-overlay').remove();
+                    showBackgroundBanner();
+                    // Load voices but keep agents area disabled
+                    fetchVoices(function() {
+                        // Show loading state for agents
+                        $('#ttp_agent_select').html('<option value="">Setting up...</option>').prop('disabled', true);
+                        $('#ttp-create-agent').hide();
+                    });
+                });
             }
             
             // Poll every 3 seconds
@@ -727,18 +789,47 @@ function ttp_render_admin_scripts($current_agent_id) {
                         // Still creating - keep polling
                         showSetupInProgress();
                     } else {
-                        // Done - reload page to show everything fresh
-                        window.location.reload();
+                        // Done!
+                        if (isBackgroundSetup) {
+                            // Remove banner and reload agents
+                            $('#ttp-background-setup-banner').remove();
+                            $('#ttp_agent_select').prop('disabled', false);
+                            fetchAgents();
+                            // Show success notice
+                            var $notice = $('<div class="notice notice-success is-dismissible" style="margin: 10px 0;"><p>✅ Your AI assistant is ready!</p></div>');
+                            $('.wrap h1').after($notice);
+                        } else {
+                            // Reload page to show everything fresh
+                            window.location.reload();
+                        }
                     }
                 }).fail(function() {
                     // On error, reload anyway
-                    window.location.reload();
+                    if (!isBackgroundSetup) {
+                        window.location.reload();
+                    }
                 });
             }, 3000);
         }
         
+        function showBackgroundBanner() {
+            if ($('#ttp-background-setup-banner').length === 0) {
+                var banner = $(
+                    '<div id="ttp-background-setup-banner" class="ttp-background-setup-banner">' +
+                        '<div class="ttp-banner-spinner"></div>' +
+                        '<div class="ttp-banner-text">' +
+                            '<strong>Creating your AI assistant...</strong>' +
+                            '<span>This is running in the background. You can explore the settings while you wait.</span>' +
+                        '</div>' +
+                    '</div>'
+                );
+                $('.ttp-card').first().before(banner);
+            }
+        }
+        
         function hideSetupInProgress() {
             $('#ttp-setup-overlay').remove();
+            $('#ttp-background-setup-banner').remove();
         }
         
         // === AGENTS ===
