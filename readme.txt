@@ -1,62 +1,83 @@
 === TalkToPC Voice Widget ===
 Contributors: yinon11
-Tags: voice, ai, chatbot, voice assistant, widget
+Tags: voice, ai, chatbot, voice assistant, widget, speech
 Requires at least: 5.0
-Tested up to: 6.9
+Tested up to: 6.5
 Stable tag: 1.9.28
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Add AI voice conversations to your WordPress site. Let visitors talk to your AI agent with natural voice interactions.
+Add AI voice conversations to your WordPress site. Connect your TalkToPC account and get a fully configured AI assistant in under 2 minutes!
 
 == Description ==
 
-TalkToPC Voice Widget allows you to add an AI-powered voice assistant to your WordPress website. Visitors can have natural voice conversations with your AI agent.
+TalkToPC Voice Widget adds an AI-powered voice assistant to your WordPress website. Visitors can have natural voice conversations with your AI agent - no coding required.
 
-**Features:**
+**🚀 Quick Setup (Under 2 Minutes):**
 
-* Easy setup - just connect your TalkToPC account via OAuth
-* Voice-to-voice conversations with AI
-* Text chat mode also available
-* Works on desktop and mobile
-* Customizable AI agent responses
-* AI-powered prompt generation from your site content
-* Fully customizable widget appearance
-* WooCommerce support for product information
-* Low latency, natural sounding speech
+1. Install the plugin
+2. Click "Connect to TalkToPC" 
+3. Done! Your AI assistant is auto-created with content from your website
 
-**How it works:**
+The plugin automatically scans your pages, posts, and products to create a personalized AI assistant that knows about your business.
 
-1. Sign up at [TalkToPC](https://talktopc.com)
-2. Install this plugin and click "Connect to TalkToPC"
-3. Your AI agent is auto-created with content from your website!
-4. Visitors can now talk to your AI agent
+**✨ Features:**
 
-**Use Cases:**
+* **One-Click Setup** - OAuth connection with automatic AI agent creation
+* **AI-Powered Configuration** - System prompt auto-generated from your site content
+* **Voice & Text Modes** - Visitors can speak or type
+* **Fully Customizable** - Colors, sizes, positions, icons, and more
+* **WooCommerce Support** - AI knows your products, prices, and availability
+* **Multi-Language** - Support for Hebrew, English, Spanish, and more
+* **Mobile Ready** - Works on all devices with microphone access
+* **Low Latency** - Natural, responsive conversations
+
+**🎯 Use Cases:**
 
 * Customer support automation
-* Restaurant reservations
-* Appointment booking
-* Product information
+* Product recommendations
 * FAQ handling
-* E-commerce assistance
+* Appointment scheduling
+* Restaurant reservations
+* Lead qualification
 * And much more!
+
+**🔒 Security:**
+
+* Secure OAuth 2.0 connection
+* No passwords stored
+* One-time secrets with automatic expiration
+* All data transmitted over HTTPS
 
 == Installation ==
 
-1. Upload the plugin files to the `/wp-content/plugins/ttp-voice-widget` directory, or install the plugin through the WordPress plugins screen directly.
-2. Activate the plugin through the 'Plugins' screen in WordPress.
-3. Go to TalkToPC in the admin menu to configure the plugin.
-4. Click "Connect to TalkToPC" and authorize your account.
-5. An AI agent will be automatically created based on your site content.
-6. The widget will appear on your site immediately!
+= Automatic Installation =
+
+1. Go to Plugins → Add New in your WordPress admin
+2. Search for "TalkToPC Voice Widget"
+3. Click Install Now, then Activate
+4. Go to TalkToPC in the admin menu
+5. Click "Connect to TalkToPC" and authorize
+6. Your AI assistant is ready!
+
+= Manual Installation =
+
+1. Download the plugin ZIP file
+2. Go to Plugins → Add New → Upload Plugin
+3. Upload the ZIP file and click Install Now
+4. Activate the plugin
+5. Go to TalkToPC in the admin menu to connect
 
 == Frequently Asked Questions ==
 
 = How do I connect my account? =
 
-Click "Connect to TalkToPC" in the plugin settings. You'll be redirected to authorize the connection, then sent back automatically.
+Click "Connect to TalkToPC" in the plugin settings. You'll be redirected to TalkToPC to authorize the connection. After authorization, you'll be sent back to WordPress automatically with your AI assistant ready to go.
+
+= Does the AI know about my website? =
+
+Yes! When you first connect, the plugin scans your pages, posts, and products to create a customized AI assistant. You can also regenerate the prompt anytime by clicking "Generate from Site Content" in the settings.
 
 = Does this work on mobile? =
 
@@ -64,129 +85,119 @@ Yes! The voice widget works on both desktop and mobile browsers that support mic
 
 = Is this free? =
 
-The WordPress plugin is free. TalkToPC offers various pricing plans for the AI voice service. Check [talktopc.com](https://talktopc.com) for pricing details.
+The WordPress plugin is free. TalkToPC offers a free trial and various pricing plans for the AI voice service. Visit [talktopc.com/pricing](https://talktopc.com/upgrade) for details.
 
 = Can I customize the AI responses? =
 
-Yes, you can customize the system prompt, first message, voice, language, and many other settings directly in the WordPress admin.
+Yes! You can customize:
+* System prompt (AI personality and knowledge)
+* First message (greeting)
+* Voice selection
+* Language
+* Temperature (creativity level)
+* And more
 
 = Can I customize the widget appearance? =
 
-Yes! The plugin includes extensive customization options for colors, sizes, positions, icons, and more.
+Absolutely! The plugin includes extensive customization:
+* Button position, size, and colors
+* Panel dimensions and colors
+* Header and footer styling
+* Message bubble colors
+* Voice interface colors
+* Animations and tooltips
+* Custom CSS support
+
+= What languages are supported? =
+
+The AI supports multiple languages including English, Hebrew, Spanish, French, German, Arabic, Chinese, Japanese, and more. The plugin auto-detects your site's language.
+
+= Does it work with WooCommerce? =
+
+Yes! The plugin automatically includes your product names, prices, descriptions, and availability in the AI's knowledge base.
 
 == Screenshots ==
 
-1. Settings page - Connect your TalkToPC account
-2. Agent selection and AI settings override
-3. Widget appearance customization
-4. Voice widget on your site
+1. Connect page - One-click OAuth connection to TalkToPC
+2. Settings page - Agent selection with auto-generated AI prompt
+3. Customization - Extensive appearance options
+4. Live widget - Voice assistant on your site
 
 == Privacy Policy ==
 
 This plugin connects to the TalkToPC service (talktopc.com) to provide AI voice conversations.
 
 **Data Collection:**
+
 * Voice audio is transmitted to TalkToPC servers only when a visitor actively uses the voice widget
 * No data is collected without explicit user interaction (clicking the voice button)
-* Conversation data may be processed for AI response generation
+* Conversation data is processed for AI response generation
+* Site content (pages, posts, products) is sent during initial setup for AI prompt generation
 
 **External Services:**
-* This plugin loads JavaScript from cdn.talktopc.com (required for voice functionality)
-* Voice processing is handled by speech.talktopc.com
-* Backend API at backend.talktopc.com
 
-By using this plugin, site owners agree to TalkToPC's Terms of Service and Privacy Policy at https://talktopc.com
+* Widget JavaScript: cdn.talktopc.com
+* Voice processing: speech.talktopc.com  
+* Backend API: backend.talktopc.com
 
-== Plugin Structure (For Developers & AI Agents) ==
+By using this plugin, site owners agree to TalkToPC's [Terms of Service](https://talktopc.com/terms) and [Privacy Policy](https://talktopc.com/privacy).
 
-This section documents the plugin's file structure to help developers and AI coding assistants understand and modify the codebase efficiently.
+== Plugin Structure (For Developers) ==
 
 = File Structure =
-
-`
-ttp-voice-widget/
-├── ttp-voice-widget.php          # Main entry point (constants, includes)
+```
+talktopc-voice-widget/
+├── ttp-voice-widget.php          # Main entry point
 ├── readme.txt                    # This file
 └── includes/
-    ├── admin-settings.php        # Settings registration & sanitizers
-    ├── admin-page.php            # Admin UI (HTML/JS/CSS for settings)
-    ├── oauth.php                 # OAuth callback & disconnect handlers
-    ├── ajax-handlers.php         # All AJAX endpoints
+    ├── admin-settings.php        # Settings registration
+    ├── admin-page.php            # Admin UI (HTML/JS/CSS)
+    ├── oauth.php                 # OAuth flow handlers
+    ├── ajax-handlers.php         # AJAX endpoints
     └── frontend-widget.php       # Frontend widget rendering
-`
+```
 
-= File Descriptions =
+= Key Files =
 
-**ttp-voice-widget.php**
-Main entry point. Contains plugin header, constants (TTP_API_URL, TTP_CONNECT_URL, TTP_VERSION), includes all modules, uninstall cleanup, and plugin action links.
+* **ttp-voice-widget.php** - Plugin header, constants, includes
+* **admin-settings.php** - register_setting() calls, sanitizers, API sync
+* **admin-page.php** - Settings UI with all customization options
+* **oauth.php** - Secure OAuth with one-time secret verification
+* **ajax-handlers.php** - All AJAX endpoints for agents, voices, prompts
+* **frontend-widget.php** - Widget script and configuration injection
 
-**includes/admin-settings.php**
-All register_setting() calls, custom sanitizers (ttp_sanitize_float), backend sync hooks that push settings to TalkToPC API, and admin menu registration.
+= API Endpoints =
 
-**includes/admin-page.php**
-The ttp_settings_page() function that renders the entire admin UI. Contains all settings cards (Connection, Agent Selection, Overrides, Appearance), JavaScript for agent/voice loading and interactions, and CSS styles.
+* `GET /api/public/wordpress/agents` - List agents
+* `POST /api/public/wordpress/agents` - Create agent
+* `PUT /api/public/wordpress/agents/{id}` - Update agent
+* `GET /api/public/wordpress/voices` - List voices
+* `POST /api/public/wordpress/generate-prompt` - AI prompt generation
+* `POST /api/public/agents/signed-url` - Widget authentication
 
-**includes/oauth.php**
-Handles OAuth callback (receives api_key from TalkToPC after authorization) and disconnect action (clears all settings). Security nonce verification included.
-
-**includes/ajax-handlers.php**
-All WordPress AJAX endpoints:
-* ttp_fetch_agents - Get user's agents from API
-* ttp_fetch_voices - Get available voices from API
-* ttp_create_agent - Create new agent (with optional AI prompt)
-* ttp_update_agent - Update agent settings
-* ttp_generate_prompt - Generate system prompt from site content
-* ttp_save_agent_selection - Save selected agent
-* ttp_get_signed_url - Get signed URL for widget (public)
-
-**includes/frontend-widget.php**
-Enqueues widget script from CDN, builds configuration object from all settings, and injects initialization script on the frontend.
-
-= API Endpoints Used =
-
-* POST /api/developers/api-keys - Create API key (React frontend, during OAuth)
-* GET /api/public/wordpress/agents - List user's agents
-* POST /api/public/wordpress/agents - Create new agent
-* PUT /api/public/wordpress/agents/{id} - Update agent
-* GET /api/public/wordpress/voices - List available voices
-* POST /api/public/wordpress/generate-prompt - AI prompt generation
-* POST /api/public/agents/signed-url - Get signed URL for widget
-
-= Common Modifications =
-
-**Change widget appearance:**
-See includes/admin-page.php (settings UI) and includes/frontend-widget.php (config building)
+= Extending the Plugin =
 
 **Add new setting:**
-1. Register in includes/admin-settings.php
-2. Add UI in includes/admin-page.php
-3. Add to config in includes/frontend-widget.php
-4. Add to cleanup list in ttp-voice-widget.php
+1. Register in `admin-settings.php`
+2. Add UI in `admin-page.php`
+3. Add to config in `frontend-widget.php`
+4. Add to cleanup in `ttp-voice-widget.php`
 
-**Modify OAuth flow:**
-See includes/oauth.php
-
-**Add new AJAX endpoint:**
-See includes/ajax-handlers.php
-
-**Change API URLs:**
-See constants in ttp-voice-widget.php
-
-= Working with AI Agents =
-
-When asking an AI assistant to modify this plugin:
-
-1. Share this readme section first to explain the structure
-2. Tell the AI which file to look at based on what you want to change
-3. The AI can request to see specific files as needed
-
-Example prompts:
-* "I want to add a new setting" → AI needs admin-settings.php + admin-page.php
-* "Fix OAuth flow" → AI needs includes/oauth.php
-* "Change widget appearance" → AI needs frontend-widget.php
-* "Add new AJAX endpoint" → AI needs ajax-handlers.php
+**Modify OAuth:** See `oauth.php`
+**Add AJAX endpoint:** See `ajax-handlers.php`
 
 == Changelog ==
+
+= 1.9.28 =
+* New: Redesigned OAuth authorization pages with modern dark theme
+* New: Animated progress indicator during setup
+* New: "Continue in background" option during agent creation
+* Fixed: "Close Window" button now works correctly
+* Fixed: Duplicate agent creation when returning to WordPress quickly
+* Improved: Setup status tracking with transient-based locking
+* Improved: WordPress coding standards compliance
+* Security: Added proper nonce verification comments for OAuth endpoint
+* Security: Wrapped debug logging in WP_DEBUG check
 
 = 1.9.1 =
 * Fixed: Removed redundant API key creation during OAuth flow
@@ -202,16 +213,14 @@ Example prompts:
 
 = 1.0.0 =
 * Initial release
-* Voice widget integration
-* Settings page for configuration
 
 == Upgrade Notice ==
 
+= 1.9.28 =
+Redesigned OAuth flow with better UX. Fixed duplicate agent bug. Improved WordPress standards compliance.
+
 = 1.9.1 =
-Bug fix release. Fixes issue with multiple API keys being created during OAuth connection.
+Bug fix for multiple API keys being created during OAuth connection.
 
 = 1.9.0 =
-Major update with AI prompt generation, extensive customization, and improved OAuth flow.
-
-= 1.0.0 =
-Initial release of TalkToPC Voice Widget.
+Major update with AI prompt generation and extensive customization options.

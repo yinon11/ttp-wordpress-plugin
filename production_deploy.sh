@@ -79,9 +79,9 @@ mkdir -p "$PLUGIN_TEMP_DIR"
 
 echo "Creating temporary plugin directory: $PLUGIN_TEMP_DIR"
 
-# Copy all files except .git, zip files, and the deploy script
+# Copy all files except .git, zip files, deploy script, and WordPress.org assets
 cd "$PLUGIN_DIR"
-rsync -a --exclude='.git' --exclude='*.zip' --exclude='production_deploy.sh' --exclude='.gitignore' --exclude='.gitattributes' . "$PLUGIN_TEMP_DIR/"
+rsync -a --exclude='.git' --exclude='*.zip' --exclude='production_deploy.sh' --exclude='.gitignore' --exclude='.gitattributes' --exclude='.wordpress-org' . "$PLUGIN_TEMP_DIR/"
 
 # Create zip file from temp directory (ensures correct folder structure)
 cd "$TEMP_DIR"
