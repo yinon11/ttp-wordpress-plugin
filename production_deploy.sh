@@ -52,6 +52,13 @@ else
     sed -i "s/^ \* Version: $CURRENT_VERSION/ * Version: $NEW_VERSION/" "$PLUGIN_FILE"
     sed -i "s/define('TTP_VERSION', '$CURRENT_VERSION');/define('TTP_VERSION', '$NEW_VERSION');/" "$PLUGIN_FILE"
     
+    # Update version in readme.txt (Stable tag)
+    README_FILE="$PLUGIN_DIR/readme.txt"
+    if [ -f "$README_FILE" ]; then
+        sed -i "s/^Stable tag: $CURRENT_VERSION/Stable tag: $NEW_VERSION/" "$README_FILE"
+        echo "Updated version in $README_FILE"
+    fi
+    
     echo "Updated version in $PLUGIN_FILE"
 fi
 
