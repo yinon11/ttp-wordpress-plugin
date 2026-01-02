@@ -1,12 +1,13 @@
 <?php
 /**
  * Plugin Name: TalkToPC Voice Widget
+ * Plugin URI: https://wordpress.org/plugins/talktopc/
  * Description: Add AI voice conversations to your WordPress site.
- * Version: 1.9.28
+ * Version: 1.9.30
  * Author: TalkToPC
  * Author URI: https://talktopc.com
  * License: GPL-2.0-or-later
- * Text Domain: talktopc-voice-widget
+ * Text Domain: talktopc
  * Requires at least: 5.0
  * Requires PHP: 7.4
  * 
@@ -15,7 +16,7 @@
  * =============================================================================
  * 
  * Main Files:
- *   - ttp-voice-widget.php    → THIS FILE: Entry point, constants, includes
+ *   - talktopc.php    → THIS FILE: Entry point, constants, includes
  *   - README-STRUCTURE.md     → Guide for understanding the codebase
  * 
  * Includes:
@@ -36,7 +37,7 @@ if (!defined('ABSPATH')) exit;
 // =============================================================================
 define('TTP_API_URL', 'https://backend.talktopc.com');
 define('TTP_CONNECT_URL', 'https://talktopc.com/connect/wordpress');
-define('TTP_VERSION', '1.9.28');
+define('TTP_VERSION', '1.9.30');
 define('TTP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 
 // =============================================================================
@@ -181,6 +182,6 @@ function ttp_get_all_option_names() {
 // PLUGIN ACTION LINKS
 // =============================================================================
 add_filter('plugin_action_links_' . plugin_basename(__FILE__), function($links) {
-    array_unshift($links, '<a href="' . admin_url('admin.php?page=ttp-voice-widget') . '">Settings</a>');
+    array_unshift($links, '<a href="' . admin_url('admin.php?page=talktopc') . '">Settings</a>');
     return $links;
 });

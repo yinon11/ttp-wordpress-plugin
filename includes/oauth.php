@@ -329,7 +329,7 @@ function ttp_create_agent_sync($api_key, $agent_name, $auto_generate = true) {
 // =============================================================================
 add_action('admin_init', function() {
     // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce verified below before any action
-    if (!isset($_GET['page']) || sanitize_text_field(wp_unslash($_GET['page'])) !== 'ttp-voice-widget') {
+    if (!isset($_GET['page']) || sanitize_text_field(wp_unslash($_GET['page'])) !== 'talktopc') {
         return;
     }
     
@@ -362,6 +362,6 @@ add_action('admin_init', function() {
     delete_transient('ttp_connect_secret');
     
     // Redirect to settings page with disconnected message
-    wp_safe_redirect(admin_url('admin.php?page=ttp-voice-widget&disconnected=1'));
+    wp_safe_redirect(admin_url('admin.php?page=talktopc&disconnected=1'));
     exit;
 });

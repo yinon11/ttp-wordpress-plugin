@@ -1,9 +1,9 @@
 === TalkToPC Voice Widget ===
 Contributors: yinon11
-Tags: voice, ai, chatbot, voice assistant, widget, speech
+Tags: voice assistant, ai chatbot, voice chat, customer support, woocommerce
 Requires at least: 5.0
-Tested up to: 6.5
-Stable tag: 1.9.28
+Tested up to: 6.9
+Stable tag: 1.9.30
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -146,8 +146,8 @@ By using this plugin, site owners agree to TalkToPC's [Terms of Service](https:/
 
 = File Structure =
 ```
-talktopc-voice-widget/
-├── ttp-voice-widget.php          # Main entry point
+talktopc/
+├── talktopc.php          # Main entry point
 ├── readme.txt                    # This file
 └── includes/
     ├── admin-settings.php        # Settings registration
@@ -159,7 +159,7 @@ talktopc-voice-widget/
 
 = Key Files =
 
-* **ttp-voice-widget.php** - Plugin header, constants, includes
+* **talktopc.php** - Plugin header, constants, includes
 * **admin-settings.php** - register_setting() calls, sanitizers, API sync
 * **admin-page.php** - Settings UI with all customization options
 * **oauth.php** - Secure OAuth with one-time secret verification
@@ -181,7 +181,7 @@ talktopc-voice-widget/
 1. Register in `admin-settings.php`
 2. Add UI in `admin-page.php`
 3. Add to config in `frontend-widget.php`
-4. Add to cleanup in `ttp-voice-widget.php`
+4. Add to cleanup in `talktopc.php`
 
 **Modify OAuth:** See `oauth.php`
 **Add AJAX endpoint:** See `ajax-handlers.php`

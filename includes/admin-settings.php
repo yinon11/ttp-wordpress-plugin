@@ -19,7 +19,7 @@ add_action('admin_menu', function() {
         'TalkToPC Voice Widget',
         'TalkToPC',
         'manage_options',
-        'ttp-voice-widget',
+        'talktopc',
         'ttp_settings_page',
         'dashicons-microphone',
         30

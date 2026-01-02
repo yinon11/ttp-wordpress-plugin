@@ -23,7 +23,7 @@ function ttp_settings_page() {
     
     // Build OAuth URLs
     $connect_url = admin_url('admin-post.php?action=ttp_connect');
-    $disconnect_url = wp_nonce_url(admin_url('admin.php?page=ttp-voice-widget&action=disconnect'), 'ttp_disconnect');
+    $disconnect_url = wp_nonce_url(admin_url('admin.php?page=talktopc&action=disconnect'), 'ttp_disconnect');
     
     // Enqueue WordPress color picker
     wp_enqueue_style('wp-color-picker');
@@ -31,7 +31,7 @@ function ttp_settings_page() {
     
     ?>
     <div class="wrap ttp-settings-wrap">
-        <h1><?php esc_html_e('TalkToPC Voice Widget', 'talktopc-voice-widget'); ?> <small style="font-size: 12px; color: #666;">v<?php echo esc_html(TTP_VERSION); ?></small></h1>
+        <h1><?php esc_html_e('TalkToPC Voice Widget', 'talktopc'); ?> <small style="font-size: 12px; color: #666;">v<?php echo esc_html(TTP_VERSION); ?></small></h1>
         
         <?php settings_errors(); ?>
         <?php // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only flag ?>

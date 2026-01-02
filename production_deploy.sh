@@ -13,7 +13,7 @@ if [ "$1" == "--no-version-bump" ] || [ "$1" == "-n" ]; then
 fi
 
 PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PLUGIN_FILE="$PLUGIN_DIR/ttp-voice-widget.php"
+PLUGIN_FILE="$PLUGIN_DIR/talktopc.php"
 DEST_DIR="$HOME/Downloads"
 
 # Check if plugin file exists
@@ -63,8 +63,8 @@ else
 fi
 
 # Set zip filename and folder name (matching text domain)
-ZIP_NAME="talktopc-voice-widget-${NEW_VERSION}.zip"
-PLUGIN_FOLDER_NAME="talktopc-voice-widget"
+ZIP_NAME="talktopc-${NEW_VERSION}.zip"
+PLUGIN_FOLDER_NAME="talktopc"
 
 # Remove old zip from Downloads if exists
 if [ -f "$DEST_DIR/$ZIP_NAME" ]; then
