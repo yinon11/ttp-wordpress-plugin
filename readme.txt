@@ -12,6 +12,10 @@ Add AI voice conversations to your WordPress site. Connect your TalkToPC account
 
 == Description ==
 
+**Try before you install!** [Live Demo](https://talktopc.com/demos/agent_1900570ad)
+
+---
+
 TalkToPC Voice Widget adds an AI-powered voice assistant to your WordPress website. Visitors can have natural voice conversations with your AI agent - no coding required.
 
 **🚀 Quick Setup (Under 2 Minutes):**
@@ -188,6 +192,9 @@ talktopc/
 
 == Changelog ==
 
+= 1.9.30 =
+* Maintenance release
+
 = 1.9.28 =
 * New: Redesigned OAuth authorization pages with modern dark theme
 * New: Animated progress indicator during setup
@@ -215,6 +222,9 @@ talktopc/
 * Initial release
 
 == Upgrade Notice ==
+
+= 1.9.30 =
+Maintenance release.
 
 = 1.9.28 =
 Redesigned OAuth flow with better UX. Fixed duplicate agent bug. Improved WordPress standards compliance.
