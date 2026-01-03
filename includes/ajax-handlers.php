@@ -300,6 +300,24 @@ add_action('wp_ajax_ttp_save_agent_selection', function() {
 });
 
 // =============================================================================
+// DISMISS FEATURE DISCOVERY BANNER
+// =============================================================================
+/**
+ * Dismiss feature discovery banner
+ */
+add_action('wp_ajax_ttp_dismiss_feature_banner', 'ttp_dismiss_feature_banner');
+function ttp_dismiss_feature_banner() {
+    check_ajax_referer('ttp_ajax_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(['message' => 'Permission denied']);
+    }
+    
+    update_option('ttp_feature_banner_dismissed', true);
+    wp_send_json_success();
+}
+
+// =============================================================================
 // GET SIGNED URL (Public - also for non-logged-in users)
 // =============================================================================
 function ttp_get_signed_url() {

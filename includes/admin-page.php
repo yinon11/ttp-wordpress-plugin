@@ -58,6 +58,7 @@ function ttp_settings_page() {
         </div>
         
         <?php if ($is_connected): ?>
+        <?php ttp_render_feature_discovery_banner(); ?>
         <form method="post" action="options.php">
             <?php settings_fields('ttp_settings'); ?>
             
@@ -655,6 +656,26 @@ function ttp_render_advanced_features() {
     <?php
 }
 
+function ttp_render_feature_discovery_banner() {
+    // Check if banner was dismissed
+    if (get_option('ttp_feature_banner_dismissed', false)) {
+        return;
+    }
+    ?>
+    <div id="ttp-feature-discovery-banner" class="ttp-discovery-banner">
+        <div class="ttp-discovery-icon">💡</div>
+        <div class="ttp-discovery-content">
+            <strong>Did you know?</strong>
+            <p>You can enable call recording, export transcripts, customize AI models, and view conversation analytics in the TTP app.</p>
+        </div>
+        <div class="ttp-discovery-actions">
+            <a href="https://talktopc.com/agents" target="_blank" class="button button-primary">Explore Features →</a>
+            <button type="button" class="button ttp-dismiss-banner">Dismiss</button>
+        </div>
+    </div>
+    <?php
+}
+
 // =============================================================================
 // STYLES
 // =============================================================================
@@ -892,6 +913,80 @@ function ttp_render_admin_styles() {
             background: linear-gradient(135deg, #6d28d9 0%, #4c1d95 100%);
             box-shadow: 0 6px 16px rgba(124, 58, 237, 0.4);
             transform: translateY(-1px);
+        }
+        
+        /* Feature Discovery Banner */
+        .ttp-discovery-banner {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.15);
+        }
+        
+        .ttp-discovery-icon {
+            font-size: 32px;
+            flex-shrink: 0;
+        }
+        
+        .ttp-discovery-content {
+            flex: 1;
+        }
+        
+        .ttp-discovery-content strong {
+            display: block;
+            font-size: 15px;
+            color: #92400e;
+            margin-bottom: 4px;
+        }
+        
+        .ttp-discovery-content p {
+            margin: 0;
+            font-size: 13px;
+            color: #a16207;
+            line-height: 1.4;
+        }
+        
+        .ttp-discovery-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        
+        .ttp-discovery-actions .button-primary {
+            background: #7c3aed;
+            border-color: #7c3aed;
+        }
+        
+        .ttp-discovery-actions .button-primary:hover {
+            background: #6d28d9;
+            border-color: #6d28d9;
+        }
+        
+        .ttp-dismiss-banner {
+            background: transparent !important;
+            border-color: #d97706 !important;
+            color: #b45309 !important;
+        }
+        
+        .ttp-dismiss-banner:hover {
+            background: rgba(217, 119, 6, 0.1) !important;
+        }
+        
+        @media (max-width: 782px) {
+            .ttp-discovery-banner {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .ttp-discovery-actions {
+                width: 100%;
+                justify-content: center;
+            }
         }
     </style>
     <?php
@@ -1227,6 +1322,18 @@ function ttp_render_admin_scripts($current_agent_id) {
                     $status.html('<span style="color:red;">Error: ' + (r.data?.message || 'Failed') + '</span>');
                 }
                 $btn.prop('disabled', false).html('<span class="dashicons dashicons-admin-site" style="vertical-align:middle;margin-right:4px;"></span> Generate from Site Content');
+            });
+        });
+        
+        // === FEATURE DISCOVERY BANNER DISMISS ===
+        $('.ttp-dismiss-banner').on('click', function() {
+            var $banner = $('#ttp-feature-discovery-banner');
+            $banner.fadeOut(300, function() { $(this).remove(); });
+            
+            // Save dismissal to database
+            $.post(ajaxurl, {
+                action: 'ttp_dismiss_feature_banner',
+                nonce: ajaxNonce
             });
         });
     });
