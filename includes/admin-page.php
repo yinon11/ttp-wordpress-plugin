@@ -81,6 +81,8 @@ function ttp_settings_page() {
             <?php submit_button('Save Settings'); ?>
         </form>
         
+        <?php ttp_render_advanced_features(); ?>
+        
         <?php if (!empty($current_agent_id)): ?>
         <div class="ttp-card ttp-status-card">
             <span class="dashicons dashicons-yes-alt" style="color: #00a32a;"></span>
@@ -578,6 +580,81 @@ function ttp_render_custom_css() {
     <?php
 }
 
+function ttp_render_advanced_features() {
+    ?>
+    <div class="ttp-card ttp-advanced-features">
+        <div class="ttp-advanced-header">
+            <span class="dashicons dashicons-admin-generic"></span>
+            <h2>Advanced Features</h2>
+        </div>
+        <p class="ttp-advanced-subtitle">Configure these options in the TalkToPC app</p>
+        
+        <!-- Call Management -->
+        <div class="ttp-feature-group">
+            <h4>📞 Call Management</h4>
+            <div class="ttp-feature-list">
+                <div class="ttp-feature-item">
+                    <span class="ttp-feature-icon">🎙️</span>
+                    <span class="ttp-feature-name">Call Recording</span>
+                    <span class="ttp-feature-status">Configure in app</span>
+                </div>
+                <a href="https://talktopc.com/agents/conversations" target="_blank" class="ttp-feature-item ttp-feature-clickable">
+                    <span class="ttp-feature-icon">🔊</span>
+                    <span class="ttp-feature-name">Export Calls (Audio)</span>
+                    <span class="ttp-feature-action">Open →</span>
+                </a>
+                <a href="https://talktopc.com/agents/conversations" target="_blank" class="ttp-feature-item ttp-feature-clickable">
+                    <span class="ttp-feature-icon">📝</span>
+                    <span class="ttp-feature-name">Export Transcripts</span>
+                    <span class="ttp-feature-action">Open →</span>
+                </a>
+            </div>
+        </div>
+        
+        <!-- AI Configuration -->
+        <div class="ttp-feature-group">
+            <h4>🤖 AI Configuration</h4>
+            <div class="ttp-feature-list">
+                <div class="ttp-feature-item">
+                    <span class="ttp-feature-icon">🧠</span>
+                    <span class="ttp-feature-name">LLM Model</span>
+                    <span class="ttp-feature-status">Configure in app</span>
+                </div>
+                <div class="ttp-feature-item">
+                    <span class="ttp-feature-icon">🎛️</span>
+                    <span class="ttp-feature-name">Temperature</span>
+                    <span class="ttp-feature-status">Configure in app</span>
+                </div>
+                <div class="ttp-feature-item">
+                    <span class="ttp-feature-icon">🔧</span>
+                    <span class="ttp-feature-name">Add Tools</span>
+                    <span class="ttp-feature-status">Configure in app</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Analytics -->
+        <div class="ttp-feature-group">
+            <h4>📊 Analytics</h4>
+            <div class="ttp-feature-list">
+                <div class="ttp-feature-item">
+                    <span class="ttp-feature-icon">📊</span>
+                    <span class="ttp-feature-name">Dashboard</span>
+                    <span class="ttp-feature-status">View stats & analytics</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- CTA Button -->
+        <div class="ttp-feature-cta">
+            <a href="https://talktopc.com/agents" target="_blank" class="button button-primary button-hero">
+                🚀 Open TTP App to Configure
+            </a>
+        </div>
+    </div>
+    <?php
+}
+
 // =============================================================================
 // STYLES
 // =============================================================================
@@ -694,6 +771,127 @@ function ttp_render_admin_styles() {
         .ttp-background-setup-banner .ttp-banner-text span {
             font-size: 12px;
             opacity: 0.9;
+        }
+        
+        /* Advanced Features Section */
+        .ttp-advanced-features {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 24px;
+            margin: 20px 0;
+        }
+        
+        .ttp-advanced-features h2 {
+            border: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            font-size: 18px;
+        }
+        
+        .ttp-advanced-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 4px;
+        }
+        
+        .ttp-advanced-header .dashicons {
+            color: #7c3aed;
+            font-size: 24px;
+            width: 24px;
+            height: 24px;
+        }
+        
+        .ttp-advanced-subtitle {
+            color: #64748b;
+            margin: 0 0 20px 0;
+            font-size: 14px;
+        }
+        
+        .ttp-feature-group {
+            margin-bottom: 20px;
+        }
+        
+        .ttp-feature-group h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #475569;
+            margin: 0 0 12px 0;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        
+        .ttp-feature-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .ttp-feature-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.2s ease;
+        }
+        
+        .ttp-feature-item.ttp-feature-clickable:hover {
+            background: #f1f5f9;
+            border-color: #7c3aed;
+        }
+        
+        .ttp-feature-icon {
+            font-size: 18px;
+            margin-right: 12px;
+            width: 24px;
+            text-align: center;
+        }
+        
+        .ttp-feature-name {
+            flex: 1;
+            font-size: 14px;
+            color: #334155;
+            font-weight: 500;
+        }
+        
+        .ttp-feature-status {
+            font-size: 13px;
+            color: #94a3b8;
+            font-style: italic;
+        }
+        
+        .ttp-feature-action {
+            font-size: 13px;
+            color: #7c3aed;
+            font-weight: 500;
+        }
+        
+        .ttp-feature-cta {
+            margin-top: 24px;
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid #f1f5f9;
+        }
+        
+        .ttp-feature-cta .button-hero {
+            background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
+            border: none;
+            padding: 12px 32px !important;
+            font-size: 15px !important;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+            transition: all 0.2s ease;
+        }
+        
+        .ttp-feature-cta .button-hero:hover {
+            background: linear-gradient(135deg, #6d28d9 0%, #4c1d95 100%);
+            box-shadow: 0 6px 16px rgba(124, 58, 237, 0.4);
+            transform: translateY(-1px);
         }
     </style>
     <?php
