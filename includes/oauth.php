@@ -113,6 +113,7 @@ function ttp_receive_credentials() {
         update_option('ttp_user_email', $email);
     }
     update_option('ttp_connected_at', current_time('mysql'));
+    update_option('ttp_connected_time', time());
     
     // =================================================================
     // AUTO-SETUP: Fetch agents and create one if none exist

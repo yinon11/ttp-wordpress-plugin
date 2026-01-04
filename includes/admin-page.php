@@ -74,6 +74,7 @@ function ttp_settings_page() {
         
         <?php if ($is_connected): ?>
         <?php ttp_render_feature_discovery_banner(); ?>
+        <?php ttp_render_review_request_card(); ?>
         <form method="post" action="options.php">
             <?php settings_fields('ttp_settings'); ?>
             
@@ -691,6 +692,42 @@ function ttp_render_feature_discovery_banner() {
     <?php
 }
 
+/**
+ * Render review request card (shows 7 days after successful connection)
+ */
+function ttp_render_review_request_card() {
+    // Don't show if dismissed or already reviewed
+    if (get_option('ttp_review_dismissed') || get_option('ttp_review_done')) {
+        return;
+    }
+    
+    // Check when user connected
+    $connected_time = get_option('ttp_connected_time');
+    if (!$connected_time) {
+        return;
+    }
+    
+    // Wait 7 days after connection
+    if (time() - $connected_time < 7 * DAY_IN_SECONDS) {
+        return;
+    }
+    
+    ?>
+    <div id="ttp-review-request-card" class="ttp-review-banner">
+        <div class="ttp-review-icon">💬</div>
+        <div class="ttp-review-content">
+            <strong>We'd love your feedback!</strong>
+            <p>Your review helps other WordPress users discover TalkToPC. Have a question or issue? We're here to help!</p>
+        </div>
+        <div class="ttp-review-actions">
+            <a href="https://wordpress.org/support/plugin/talktopc/reviews/#new-post" target="_blank" class="button button-primary" id="ttp-review-yes">⭐ Leave a Review</a>
+            <a href="https://wordpress.org/support/plugin/talktopc/" target="_blank" class="button" id="ttp-review-support">💬 Get Support</a>
+            <button type="button" class="button ttp-review-dismiss-btn" id="ttp-review-dismiss">Dismiss</button>
+        </div>
+    </div>
+    <?php
+}
+
 // =============================================================================
 // STYLES
 // =============================================================================
@@ -1001,6 +1038,81 @@ function ttp_render_admin_styles() {
             .ttp-discovery-actions {
                 width: 100%;
                 justify-content: center;
+            }
+        }
+        
+        /* Review Request Card */
+        .ttp-review-banner {
+            background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
+            border: 1px solid #a78bfa;
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 2px 8px rgba(139, 92, 246, 0.15);
+        }
+        
+        .ttp-review-icon {
+            font-size: 36px;
+            flex-shrink: 0;
+        }
+        
+        .ttp-review-content {
+            flex: 1;
+        }
+        
+        .ttp-review-content strong {
+            display: block;
+            font-size: 15px;
+            color: #5b21b6;
+            margin-bottom: 4px;
+        }
+        
+        .ttp-review-content p {
+            margin: 0;
+            font-size: 13px;
+            color: #6d28d9;
+            line-height: 1.4;
+        }
+        
+        .ttp-review-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        
+        .ttp-review-actions .button-primary {
+            background: #7c3aed;
+            border-color: #7c3aed;
+        }
+        
+        .ttp-review-actions .button-primary:hover {
+            background: #6d28d9;
+            border-color: #6d28d9;
+        }
+        
+        .ttp-review-dismiss-btn {
+            background: transparent !important;
+            border-color: #8b5cf6 !important;
+            color: #7c3aed !important;
+        }
+        
+        .ttp-review-dismiss-btn:hover {
+            background: rgba(139, 92, 246, 0.1) !important;
+        }
+        
+        @media (max-width: 782px) {
+            .ttp-review-banner {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .ttp-review-actions {
+                width: 100%;
+                justify-content: center;
+                flex-wrap: wrap;
             }
         }
     </style>
@@ -1350,6 +1462,22 @@ function ttp_render_admin_scripts($current_agent_id) {
                 action: 'ttp_dismiss_feature_banner',
                 nonce: ajaxNonce
             });
+        });
+        
+        // === REVIEW REQUEST HANDLERS ===
+        $('#ttp-review-yes').on('click', function() {
+            $.post(ajaxurl, { action: 'ttp_review_action', type: 'done', nonce: ajaxNonce });
+            $('#ttp-review-request-card').fadeOut(300);
+        });
+        
+        $('#ttp-review-support').on('click', function() {
+            $.post(ajaxurl, { action: 'ttp_review_action', type: 'done', nonce: ajaxNonce });
+            $('#ttp-review-request-card').fadeOut(300);
+        });
+        
+        $('#ttp-review-dismiss').on('click', function() {
+            $.post(ajaxurl, { action: 'ttp_review_action', type: 'later', nonce: ajaxNonce });
+            $('#ttp-review-request-card').fadeOut(300);
         });
     });
     </script>

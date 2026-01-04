@@ -318,6 +318,29 @@ function ttp_dismiss_feature_banner() {
 }
 
 // =============================================================================
+// HANDLE REVIEW REQUEST ACTIONS
+// =============================================================================
+/**
+ * Handle review request actions
+ */
+add_action('wp_ajax_ttp_review_action', 'ttp_handle_review_action');
+
+function ttp_handle_review_action() {
+    check_ajax_referer('ttp_ajax_nonce', 'nonce');
+    
+    $type = sanitize_text_field($_POST['type'] ?? '');
+    
+    if ($type === 'done') {
+        update_option('ttp_review_done', true);
+    } elseif ($type === 'later') {
+        // Reset connected time to ask again in 30 days
+        update_option('ttp_connected_time', time() - (7 * DAY_IN_SECONDS) + (30 * DAY_IN_SECONDS));
+    }
+    
+    wp_send_json_success();
+}
+
+// =============================================================================
 // GET SIGNED URL (Public - also for non-logged-in users)
 // =============================================================================
 function ttp_get_signed_url() {
