@@ -13,6 +13,21 @@
 if (!defined('ABSPATH')) exit;
 
 /**
+ * Remove third-party admin notices from TalkToPC settings page
+ * This prevents other plugins (like MonsterInsights) from showing their
+ * review nags and promotional notices inside our settings panel.
+ */
+add_action('admin_head', function() {
+    $screen = get_current_screen();
+    if ($screen && $screen->id === 'toplevel_page_talktopc') {
+        remove_all_actions('admin_notices');
+        remove_all_actions('all_admin_notices');
+        // Re-add settings errors so our own notices still work
+        add_action('admin_notices', 'settings_errors');
+    }
+}, 1);
+
+/**
  * Main settings page function (called from admin menu)
  */
 function ttp_settings_page() {
