@@ -286,17 +286,30 @@ function ttp_render_dashboard_scripts($current_agent_id) {
             
             $s.off('change').on('change', function() {
                 var selectedId = $(this).val();
-                if (selectedId === 'none' || !selectedId) {
-                    $('#agentSettings').addClass('collapsed').hide();
-                } else {
-                    $('#agentSettings').removeClass('collapsed').show();
-                    // Save the selection via AJAX
+                var selectedName = $(this).find('option:selected').text();
+                
+                // Always save the selection (including "none" for disabled)
+                if (selectedId) {
                     $.post(ajaxurl, {
                         action: 'ttp_save_agent_selection',
                         nonce: ajaxNonce,
                         agent_id: selectedId,
-                        agent_name: $(this).find('option:selected').text()
+                        agent_name: selectedName
+                    }, function(r) {
+                        if (r.success && selectedId === 'none') {
+                            // Show confirmation for disabled state
+                            var $notice = $('<div class="notice notice-warning is-dismissible" style="margin: 10px 0;"><p>✓ Widget disabled. The voice widget will not appear on your website.</p></div>');
+                            $('#agentSelectorArea').after($notice);
+                            setTimeout(function() { $notice.fadeOut(function() { $(this).remove(); }); }, 3000);
+                        }
                     });
+                }
+                
+                // Show/hide settings panel based on selection
+                if (selectedId === 'none' || !selectedId) {
+                    $('#agentSettings').addClass('collapsed').hide();
+                } else {
+                    $('#agentSettings').removeClass('collapsed').show();
                     if (selectedId && agentsData[selectedId]) {
                         populateAgentSettings(agentsData[selectedId]);
                     }
