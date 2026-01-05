@@ -15,15 +15,12 @@ if (!defined('ABSPATH')) exit;
 // ADMIN MENU
 // =============================================================================
 add_action('admin_menu', function() {
-    add_menu_page(
-        'TalkToPC Voice Widget',
-        'TalkToPC',
-        'manage_options',
-        'talktopc',
-        'ttp_settings_page',
-        'dashicons-microphone',
-        30
-    );
+    add_menu_page('TalkToPC Voice Widget', 'TalkToPC', 'manage_options', 'talktopc', 'ttp_render_dashboard_page', 'dashicons-microphone', 30);
+    add_submenu_page('talktopc', 'Dashboard', 'Dashboard', 'manage_options', 'talktopc', 'ttp_render_dashboard_page');
+    add_submenu_page('talktopc', 'Page Rules', 'Page Rules', 'manage_options', 'talktopc-page-rules', 'ttp_render_page_rules_page');
+    add_submenu_page('talktopc', 'Appearance', 'Appearance', 'manage_options', 'talktopc-appearance', 'ttp_render_appearance_page');
+    add_submenu_page('talktopc', 'Chat', 'Chat', 'manage_options', 'talktopc-chat', 'ttp_render_chat_page');
+    add_submenu_page('talktopc', 'Advanced', 'Advanced', 'manage_options', 'talktopc-advanced', 'ttp_render_advanced_page');
 });
 
 // =============================================================================
@@ -43,6 +40,14 @@ add_action('admin_init', function() {
     // =========================================================================
     register_setting('ttp_settings', 'ttp_agent_id', ['sanitize_callback' => 'sanitize_text_field']);
     register_setting('ttp_settings', 'ttp_agent_name', ['sanitize_callback' => 'sanitize_text_field']);
+    
+    // =========================================================================
+    // PAGE RULES (JSON array stored as option)
+    // =========================================================================
+    register_setting('ttp_settings', 'ttp_page_rules', [
+        'sanitize_callback' => 'ttp_sanitize_page_rules',
+        'default' => '[]'
+    ]);
     
     // =========================================================================
     // AGENT OVERRIDES
@@ -211,6 +216,25 @@ add_action('admin_init', function() {
 function ttp_sanitize_float($input) {
     if ($input === '' || $input === null) return '';
     return filter_var($input, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+}
+
+function ttp_sanitize_page_rules($input) {
+    if (empty($input)) return '[]';
+    if (is_array($input)) return wp_json_encode($input);
+    $decoded = json_decode($input, true);
+    if (json_last_error() !== JSON_ERROR_NONE) return '[]';
+    $sanitized = [];
+    foreach ($decoded as $rule) {
+        $sanitized[] = [
+            'id' => sanitize_text_field($rule['id'] ?? uniqid('rule_')),
+            'type' => sanitize_text_field($rule['type'] ?? 'page'),
+            'target_id' => sanitize_text_field($rule['target_id'] ?? ''),
+            'target_name' => sanitize_text_field($rule['target_name'] ?? ''),
+            'agent_id' => sanitize_text_field($rule['agent_id'] ?? ''),
+            'agent_name' => sanitize_text_field($rule['agent_name'] ?? '')
+        ];
+    }
+    return wp_json_encode($sanitized);
 }
 
 // =============================================================================

@@ -1,0 +1,426 @@
+<?php
+/**
+ * Dashboard Scripts
+ * 
+ * FIXES:
+ * - Issue #1: Keep existing saved agent visible while loading, only update dropdown options
+ */
+
+if (!defined('ABSPATH')) exit;
+
+
+function ttp_render_dashboard_scripts($current_agent_id) {
+    $ajax_nonce = wp_create_nonce('ttp_ajax_nonce');
+    $current_voice = get_option('ttp_override_voice');
+    $current_language = get_option('ttp_override_language');
+    ?>
+    <script>
+    console.log('🔧 TTP Voice Widget v<?php echo esc_js(TTP_VERSION); ?> loaded');
+    var agentsData = {};
+    var voicesData = [];
+    var languageMap = {};
+    var isBackgroundSetup = false;
+    
+    jQuery(document).ready(function($) {
+        var ajaxNonce = '<?php echo esc_js($ajax_nonce); ?>';
+        var currentAgentId = '<?php echo esc_js($current_agent_id); ?>';
+        var currentVoice = '<?php echo esc_js($current_voice); ?>';
+        var currentLanguage = '<?php echo esc_js($current_language); ?>';
+        
+        // FIX #1: If we have a saved agent, show settings immediately (don't wait for AJAX)
+        if (currentAgentId && currentAgentId !== 'none') {
+            $('#agentSettings').removeClass('collapsed').show();
+        }
+        
+        // Check setup status first before loading data
+        checkSetupStatus();
+        
+        // === SETUP STATUS CHECK ===
+        function checkSetupStatus() {
+            $.post(ajaxurl, { action: 'ttp_get_setup_status', nonce: ajaxNonce }, function(r) {
+                if (r.success && r.data.creating) {
+                    // Still creating agent - show overlay and poll
+                    showSetupInProgress();
+                } else {
+                    // Not creating - load data normally
+                    hideSetupInProgress();
+                    fetchVoices(function() { fetchAgents(); });
+                }
+            }).fail(function() {
+                // On error, just load normally
+                fetchVoices(function() { fetchAgents(); });
+            });
+        }
+        
+        function showSetupInProgress() {
+            // Show overlay if not exists and not in background mode
+            if ($('#ttp-setup-overlay').length === 0 && !isBackgroundSetup) {
+                var overlay = $(
+                    '<div id="ttp-setup-overlay" class="ttp-setup-overlay">' +
+                        '<div class="ttp-setup-modal">' +
+                            '<div class="ttp-setup-spinner"></div>' +
+                            '<h2>🤖 Creating your AI assistant...</h2>' +
+                            '<p>We\'re analyzing your website content and generating a personalized AI assistant.</p>' +
+                            '<p class="ttp-setup-note">This usually takes 30-60 seconds.</p>' +
+                            '<button type="button" class="button" id="ttp-run-background-btn">Run in Background</button>' +
+                        '</div>' +
+                    '</div>'
+                );
+                $('body').append(overlay);
+                
+                // Handle "Run in Background" button
+                $('#ttp-run-background-btn').on('click', function() {
+                    isBackgroundSetup = true;
+                    $('#ttp-setup-overlay').remove();
+                    showBackgroundBanner();
+                    // Load voices but keep agents area disabled
+                    fetchVoices(function() {
+                        // Show loading state for agents
+                        $('#defaultAgentSelect').html('<option value="">Setting up...</option>').prop('disabled', true);
+                        $('#agentSelectorArea').hide();
+                        $('#createAgentBtn').prop('disabled', true);
+                    });
+                });
+            }
+            
+            // Poll every 3 seconds
+            setTimeout(function() {
+                $.post(ajaxurl, { action: 'ttp_get_setup_status', nonce: ajaxNonce }, function(r) {
+                    if (r.success && r.data.creating) {
+                        // Still creating - keep polling
+                        showSetupInProgress();
+                    } else {
+                        // Done!
+                        if (isBackgroundSetup) {
+                            // Remove banner and reload agents
+                            $('#ttp-background-setup-banner').remove();
+                            $('#defaultAgentSelect').prop('disabled', false);
+                            $('#agentSelectorArea').show();
+                            $('#createAgentBtn').prop('disabled', false);
+                            fetchAgents();
+                            // Show success notice
+                            var $notice = $('<div class="notice notice-success is-dismissible" style="margin: 10px 0;"><p>✅ Your AI assistant is ready!</p></div>');
+                            $('.ttp-admin-wrap .wp-header').after($notice);
+                        } else {
+                            // Reload page to show everything fresh
+                            window.location.reload();
+                        }
+                    }
+                }).fail(function() {
+                    // On error, reload anyway
+                    if (!isBackgroundSetup) {
+                        window.location.reload();
+                    }
+                });
+            }, 3000);
+        }
+        
+        function showBackgroundBanner() {
+            if ($('#ttp-background-setup-banner').length === 0) {
+                var banner = $(
+                    '<div id="ttp-background-setup-banner" class="ttp-background-setup-banner">' +
+                        '<div class="ttp-banner-spinner"></div>' +
+                        '<div class="ttp-banner-text">' +
+                            '<strong>Creating your AI assistant...</strong>' +
+                            '<span>This is running in the background. You can explore the settings while you wait.</span>' +
+                        '</div>' +
+                    '</div>'
+                );
+                $('.ttp-admin-wrap .card').first().before(banner);
+            }
+        }
+        
+        function hideSetupInProgress() {
+            $('#ttp-setup-overlay').remove();
+            $('#ttp-background-setup-banner').remove();
+        }
+        
+        // === FETCH CREDITS ===
+        $.post(ajaxurl, { action: 'ttp_fetch_credits', nonce: ajaxNonce }, function(r) {
+            if (r.success && r.data.credits) {
+                $('#ttpCreditsAmount').text(r.data.credits);
+            } else {
+                $('#ttpCreditsBox').addClass('no-credits');
+                $('#ttpCreditsAmount').text('0');
+            }
+        });
+        
+        // === AGENTS ===
+        function fetchAgents() {
+            $.post(ajaxurl, { action: 'ttp_fetch_agents', nonce: ajaxNonce }, function(r) {
+                var agents = r.success && r.data ? (Array.isArray(r.data) ? r.data : (r.data.data || [])) : [];
+                
+                // Populate dropdown
+                populateAgentsDropdown(agents);
+                
+                // FIX #1: Hide loading indicator once agents are loaded
+                $('#agentLoadingIndicator').addClass('hidden');
+            }).fail(function() {
+                $('#agentLoadingIndicator').addClass('hidden');
+            });
+        }
+        
+        function populateAgentsDropdown(agents) {
+            agentsData = {};
+            agents.forEach(function(a) { var id = a.agentId || a.id; agentsData[id] = a; });
+            
+            var $s = $('#defaultAgentSelect');
+            
+            // FIX #1: Store current selection before clearing
+            var previousSelection = $s.val() || currentAgentId;
+            
+            // Clear and rebuild options
+            $s.empty().append('<option value="">-- Select Agent --</option>');
+            
+            if (agents.length === 0) {
+                // No agents yet - show message
+                $s.append('<option value="" disabled>No agents yet - create one below</option>');
+                return;
+            }
+            
+            agents.forEach(function(a) {
+                var id = a.agentId || a.id;
+                // FIX #1: Use previousSelection to maintain selection
+                var isSelected = (id === previousSelection);
+                $s.append('<option value="'+id+'"'+(isSelected?' selected':'')+'>'+a.name+'</option>');
+            });
+            $s.append('<option value="none"'+(previousSelection === 'none' ? ' selected' : '')+'>🚫 Widget Disabled</option>');
+            
+            $s.off('change').on('change', function() {
+                var selectedId = $(this).val();
+                if (selectedId === 'none' || !selectedId) {
+                    $('#agentSettings').addClass('collapsed').hide();
+                } else {
+                    $('#agentSettings').removeClass('collapsed').show();
+                    // Save the selection via AJAX
+                    $.post(ajaxurl, {
+                        action: 'ttp_save_agent_selection',
+                        nonce: ajaxNonce,
+                        agent_id: selectedId,
+                        agent_name: $(this).find('option:selected').text()
+                    });
+                    if (selectedId && agentsData[selectedId]) {
+                        populateAgentSettings(agentsData[selectedId]);
+                    }
+                }
+            });
+            
+            // FIX #1: If we have the saved agent in the fetched data, populate its settings
+            if (previousSelection && agentsData[previousSelection]) {
+                populateAgentSettings(agentsData[previousSelection]);
+                $('#agentSettings').removeClass('collapsed').show();
+            } else if (agents.length > 0 && !previousSelection) {
+                // Auto-select first agent if none selected
+                var first = agents[0], firstId = first.agentId || first.id;
+                $s.val(firstId);
+                populateAgentSettings(first);
+                autoSaveSettings(firstId, first.name);
+                $('#agentSettings').removeClass('collapsed').show();
+                return;
+            }
+        }
+        
+        function populateAgentSettings(agent) {
+            var config = {};
+            if (agent.configuration && agent.configuration.value) {
+                try { 
+                    var parsed = JSON.parse(agent.configuration.value); 
+                    config = typeof parsed === 'string' ? JSON.parse(parsed) : parsed; 
+                } catch (e) { 
+                    config = agent.configuration; 
+                }
+            } else if (agent.configuration && typeof agent.configuration === 'object') { 
+                config = agent.configuration; 
+            } else { 
+                config = agent; 
+            }
+            
+            // Only update if the field is empty OR if we're loading fresh agent data
+            var $prompt = $('#ttp_override_prompt');
+            var savedPrompt = $prompt.data('saved-value');
+            if (!savedPrompt) {
+                // First load - use agent's value or saved WP option
+                var agentPrompt = config.systemPrompt || config.prompt || '';
+                if (agentPrompt && !$prompt.val()) {
+                    $prompt.val(agentPrompt);
+                }
+            }
+            
+            var $firstMsg = $('#ttp_override_first_message');
+            if (!$firstMsg.val()) {
+                $firstMsg.val(config.firstMessage || '');
+            }
+            
+            var voiceId = config.voiceId || '';
+            $('#ttp_override_voice').val(voiceId);
+            
+            var voiceSpeed = config.voiceSpeed;
+            if (voiceId && voicesData.length > 0) {
+                var voice = voicesData.find(function(v) { return (v.voiceId || v.id) === voiceId; });
+                if (voice && voice.defaultVoiceSpeed && (!voiceSpeed || voiceSpeed == 1)) {
+                    voiceSpeed = voice.defaultVoiceSpeed;
+                }
+            }
+            var $speed = $('#ttp_override_voice_speed');
+            if (!$speed.val() || $speed.val() === '1.0') {
+                $speed.val(voiceSpeed || '1.0');
+            }
+            
+            var lang = config.agentLanguage || config.language || '';
+            var $lang = $('#ttp_override_language');
+            if (!$lang.val() && lang) {
+                $lang.val(lang);
+                populateVoicesDropdown(lang);
+                if (voiceId) $('#ttp_override_voice').val(voiceId);
+            }
+            
+            var $temp = $('#ttp_override_temperature');
+            if (!$temp.val() || $temp.val() === '0.7') {
+                $temp.val(config.temperature || '0.7');
+            }
+            
+            var $tokens = $('#ttp_override_max_tokens');
+            if (!$tokens.val() || $tokens.val() === '1000') {
+                $tokens.val(config.maxTokens || '1000');
+            }
+            
+            var $duration = $('#ttp_override_max_call_duration');
+            if (!$duration.val() || $duration.val() === '300') {
+                $duration.val(config.maxCallDuration || '300');
+            }
+        }
+        
+        function autoSaveSettings(agentId, agentName) {
+            if (!agentId) return;
+            var $notice = $('<div class="notice notice-info" id="ttp-autosave-notice" style="margin: 10px 0; padding: 10px;"><p>⏳ Auto-saving...</p></div>');
+            $('.ttp-admin-wrap .wp-header').after($notice);
+            
+            $.post(ajaxurl, { action: 'ttp_save_agent_selection', nonce: ajaxNonce, agent_id: agentId, agent_name: agentName }, function(r) {
+                if (r.success) {
+                    $('#ttp-autosave-notice').removeClass('notice-info').addClass('notice-success').html('<p>✅ Saved! Reloading...</p>');
+                    setTimeout(function() { window.location.reload(); }, 300);
+                } else {
+                    $('#ttp-autosave-notice').removeClass('notice-info').addClass('notice-error').html('<p>❌ Failed. Save manually.</p>');
+                }
+            });
+        }
+        
+        // === VOICES ===
+        function fetchVoices(callback) {
+            $.post(ajaxurl, { action: 'ttp_fetch_voices', nonce: ajaxNonce }, function(r) {
+                voicesData = r.success && r.data ? (Array.isArray(r.data) ? r.data : (r.data.data || r.data.voices || [])) : [];
+                
+                var langNames = {
+                    'en':'English','en-US':'English (US)','en-GB':'English (UK)',
+                    'es':'Spanish','fr':'French','de':'German',
+                    'he':'Hebrew','he-IL':'Hebrew',
+                    'ar':'Arabic','zh':'Chinese','ja':'Japanese',
+                    'pt':'Portuguese','ru':'Russian','it':'Italian',
+                    'nl':'Dutch','ko':'Korean','pl':'Polish',
+                    'tr':'Turkish','hi':'Hindi','sv':'Swedish'
+                };
+                languageMap = {};
+                voicesData.forEach(function(v) { 
+                    (v.languages || []).forEach(function(l) { 
+                        if (!languageMap[l]) languageMap[l] = langNames[l] || l; 
+                    }); 
+                });
+                
+                var $lang = $('#ttp_override_language');
+                $lang.find('option:not(:first)').remove();
+                Object.keys(languageMap).sort(function(a,b) { 
+                    return languageMap[a].localeCompare(languageMap[b]); 
+                }).forEach(function(code) {
+                    $lang.append('<option value="'+code+'"'+(code===currentLanguage?' selected':'')+'>'+languageMap[code]+'</option>');
+                });
+                
+                populateVoicesDropdown(currentLanguage);
+                $lang.off('change').on('change', function() { 
+                    populateVoicesDropdown($(this).val()); 
+                });
+                if (callback) callback();
+            });
+        }
+        
+        function populateVoicesDropdown(filterLang) {
+            var $v = $('#ttp_override_voice');
+            $v.find('option:not(:first)').remove();
+            var filtered = filterLang ? voicesData.filter(function(v) {
+                return (v.languages || []).some(function(l) { 
+                    return l === filterLang || l.startsWith(filterLang + '-') || filterLang.startsWith(l + '-'); 
+                });
+            }) : voicesData;
+            
+            filtered.forEach(function(v) {
+                var id = v.voiceId || v.id;
+                $v.append('<option value="'+id+'" data-default-speed="'+(v.defaultVoiceSpeed||1.0)+'"'+(id===currentVoice?' selected':'')+'>'+v.name+'</option>');
+            });
+        }
+        
+        $('#ttp_override_voice').on('change', function() {
+            var speed = $(this).find('option:selected').data('default-speed');
+            if (speed) $('#ttp_override_voice_speed').val(speed);
+        });
+        
+        // === GENERATE PROMPT ===
+        $('#ttpGeneratePrompt').on('click', function() {
+            var $btn = $(this), $ta = $('#ttp_override_prompt');
+            if ($ta.val().trim() !== '' && !confirm('Replace current prompt?')) return;
+            
+            $btn.prop('disabled', true).text('Generating...');
+            
+            $.post(ajaxurl, { action: 'ttp_generate_prompt', nonce: ajaxNonce }, function(r) {
+                if (r.success && r.data.prompt) {
+                    $ta.val(r.data.prompt).css('background-color', '#e8f5e9');
+                    setTimeout(function() { $ta.css('background-color', ''); }, 2000);
+                } else {
+                    alert('Error: ' + (r.data?.message || 'Failed to generate prompt'));
+                }
+                $btn.prop('disabled', false).text('🔄 Generate from Site Content');
+            });
+        });
+        
+        // === CREATE AGENT ===
+        $('#createAgentBtn').on('click', function() {
+            var name = $('#newAgentName').val().trim();
+            if (!name) { alert('Enter agent name'); return; }
+            var $btn = $(this).prop('disabled', true).text('Creating...');
+            
+            $.post(ajaxurl, {
+                action: 'ttp_create_agent',
+                nonce: ajaxNonce,
+                agent_name: name,
+                auto_generate_prompt: 'true'
+            }, function(r) {
+                if (r.success) {
+                    location.reload();
+                } else {
+                    alert('Error: ' + (r.data?.message || 'Failed to create agent'));
+                }
+                $btn.prop('disabled', false).text('Create Agent');
+            });
+        });
+        
+        // === FORM SAVE STATUS ===
+        $('#agentSettingsForm').on('submit', function() {
+            $('#agentSaveStatus').text('Saving...').removeClass('saved');
+        });
+        
+        // Show saved status after form submit
+        if (window.location.search.indexOf('settings-updated') > -1) {
+            $('#agentSaveStatus').text('✓ Saved').addClass('saved');
+        }
+    });
+    
+    function toggleAgentSettings() {
+        var el = document.getElementById('agentSettings');
+        el.classList.toggle('collapsed');
+        if (el.classList.contains('collapsed')) {
+            el.style.display = 'none';
+        } else {
+            el.style.display = 'block';
+        }
+    }
+    </script>
+    <?php
+}

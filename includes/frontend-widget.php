@@ -12,16 +12,23 @@ if (!defined('ABSPATH')) exit;
 
 add_action('wp_enqueue_scripts', function() {
     $api_key = get_option('ttp_api_key');
-    $agent_id = get_option('ttp_agent_id');
+    $default_agent_id = get_option('ttp_agent_id');
     
-    // Don't load widget if not configured
-    if (empty($api_key) || empty($agent_id)) return;
+    if (empty($api_key)) return;
+    
+    // Get agent for current page (check rules first)
+    $agent_config = ttp_get_agent_for_current_page();
+    
+    // Don't render if disabled
+    if ($agent_config['is_disabled'] || empty($agent_config['agent_id'])) return;
+    
+    $agent_id = $agent_config['agent_id'];
     
     // Enqueue widget script from CDN
     wp_enqueue_script('ttp-agent-widget', 'https://cdn.talktopc.com/agent-widget.js', [], TTP_VERSION, true);
     
-    // Build configuration object
-    $config = ttp_build_widget_config();
+    // Build configuration object (pass agent_id from page rules)
+    $config = ttp_build_widget_config($agent_id);
     
     // Create nonce for signed URL requests
     $nonce = wp_create_nonce('ttp_widget_nonce');
@@ -40,14 +47,14 @@ add_action('wp_enqueue_scripts', function() {
 /**
  * Build widget configuration from all settings
  */
-function ttp_build_widget_config() {
+function ttp_build_widget_config($agent_id = null) {
     $config = [];
     
     // ==========================================================================
     // REQUIRED
     // ==========================================================================
     $config['appId'] = get_option('ttp_app_id');
-    $config['agentId'] = get_option('ttp_agent_id');
+    $config['agentId'] = $agent_id !== null ? $agent_id : get_option('ttp_agent_id');
     
     // ==========================================================================
     // BASIC OPTIONS
@@ -261,4 +268,57 @@ function ttp_build_widget_config() {
     if ($css = get_option('ttp_custom_css')) $config['customStyles'] = $css;
     
     return $config;
+}
+
+/**
+ * Get agent configuration for current page based on page rules
+ */
+function ttp_get_agent_for_current_page() {
+    $rules = json_decode(get_option('ttp_page_rules', '[]'), true);
+    $default_agent_id = get_option('ttp_agent_id', '');
+    $default_agent_name = get_option('ttp_agent_name', '');
+    
+    foreach ($rules as $rule) {
+        if (ttp_rule_matches_current_page($rule)) {
+            return [
+                'agent_id' => $rule['agent_id'],
+                'agent_name' => $rule['agent_name'],
+                'is_disabled' => ($rule['agent_id'] === 'none')
+            ];
+        }
+    }
+    
+    return [
+        'agent_id' => $default_agent_id,
+        'agent_name' => $default_agent_name,
+        'is_disabled' => ($default_agent_id === 'none' || empty($default_agent_id))
+    ];
+}
+
+/**
+ * Check if a rule matches the current page
+ */
+function ttp_rule_matches_current_page($rule) {
+    $type = $rule['type'] ?? '';
+    $target_id = $rule['target_id'] ?? '';
+    
+    if (empty($target_id)) return false;  // Add safety check
+    
+    switch ($type) {
+        case 'page':
+            return is_page($target_id);
+        case 'post':
+            return is_single($target_id);
+        case 'post_type':
+            return is_singular($target_id) || is_post_type_archive($target_id);
+        case 'category':
+            return is_category($target_id) || (is_single() && has_category($target_id));
+        case 'product_cat':
+            if (function_exists('is_product_category')) {
+                return is_product_category($target_id) || (is_singular('product') && has_term($target_id, 'product_cat'));
+            }
+            return false;
+        default:
+            return false;
+    }
 }

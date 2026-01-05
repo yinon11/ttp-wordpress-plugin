@@ -376,6 +376,58 @@ add_action('wp_ajax_ttp_get_signed_url', 'ttp_get_signed_url');
 add_action('wp_ajax_nopriv_ttp_get_signed_url', 'ttp_get_signed_url');
 
 // =============================================================================
+// GET PAGES LIST FOR MODAL
+// =============================================================================
+add_action('wp_ajax_ttp_get_pages_list', function() {
+    check_ajax_referer('ttp_ajax_nonce', 'nonce');
+    
+    $pages = get_posts(['post_type' => 'page', 'post_status' => 'publish', 'numberposts' => 100, 'orderby' => 'title', 'order' => 'ASC']);
+    $pages_list = array_map(function($p) {
+        return ['id' => $p->ID, 'name' => $p->post_title, 'type' => 'page', 'icon' => '📄'];
+    }, $pages);
+    
+    $post_types = [
+        ['id' => 'post', 'name' => 'All Blog Posts', 'type' => 'post_type', 'icon' => '📝', 'badge' => 'Post Type']
+    ];
+    if (class_exists('WooCommerce')) {
+        $post_types[] = ['id' => 'product', 'name' => 'All Products', 'type' => 'post_type', 'icon' => '🛍️', 'badge' => 'WooCommerce'];
+    }
+    
+    $categories = get_categories(['hide_empty' => false]);
+    $cats_list = array_map(function($c) {
+        return ['id' => $c->term_id, 'name' => $c->name, 'type' => 'category', 'icon' => '📁'];
+    }, $categories);
+    
+    if (class_exists('WooCommerce')) {
+        $product_cats = get_terms(['taxonomy' => 'product_cat', 'hide_empty' => false]);
+        foreach ($product_cats as $pc) {
+            $cats_list[] = ['id' => $pc->term_id, 'name' => $pc->name, 'type' => 'product_cat', 'icon' => '🛍️', 'badge' => 'Product Cat'];
+        }
+    }
+    
+    wp_send_json_success(['pages' => $pages_list, 'post_types' => $post_types, 'categories' => $cats_list]);
+});
+
+// =============================================================================
+// SAVE PAGE RULES
+// =============================================================================
+add_action('wp_ajax_ttp_save_page_rules', function() {
+    check_ajax_referer('ttp_ajax_nonce', 'nonce');
+    $rules = isset($_POST['rules']) ? sanitize_text_field(wp_unslash($_POST['rules'])) : '[]';
+    update_option('ttp_page_rules', $rules);
+    wp_send_json_success();
+});
+
+// =============================================================================
+// FETCH CREDITS (placeholder - implement based on your API)
+// =============================================================================
+add_action('wp_ajax_ttp_fetch_credits', function() {
+    check_ajax_referer('ttp_ajax_nonce', 'nonce');
+    // TODO: Call your API to get credits
+    wp_send_json_success(['credits' => '2,450']);
+});
+
+// =============================================================================
 // HELPER FUNCTIONS
 // =============================================================================
 
