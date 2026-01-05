@@ -198,52 +198,237 @@ function ttp_render_admin_styles() {
             font-size: 16px;
         }
         
-        /* FIX: Credits box full width */
+        /* =============================================
+           Credits Box - Multiple States
+           ============================================= */
         .credits-box {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 24px 30px;
-            border-radius: 8px;
+            border-radius: 12px;
             margin-bottom: 20px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             width: 100%;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
         }
         
-        .credits-box.no-credits {
-            background: linear-gradient(135deg, #dc3545 0%, #b32d2e 100%);
+        .credits-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .credits-icon {
+            width: 56px;
+            height: 56px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            flex-shrink: 0;
         }
         
         .credits-info h3 {
-            font-size: 12px;
-            font-weight: 400;
-            opacity: 0.9;
-            margin: 0 0 5px 0;
-            color: white;
+            font-size: 11px;
+            font-weight: 500;
+            opacity: 0.85;
+            margin: 0 0 4px 0;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            color: white;
+        }
+        
+        .credits-amount {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
         }
         
         .credits-info .amount {
             font-size: 36px;
-            font-weight: 600;
+            font-weight: 700;
+            line-height: 1.1;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         
-        .credits-info .label {
-            font-size: 13px;
+        .credits-info .unit {
+            font-size: 16px;
+            font-weight: 400;
             opacity: 0.85;
         }
         
-        .credits-box .button {
+        .credits-label {
+            font-size: 13px;
+            opacity: 0.75;
+            margin-top: 2px;
+        }
+        
+        .credits-warning {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
             background: rgba(255,255,255,0.2);
-            border-color: rgba(255,255,255,0.3);
-            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            margin-top: 8px;
+        }
+        
+        .credits-warning.visible {
+            display: inline-flex;
+        }
+        
+        .credits-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+        }
+        
+        .credits-hint {
+            font-size: 11px;
+            opacity: 0.7;
+        }
+        
+        .credits-box .button {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
             padding: 10px 20px;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            color: white;
+            transition: all 0.15s;
         }
         
         .credits-box .button:hover {
             background: rgba(255,255,255,0.3);
+            color: white;
+            transform: translateY(-1px);
+        }
+        
+        /* Loading spinner */
+        .credits-info .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: ttp-spin 0.8s linear infinite;
+        }
+        
+        /* State: Loading */
+        .credits-box.loading {
+            background: linear-gradient(135deg, #a8a8a8 0%, #888 100%);
+            box-shadow: 0 4px 15px rgba(136, 136, 136, 0.3);
+        }
+        
+        /* State: Low Credits (10-100 minutes) */
+        .credits-box.low-credits {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            box-shadow: 0 4px 15px rgba(245, 87, 108, 0.3);
+        }
+        
+        /* State: Critical (<10 minutes) */
+        .credits-box.critical-credits {
+            background: linear-gradient(135deg, #ff6b6b 0%, #c0392b 100%);
+            box-shadow: 0 4px 15px rgba(192, 57, 43, 0.3);
+            animation: pulse-critical 2s infinite;
+        }
+        
+        @keyframes pulse-critical {
+            0%, 100% { box-shadow: 0 4px 15px rgba(192, 57, 43, 0.3); }
+            50% { box-shadow: 0 4px 25px rgba(192, 57, 43, 0.5); }
+        }
+        
+        .credits-box.critical-credits .button {
+            background: white;
+            color: #c0392b;
+            border-color: white;
+            font-weight: 600;
+        }
+        
+        .credits-box.critical-credits .button:hover {
+            background: #fff5f5;
+            color: #c0392b;
+        }
+        
+        /* State: No Credits */
+        .credits-box.no-credits {
+            background: linear-gradient(135deg, #636e72 0%, #2d3436 100%);
+            box-shadow: 0 4px 15px rgba(45, 52, 54, 0.3);
+        }
+        
+        .credits-box.no-credits .credits-icon {
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .credits-box.no-credits .button {
+            background: #00b894;
+            border-color: #00b894;
+        }
+        
+        .credits-box.no-credits .button:hover {
+            background: #00a185;
+            border-color: #00a185;
+            color: white;
+        }
+        
+        /* State: Error */
+        .credits-box.error {
+            background: linear-gradient(135deg, #636e72 0%, #2d3436 100%);
+            box-shadow: 0 4px 15px rgba(45, 52, 54, 0.3);
+        }
+        
+        .credits-box.error .credits-icon {
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .credits-box .retry-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 5px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+        
+        .credits-box .retry-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        /* Responsive */
+        @media (max-width: 600px) {
+            .credits-box {
+                flex-direction: column;
+                text-align: center;
+                gap: 20px;
+            }
+            
+            .credits-left {
+                flex-direction: column;
+            }
+            
+            .credits-right {
+                align-items: center;
+            }
         }
         
         .status-connected {

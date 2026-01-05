@@ -36,14 +36,26 @@ function ttp_render_dashboard_page() {
         <?php settings_errors(); ?>
         
         <?php if ($is_connected): ?>
-            <!-- Credits Box -->
+            <!-- Credits Box - Dynamic states based on credit amount -->
             <div class="credits-box" id="ttpCreditsBox">
-                <div class="credits-info">
-                    <h3>Available Credits</h3>
-                    <div class="amount" id="ttpCreditsAmount">Loading...</div>
-                    <div class="label">voice minutes remaining</div>
+                <div class="credits-left">
+                    <div class="credits-icon" id="ttpCreditsIcon">💳</div>
+                    <div class="credits-info">
+                        <h3 id="ttpCreditsTitle">Available Credits</h3>
+                        <div class="credits-amount">
+                            <span class="amount" id="ttpCreditsAmount">
+                                <span class="spinner"></span> Loading...
+                            </span>
+                            <span class="unit" id="ttpCreditsUnit"></span>
+                        </div>
+                        <div class="credits-label" id="ttpCreditsLabel">Checking your account...</div>
+                        <div class="credits-warning" id="ttpCreditsWarning"></div>
+                    </div>
                 </div>
-                <a href="https://talktopc.com/upgrade" target="_blank" class="button">Buy More →</a>
+                <div class="credits-right">
+                    <a href="https://talktopc.com/upgrade" target="_blank" class="button" id="ttpCreditsButton">Buy More →</a>
+                    <div class="credits-hint" id="ttpCreditsHint"></div>
+                </div>
             </div>
             
             <!-- Connection Status -->

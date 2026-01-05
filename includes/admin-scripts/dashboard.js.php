@@ -136,14 +136,112 @@ function ttp_render_dashboard_scripts($current_agent_id) {
         }
         
         // === FETCH CREDITS ===
+        // Start in loading state
+        $('#ttpCreditsBox').addClass('loading');
+        
         $.post(ajaxurl, { action: 'ttp_fetch_credits', nonce: ajaxNonce }, function(r) {
-            if (r.success && r.data.credits) {
-                $('#ttpCreditsAmount').text(r.data.credits);
+            $('#ttpCreditsBox').removeClass('loading');
+            
+            if (r.success && r.data) {
+                // Use remainingBrowserMinutes if available, fallback to credits
+                var minutes = r.data.remainingBrowserMinutes !== undefined 
+                    ? r.data.remainingBrowserMinutes 
+                    : r.data.credits;
+                updateCreditsDisplay(minutes, r.data);
             } else {
-                $('#ttpCreditsBox').addClass('no-credits');
-                $('#ttpCreditsAmount').text('0');
+                showCreditsError(r.data?.message || 'Unable to load credits');
             }
+        }).fail(function() {
+            $('#ttpCreditsBox').removeClass('loading');
+            showCreditsError('Connection failed');
         });
+        
+        function updateCreditsDisplay(creditsValue, fullData) {
+            // Parse credits - remove commas if string
+            var credits = typeof creditsValue === 'string' 
+                ? parseInt(creditsValue.replace(/,/g, ''), 10) 
+                : parseInt(creditsValue, 10);
+            
+            if (isNaN(credits)) credits = 0;
+            
+            var $box = $('#ttpCreditsBox');
+            var $icon = $('#ttpCreditsIcon');
+            var $title = $('#ttpCreditsTitle');
+            var $amount = $('#ttpCreditsAmount');
+            var $unit = $('#ttpCreditsUnit');
+            var $label = $('#ttpCreditsLabel');
+            var $warning = $('#ttpCreditsWarning');
+            var $button = $('#ttpCreditsButton');
+            var $hint = $('#ttpCreditsHint');
+            
+            // Reset classes
+            $box.removeClass('loading low-credits critical-credits no-credits error');
+            
+            // Format number with commas
+            var formattedCredits = credits.toLocaleString();
+            
+            // Calculate hours
+            var hours = Math.floor(credits / 60);
+            var conversations = Math.floor(credits / 3); // ~3 min avg per conversation
+            
+            if (credits === 0) {
+                // STATE: No Credits
+                $box.addClass('no-credits');
+                $icon.text('😴');
+                $title.text('No Credits Available');
+                $amount.text('0');
+                $unit.text('minutes');
+                $label.text('Your voice widget is currently disabled');
+                $warning.html('ℹ️ <span>Visitors cannot use voice chat until you add credits</span>').addClass('visible');
+                $button.text('🛒 Buy Credits Now');
+                $hint.text('');
+            } else if (credits < 10) {
+                // STATE: Critical
+                $box.addClass('critical-credits');
+                $icon.text('🚨');
+                $title.text('Credits Almost Depleted!');
+                $amount.text(formattedCredits);
+                $unit.text('minutes');
+                $label.text('Widget will stop working when depleted');
+                $warning.removeClass('visible').html('');
+                $button.text('🛒 Buy Credits Now');
+                $hint.text('');
+            } else if (credits < 100) {
+                // STATE: Low
+                $box.addClass('low-credits');
+                $icon.text('⚠️');
+                $title.text('Credits Running Low');
+                $amount.text(formattedCredits);
+                $unit.text('minutes');
+                $label.text('Voice conversation time remaining');
+                $warning.html('⏱️ <span>Estimated ~' + conversations + ' conversations left</span>').addClass('visible');
+                $button.text('🛒 Buy Credits Now');
+                $hint.text('');
+            } else {
+                // STATE: Healthy
+                $icon.text('🎙️');
+                $title.text('Available Credits');
+                $amount.text(formattedCredits);
+                $unit.text('minutes');
+                $label.text('Voice conversation time remaining');
+                $warning.removeClass('visible').html('');
+                $button.text('Buy More →');
+                $hint.text('~' + hours + ' hours of conversations');
+            }
+        }
+        
+        function showCreditsError(message) {
+            var $box = $('#ttpCreditsBox');
+            $box.removeClass('loading').addClass('error');
+            $('#ttpCreditsIcon').text('⚡');
+            $('#ttpCreditsTitle').text('Credits');
+            $('#ttpCreditsAmount').text('—');
+            $('#ttpCreditsUnit').html('<button class="retry-btn" onclick="location.reload()">↻ Retry</button>');
+            $('#ttpCreditsLabel').text(message);
+            $('#ttpCreditsWarning').removeClass('visible').html('');
+            $('#ttpCreditsHint').text('');
+            $('#ttpCreditsButton').text('Buy More →');
+        }
         
         // === AGENTS ===
         function fetchAgents() {

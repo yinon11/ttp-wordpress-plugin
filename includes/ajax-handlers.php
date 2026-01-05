@@ -50,7 +50,7 @@ add_action('wp_ajax_ttp_fetch_voices', function() {
 });
 
 // =============================================================================
-// FETCH CREDITS - FIX: Actually call the API
+// FETCH CREDITS - Get user's remaining voice minutes
 // =============================================================================
 add_action('wp_ajax_ttp_fetch_credits', function() {
     check_ajax_referer('ttp_ajax_nonce', 'nonce');
@@ -71,17 +71,12 @@ add_action('wp_ajax_ttp_fetch_credits', function() {
     $body = json_decode(wp_remote_retrieve_body($response), true);
     
     if ($status_code !== 200) {
-        // If API doesn't have credits endpoint yet, return a message
         wp_send_json_error(['message' => 'Credits API not available']);
     }
     
-    // Format credits with comma separators if it's a number
-    $credits = $body['credits'] ?? $body['balance'] ?? $body['minutes'] ?? 0;
-    if (is_numeric($credits)) {
-        $credits = number_format((float)$credits, 0, '.', ',');
-    }
-    
-    wp_send_json_success(['credits' => $credits]);
+    // Pass through the full response from backend
+    // Expected fields: credits, remainingBrowserMinutes, totalCredits, usedCredits, etc.
+    wp_send_json_success($body);
 });
 
 // =============================================================================
@@ -434,9 +429,35 @@ function ttp_get_signed_url() {
         wp_send_json_error(['message' => 'Widget disabled for this page']);
     }
     
+    // Check credits before allowing widget - if 0 credits, widget should not work
+    $credits_response = wp_remote_get(TTP_API_URL . '/api/public/wordpress/credits', [
+        'headers' => ['X-API-Key' => $api_key, 'Content-Type' => 'application/json'],
+        'timeout' => 10
+    ]);
+    
+    if (!is_wp_error($credits_response)) {
+        $credits_body = json_decode(wp_remote_retrieve_body($credits_response), true);
+        
+        // Use remainingBrowserMinutes if available, fallback to credits
+        $minutes = $credits_body['remainingBrowserMinutes'] ?? $credits_body['credits'] ?? $credits_body['balance'] ?? 0;
+        
+        // Parse if string
+        if (is_string($minutes)) {
+            $minutes = intval(str_replace(',', '', $minutes));
+        }
+        
+        if ($minutes <= 0) {
+            wp_send_json_error([
+                'message' => 'No credits available',
+                'code' => 'NO_CREDITS',
+                'credits' => 0
+            ]);
+        }
+    }
+    
     $response = wp_remote_post(TTP_API_URL . '/api/public/agents/signed-url', [
         'headers' => ['Authorization' => 'Bearer ' . $api_key, 'Content-Type' => 'application/json'],
-        'body' => json_encode(['agentId' => $agent_id, 'appId' => $app_id, 'allowOverride' => true, 'expirationMs' => 3600000]),
+        'body' => json_encode(['agentId' => $agent_id, 'appId' => $app_id, 'allowOverride' => false, 'expirationMs' => 3600000]),
         'timeout' => 30
     ]);
     

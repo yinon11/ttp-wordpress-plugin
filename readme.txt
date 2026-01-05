@@ -3,7 +3,7 @@ Contributors: yinon11
 Tags: voice assistant, ai chatbot, voice chat, customer support, woocommerce
 Requires at least: 5.0
 Tested up to: 6.9
-Stable tag: 1.9.50
+Stable tag: 1.9.55
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
