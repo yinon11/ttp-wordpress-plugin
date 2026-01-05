@@ -5,6 +5,7 @@
  * All WordPress AJAX endpoints for the plugin:
  * - ttp_fetch_agents      - Get user's agents from TalkToPC API
  * - ttp_fetch_voices      - Get available voices from TalkToPC API
+ * - ttp_fetch_credits     - Get user's remaining credits from TalkToPC API
  * - ttp_create_agent      - Create new agent (with optional AI prompt)
  * - ttp_update_agent      - Update agent settings
  * - ttp_generate_prompt   - Generate system prompt from site content
@@ -46,6 +47,41 @@ add_action('wp_ajax_ttp_fetch_voices', function() {
     
     if (is_wp_error($response)) wp_send_json_error(['message' => $response->get_error_message()]);
     wp_send_json_success(json_decode(wp_remote_retrieve_body($response), true));
+});
+
+// =============================================================================
+// FETCH CREDITS - FIX: Actually call the API
+// =============================================================================
+add_action('wp_ajax_ttp_fetch_credits', function() {
+    check_ajax_referer('ttp_ajax_nonce', 'nonce');
+    $api_key = get_option('ttp_api_key');
+    if (empty($api_key)) wp_send_json_error(['message' => 'Not connected']);
+    
+    // Call the TalkToPC API to get credits
+    $response = wp_remote_get(TTP_API_URL . '/api/public/wordpress/credits', [
+        'headers' => ['X-API-Key' => $api_key, 'Content-Type' => 'application/json'],
+        'timeout' => 30
+    ]);
+    
+    if (is_wp_error($response)) {
+        wp_send_json_error(['message' => $response->get_error_message()]);
+    }
+    
+    $status_code = wp_remote_retrieve_response_code($response);
+    $body = json_decode(wp_remote_retrieve_body($response), true);
+    
+    if ($status_code !== 200) {
+        // If API doesn't have credits endpoint yet, return a message
+        wp_send_json_error(['message' => 'Credits API not available']);
+    }
+    
+    // Format credits with comma separators if it's a number
+    $credits = $body['credits'] ?? $body['balance'] ?? $body['minutes'] ?? 0;
+    if (is_numeric($credits)) {
+        $credits = number_format((float)$credits, 0, '.', ',');
+    }
+    
+    wp_send_json_success(['credits' => $credits]);
 });
 
 // =============================================================================
@@ -300,6 +336,41 @@ add_action('wp_ajax_ttp_save_agent_selection', function() {
 });
 
 // =============================================================================
+// SAVE AGENT SETTINGS LOCAL (WordPress options cache for fast UI)
+// =============================================================================
+add_action('wp_ajax_ttp_save_agent_settings_local', function() {
+    check_ajax_referer('ttp_ajax_nonce', 'nonce');
+    
+    // Save to WordPress options for fast UI loading
+    if (isset($_POST['system_prompt'])) {
+        update_option('ttp_override_prompt', sanitize_textarea_field(wp_unslash($_POST['system_prompt'])));
+    }
+    if (isset($_POST['first_message'])) {
+        update_option('ttp_override_first_message', sanitize_text_field(wp_unslash($_POST['first_message'])));
+    }
+    if (isset($_POST['voice_id'])) {
+        update_option('ttp_override_voice', sanitize_text_field(wp_unslash($_POST['voice_id'])));
+    }
+    if (isset($_POST['voice_speed'])) {
+        update_option('ttp_override_voice_speed', sanitize_text_field(wp_unslash($_POST['voice_speed'])));
+    }
+    if (isset($_POST['language'])) {
+        update_option('ttp_override_language', sanitize_text_field(wp_unslash($_POST['language'])));
+    }
+    if (isset($_POST['temperature'])) {
+        update_option('ttp_override_temperature', sanitize_text_field(wp_unslash($_POST['temperature'])));
+    }
+    if (isset($_POST['max_tokens'])) {
+        update_option('ttp_override_max_tokens', sanitize_text_field(wp_unslash($_POST['max_tokens'])));
+    }
+    if (isset($_POST['max_call_duration'])) {
+        update_option('ttp_override_max_call_duration', sanitize_text_field(wp_unslash($_POST['max_call_duration'])));
+    }
+    
+    wp_send_json_success(['message' => 'Settings cached locally']);
+});
+
+// =============================================================================
 // DISMISS FEATURE DISCOVERY BANNER
 // =============================================================================
 /**
@@ -351,9 +422,17 @@ function ttp_get_signed_url() {
     
     $api_key = get_option('ttp_api_key');
     $app_id = get_option('ttp_app_id');
-    $agent_id = get_option('ttp_agent_id');
+    
+    // FIX: Get agent for current page (check page rules first)
+    $agent_config = ttp_get_agent_for_current_page_ajax();
+    $agent_id = $agent_config['agent_id'];
     
     if (empty($api_key) || empty($agent_id)) wp_send_json_error(['message' => 'Widget not configured']);
+    
+    // If widget is disabled for this page, return error
+    if ($agent_config['is_disabled']) {
+        wp_send_json_error(['message' => 'Widget disabled for this page']);
+    }
     
     $response = wp_remote_post(TTP_API_URL . '/api/public/agents/signed-url', [
         'headers' => ['Authorization' => 'Bearer ' . $api_key, 'Content-Type' => 'application/json'],
@@ -374,6 +453,73 @@ function ttp_get_signed_url() {
 }
 add_action('wp_ajax_ttp_get_signed_url', 'ttp_get_signed_url');
 add_action('wp_ajax_nopriv_ttp_get_signed_url', 'ttp_get_signed_url');
+
+/**
+ * Get agent for current page via AJAX (uses referer URL)
+ * This is needed because AJAX requests don't have WordPress conditionals
+ */
+function ttp_get_agent_for_current_page_ajax() {
+    $rules = json_decode(get_option('ttp_page_rules', '[]'), true);
+    $default_agent_id = get_option('ttp_agent_id', '');
+    $default_agent_name = get_option('ttp_agent_name', '');
+    
+    // Get the page URL from referer
+    $referer = isset($_SERVER['HTTP_REFERER']) ? esc_url_raw($_SERVER['HTTP_REFERER']) : '';
+    
+    if (!empty($referer) && !empty($rules)) {
+        // Try to get page ID from URL
+        $page_id = url_to_postid($referer);
+        
+        if ($page_id) {
+            $post = get_post($page_id);
+            $post_type = $post ? $post->post_type : '';
+            
+            foreach ($rules as $rule) {
+                $rule_type = $rule['type'] ?? '';
+                $target_id = $rule['target_id'] ?? '';
+                
+                // Convert target_id to appropriate type
+                if (in_array($rule_type, ['page', 'post', 'category', 'product_cat'])) {
+                    $target_id = intval($target_id);
+                }
+                
+                $matches = false;
+                
+                switch ($rule_type) {
+                    case 'page':
+                        $matches = ($post_type === 'page' && $page_id === $target_id);
+                        break;
+                    case 'post':
+                        $matches = ($post_type === 'post' && $page_id === $target_id);
+                        break;
+                    case 'post_type':
+                        $matches = ($post_type === $target_id);
+                        break;
+                    case 'category':
+                        $matches = ($post_type === 'post' && has_category($target_id, $page_id));
+                        break;
+                    case 'product_cat':
+                        $matches = ($post_type === 'product' && has_term($target_id, 'product_cat', $page_id));
+                        break;
+                }
+                
+                if ($matches) {
+                    return [
+                        'agent_id' => $rule['agent_id'],
+                        'agent_name' => $rule['agent_name'] ?? '',
+                        'is_disabled' => ($rule['agent_id'] === 'none')
+                    ];
+                }
+            }
+        }
+    }
+    
+    return [
+        'agent_id' => $default_agent_id,
+        'agent_name' => $default_agent_name,
+        'is_disabled' => ($default_agent_id === 'none' || empty($default_agent_id))
+    ];
+}
 
 // =============================================================================
 // GET PAGES LIST FOR MODAL
@@ -416,15 +562,6 @@ add_action('wp_ajax_ttp_save_page_rules', function() {
     $rules = isset($_POST['rules']) ? sanitize_text_field(wp_unslash($_POST['rules'])) : '[]';
     update_option('ttp_page_rules', $rules);
     wp_send_json_success();
-});
-
-// =============================================================================
-// FETCH CREDITS (placeholder - implement based on your API)
-// =============================================================================
-add_action('wp_ajax_ttp_fetch_credits', function() {
-    check_ajax_referer('ttp_ajax_nonce', 'nonce');
-    // TODO: Call your API to get credits
-    wp_send_json_success(['credits' => '2,450']);
 });
 
 // =============================================================================

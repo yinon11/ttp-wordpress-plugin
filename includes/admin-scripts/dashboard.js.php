@@ -235,59 +235,39 @@ function ttp_render_dashboard_scripts($current_agent_id) {
                 config = agent; 
             }
             
-            // Only update if the field is empty OR if we're loading fresh agent data
-            var $prompt = $('#ttp_override_prompt');
-            var savedPrompt = $prompt.data('saved-value');
-            if (!savedPrompt) {
-                // First load - use agent's value or saved WP option
-                var agentPrompt = config.systemPrompt || config.prompt || '';
-                if (agentPrompt && !$prompt.val()) {
-                    $prompt.val(agentPrompt);
-                }
-            }
+            // Always populate fields with agent data
+            var agentPrompt = config.systemPrompt || config.prompt || '';
+            $('#ttp_override_prompt').val(agentPrompt);
             
-            var $firstMsg = $('#ttp_override_first_message');
-            if (!$firstMsg.val()) {
-                $firstMsg.val(config.firstMessage || '');
-            }
+            var firstMessage = config.firstMessage || '';
+            $('#ttp_override_first_message').val(firstMessage);
             
             var voiceId = config.voiceId || '';
-            $('#ttp_override_voice').val(voiceId);
+            var voiceSpeed = config.voiceSpeed || 1.0;
             
-            var voiceSpeed = config.voiceSpeed;
+            // If voice has a default speed, use it
             if (voiceId && voicesData.length > 0) {
                 var voice = voicesData.find(function(v) { return (v.voiceId || v.id) === voiceId; });
                 if (voice && voice.defaultVoiceSpeed && (!voiceSpeed || voiceSpeed == 1)) {
                     voiceSpeed = voice.defaultVoiceSpeed;
                 }
             }
-            var $speed = $('#ttp_override_voice_speed');
-            if (!$speed.val() || $speed.val() === '1.0') {
-                $speed.val(voiceSpeed || '1.0');
-            }
             
             var lang = config.agentLanguage || config.language || '';
-            var $lang = $('#ttp_override_language');
-            if (!$lang.val() && lang) {
-                $lang.val(lang);
+            
+            // Set language first (this filters voices)
+            if (lang) {
+                $('#ttp_override_language').val(lang);
                 populateVoicesDropdown(lang);
-                if (voiceId) $('#ttp_override_voice').val(voiceId);
             }
             
-            var $temp = $('#ttp_override_temperature');
-            if (!$temp.val() || $temp.val() === '0.7') {
-                $temp.val(config.temperature || '0.7');
-            }
+            // Then set voice (after dropdown is populated)
+            $('#ttp_override_voice').val(voiceId);
+            $('#ttp_override_voice_speed').val(voiceSpeed);
             
-            var $tokens = $('#ttp_override_max_tokens');
-            if (!$tokens.val() || $tokens.val() === '1000') {
-                $tokens.val(config.maxTokens || '1000');
-            }
-            
-            var $duration = $('#ttp_override_max_call_duration');
-            if (!$duration.val() || $duration.val() === '300') {
-                $duration.val(config.maxCallDuration || '300');
-            }
+            $('#ttp_override_temperature').val(config.temperature || '0.7');
+            $('#ttp_override_max_tokens').val(config.maxTokens || '1000');
+            $('#ttp_override_max_call_duration').val(config.maxCallDuration || '300');
         }
         
         function autoSaveSettings(agentId, agentName) {
@@ -401,15 +381,64 @@ function ttp_render_dashboard_scripts($current_agent_id) {
             });
         });
         
-        // === FORM SAVE STATUS ===
-        $('#agentSettingsForm').on('submit', function() {
-            $('#agentSaveStatus').text('Saving...').removeClass('saved');
+        // === SAVE AGENT SETTINGS ===
+        // Saves to both WordPress (for fast UI cache) and TalkToPC backend (actual DB)
+        $('#saveAgentSettingsBtn').on('click', function() {
+            var $btn = $(this);
+            var $status = $('#agentSaveStatus');
+            var selectedAgentId = $('#defaultAgentSelect').val();
+            
+            if (!selectedAgentId || selectedAgentId === 'none') {
+                alert('Please select an agent first');
+                return;
+            }
+            
+            // Collect form data
+            var formData = {
+                system_prompt: $('#ttp_override_prompt').val(),
+                first_message: $('#ttp_override_first_message').val(),
+                voice_id: $('#ttp_override_voice').val(),
+                voice_speed: $('#ttp_override_voice_speed').val(),
+                language: $('#ttp_override_language').val(),
+                temperature: $('#ttp_override_temperature').val(),
+                max_tokens: $('#ttp_override_max_tokens').val(),
+                max_call_duration: $('#ttp_override_max_call_duration').val()
+            };
+            
+            $btn.prop('disabled', true).text('Saving...');
+            $status.text('').removeClass('saved error');
+            
+            // Step 1: Save to WordPress options (for fast UI cache)
+            $.post(ajaxurl, {
+                action: 'ttp_save_agent_settings_local',
+                nonce: ajaxNonce,
+                ...formData
+            }, function(localResult) {
+                // Step 2: Save to TalkToPC backend (actual DB)
+                $.post(ajaxurl, {
+                    action: 'ttp_update_agent',
+                    nonce: ajaxNonce,
+                    agent_id: selectedAgentId,
+                    ...formData
+                }, function(r) {
+                    if (r.success) {
+                        $status.text('✓ Saved to TalkToPC').addClass('saved');
+                        setTimeout(function() {
+                            $status.text('');
+                        }, 3000);
+                    } else {
+                        $status.text('⚠ Local saved, backend failed: ' + (r.data?.message || 'Unknown error')).addClass('error');
+                    }
+                    $btn.prop('disabled', false).text('Save Agent Settings');
+                }).fail(function() {
+                    $status.text('⚠ Local saved, backend unreachable').addClass('error');
+                    $btn.prop('disabled', false).text('Save Agent Settings');
+                });
+            }).fail(function() {
+                $status.text('✗ Failed to save').addClass('error');
+                $btn.prop('disabled', false).text('Save Agent Settings');
+            });
         });
-        
-        // Show saved status after form submit
-        if (window.location.search.indexOf('settings-updated') > -1) {
-            $('#agentSaveStatus').text('✓ Saved').addClass('saved');
-        }
     });
     
     function toggleAgentSettings() {

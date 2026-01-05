@@ -6,6 +6,8 @@
  * - Enqueuing the widget script from CDN
  * - Building the configuration object from all settings
  * - Injecting the initialization script
+ * 
+ * FIX: Page rules now properly match with type casting
  */
 
 if (!defined('ABSPATH')) exit;
@@ -18,6 +20,11 @@ add_action('wp_enqueue_scripts', function() {
     
     // Get agent for current page (check rules first)
     $agent_config = ttp_get_agent_for_current_page();
+    
+    // Debug logging (remove in production)
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('TTP Widget - Agent Config: ' . print_r($agent_config, true));
+    }
     
     // Don't render if disabled
     if ($agent_config['is_disabled'] || empty($agent_config['agent_id'])) return;
@@ -57,10 +64,9 @@ function ttp_build_widget_config($agent_id = null) {
     $config['agentId'] = $agent_id !== null ? $agent_id : get_option('ttp_agent_id');
     
     // ==========================================================================
-    // BASIC OPTIONS
+    // BASIC OPTIONS (Widget UI only - NOT agent settings)
     // ==========================================================================
     if ($v = get_option('ttp_direction')) $config['direction'] = $v;
-    if ($v = get_option('ttp_override_language')) $config['language'] = $v;
     if ($v = get_option('ttp_position')) $config['position'] = $v;
     
     // ==========================================================================
@@ -251,16 +257,12 @@ function ttp_build_widget_config($agent_id = null) {
     // ==========================================================================
     // AGENT SETTINGS OVERRIDE
     // ==========================================================================
-    $override = [];
-    if ($v = get_option('ttp_override_prompt')) $override['prompt'] = $v;
-    if ($v = get_option('ttp_override_first_message')) $override['firstMessage'] = $v;
-    if ($v = get_option('ttp_override_voice')) $override['voiceId'] = $v;
-    if ($v = get_option('ttp_override_voice_speed')) $override['voiceSpeed'] = floatval($v);
-    if ($v = get_option('ttp_override_language')) $override['language'] = $v;
-    if ($v = get_option('ttp_override_temperature')) $override['temperature'] = floatval($v);
-    if ($v = get_option('ttp_override_max_tokens')) $override['maxTokens'] = intval($v);
-    if ($v = get_option('ttp_override_max_call_duration')) $override['maxCallDuration'] = intval($v);
-    if (!empty($override)) $config['agentSettingsOverride'] = $override;
+    // NOTE: We no longer send overrides by default. The agent should use its 
+    // own settings from the TalkToPC backend. Only send overrides if explicitly
+    // configured in WordPress (future feature: add a "customize agent" checkbox)
+    //
+    // If you need per-page overrides, use Page Rules with custom settings.
+    // ==========================================================================
     
     // ==========================================================================
     // CUSTOM CSS
@@ -272,17 +274,33 @@ function ttp_build_widget_config($agent_id = null) {
 
 /**
  * Get agent configuration for current page based on page rules
+ * 
+ * FIX: Properly cast target_id to int for page/post/category matching
  */
 function ttp_get_agent_for_current_page() {
     $rules = json_decode(get_option('ttp_page_rules', '[]'), true);
     $default_agent_id = get_option('ttp_agent_id', '');
     $default_agent_name = get_option('ttp_agent_name', '');
     
+    // Debug logging
+    if (defined('WP_DEBUG') && WP_DEBUG && !empty($rules)) {
+        error_log('TTP Page Rules Check - Current URL: ' . $_SERVER['REQUEST_URI']);
+        error_log('TTP Page Rules - Rules: ' . print_r($rules, true));
+        error_log('TTP Page Rules - is_page(): ' . (is_page() ? 'yes' : 'no'));
+        error_log('TTP Page Rules - is_single(): ' . (is_single() ? 'yes' : 'no'));
+        if (is_page() || is_single()) {
+            error_log('TTP Page Rules - Current post ID: ' . get_the_ID());
+        }
+    }
+    
     foreach ($rules as $rule) {
         if (ttp_rule_matches_current_page($rule)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('TTP Page Rules - MATCHED rule: ' . print_r($rule, true));
+            }
             return [
                 'agent_id' => $rule['agent_id'],
-                'agent_name' => $rule['agent_name'],
+                'agent_name' => $rule['agent_name'] ?? '',
                 'is_disabled' => ($rule['agent_id'] === 'none')
             ];
         }
@@ -297,27 +315,52 @@ function ttp_get_agent_for_current_page() {
 
 /**
  * Check if a rule matches the current page
+ * 
+ * FIX: Cast target_id to int for numeric comparisons
  */
 function ttp_rule_matches_current_page($rule) {
     $type = $rule['type'] ?? '';
     $target_id = $rule['target_id'] ?? '';
     
-    if (empty($target_id)) return false;  // Add safety check
+    if (empty($target_id)) return false;
+    
+    // Debug logging
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log("TTP Rule Check - Type: {$type}, Target: {$target_id}");
+    }
     
     switch ($type) {
         case 'page':
-            return is_page($target_id);
+            // FIX: Cast to int for is_page() check
+            $target_int = intval($target_id);
+            $matches = is_page($target_int);
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("TTP Rule Check - is_page({$target_int}): " . ($matches ? 'yes' : 'no'));
+            }
+            return $matches;
+            
         case 'post':
-            return is_single($target_id);
+            // FIX: Cast to int for is_single() check
+            $target_int = intval($target_id);
+            return is_single($target_int);
+            
         case 'post_type':
+            // post_type target_id is a string like 'post', 'product'
             return is_singular($target_id) || is_post_type_archive($target_id);
+            
         case 'category':
-            return is_category($target_id) || (is_single() && has_category($target_id));
+            // FIX: Cast to int for category checks
+            $target_int = intval($target_id);
+            return is_category($target_int) || (is_single() && has_category($target_int));
+            
         case 'product_cat':
             if (function_exists('is_product_category')) {
-                return is_product_category($target_id) || (is_singular('product') && has_term($target_id, 'product_cat'));
+                // FIX: Cast to int for product category checks
+                $target_int = intval($target_id);
+                return is_product_category($target_int) || (is_singular('product') && has_term($target_int, 'product_cat'));
             }
             return false;
+            
         default:
             return false;
     }

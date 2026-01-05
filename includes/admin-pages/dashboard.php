@@ -43,7 +43,7 @@ function ttp_render_dashboard_page() {
                     <div class="amount" id="ttpCreditsAmount">Loading...</div>
                     <div class="label">voice minutes remaining</div>
                 </div>
-                <a href="https://talktopc.com/pricing" target="_blank" class="button">Buy More →</a>
+                <a href="https://talktopc.com/upgrade" target="_blank" class="button">Buy More →</a>
             </div>
             
             <!-- Connection Status -->
@@ -95,15 +95,15 @@ function ttp_render_dashboard_page() {
                         <span class="arrow">▼</span>
                     </div>
                     <div class="agent-settings-body">
-                        <form method="post" action="options.php" id="agentSettingsForm">
-                            <?php settings_fields('ttp_settings'); ?>
+                        <!-- Settings saved via AJAX to both WordPress (cache) and TalkToPC backend (DB) -->
+                        <div id="agentSettingsForm">
                             
                             <!-- FIX #3: Better aligned form layout -->
                             <div class="agent-form-grid">
                                 <div class="form-row full-width">
                                     <label for="ttp_override_prompt">System Prompt</label>
                                     <div class="field">
-                                        <textarea name="ttp_override_prompt" id="ttp_override_prompt" rows="5"><?php echo esc_textarea(get_option('ttp_override_prompt')); ?></textarea>
+                                        <textarea id="ttp_override_prompt" rows="5"><?php echo esc_textarea(get_option('ttp_override_prompt', '')); ?></textarea>
                                         <p class="field-action">
                                             <button type="button" class="button button-small" id="ttpGeneratePrompt">🔄 Generate from Site Content</button>
                                         </p>
@@ -113,15 +113,15 @@ function ttp_render_dashboard_page() {
                                 <div class="form-row full-width">
                                     <label for="ttp_override_first_message">First Message</label>
                                     <div class="field">
-                                        <input type="text" name="ttp_override_first_message" id="ttp_override_first_message" value="<?php echo esc_attr(get_option('ttp_override_first_message')); ?>">
+                                        <input type="text" id="ttp_override_first_message" value="<?php echo esc_attr(get_option('ttp_override_first_message', '')); ?>">
                                     </div>
                                 </div>
                                 
                                 <div class="form-row full-width">
                                     <label for="ttp_override_voice">Voice</label>
                                     <div class="field">
-                                        <select name="ttp_override_voice" id="ttp_override_voice">
-                                            <option value="">-- Use Default --</option>
+                                        <select id="ttp_override_voice">
+                                            <option value="">-- Select Voice --</option>
                                         </select>
                                     </div>
                                 </div>
@@ -133,40 +133,40 @@ function ttp_render_dashboard_page() {
                             <div class="advanced-settings-grid">
                                 <div class="grid-field">
                                     <label for="ttp_override_voice_speed">Speed</label>
-                                    <input type="number" name="ttp_override_voice_speed" id="ttp_override_voice_speed" value="<?php echo esc_attr(get_option('ttp_override_voice_speed', '1.0')); ?>" step="0.1" min="0.5" max="2.0">
+                                    <input type="number" id="ttp_override_voice_speed" value="<?php echo esc_attr(get_option('ttp_override_voice_speed', '1.0')); ?>" step="0.1" min="0.5" max="2.0">
                                 </div>
                                 
                                 <div class="grid-field">
                                     <label for="ttp_override_language">Language</label>
-                                    <select name="ttp_override_language" id="ttp_override_language">
-                                        <option value="">-- Use Default --</option>
+                                    <select id="ttp_override_language">
+                                        <option value="">-- Select Language --</option>
                                     </select>
                                 </div>
                                 
                                 <div class="grid-field">
                                     <label for="ttp_override_temperature">Temperature</label>
-                                    <input type="number" name="ttp_override_temperature" id="ttp_override_temperature" value="<?php echo esc_attr(get_option('ttp_override_temperature', '0.7')); ?>" step="0.1" min="0" max="2">
+                                    <input type="number" id="ttp_override_temperature" value="<?php echo esc_attr(get_option('ttp_override_temperature', '0.7')); ?>" step="0.1" min="0" max="2">
                                 </div>
                                 
                                 <div class="grid-field">
                                     <label for="ttp_override_max_tokens">Max Tokens</label>
-                                    <input type="number" name="ttp_override_max_tokens" id="ttp_override_max_tokens" value="<?php echo esc_attr(get_option('ttp_override_max_tokens', '1000')); ?>">
+                                    <input type="number" id="ttp_override_max_tokens" value="<?php echo esc_attr(get_option('ttp_override_max_tokens', '1000')); ?>">
                                 </div>
                                 
                                 <div class="grid-field">
                                     <label for="ttp_override_max_call_duration">Max Duration</label>
                                     <div class="input-with-suffix">
-                                        <input type="number" name="ttp_override_max_call_duration" id="ttp_override_max_call_duration" value="<?php echo esc_attr(get_option('ttp_override_max_call_duration', '300')); ?>">
+                                        <input type="number" id="ttp_override_max_call_duration" value="<?php echo esc_attr(get_option('ttp_override_max_call_duration', '300')); ?>">
                                         <span class="suffix">sec</span>
                                     </div>
                                 </div>
                             </div>
                             
                             <div class="save-area">
-                                <button type="submit" class="button button-primary">Save Agent Settings</button>
-                                <span class="save-status" id="agentSaveStatus">Settings sync with TalkToPC</span>
+                                <button type="button" class="button button-primary" id="saveAgentSettingsBtn">Save Agent Settings</button>
+                                <span class="save-status" id="agentSaveStatus"></span>
                             </div>
-                        </form>
+                        </div>
                     </div>
                 </div>
                 </div>
