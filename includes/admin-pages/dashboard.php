@@ -102,9 +102,15 @@ function ttp_render_dashboard_page() {
                 
                 <!-- Agent Settings (collapsible) -->
                 <div class="agent-settings <?php echo ($current_agent_id && $current_agent_id !== 'none') ? '' : 'collapsed'; ?>" id="agentSettings">
-                    <div class="agent-settings-header" onclick="toggleAgentSettings()">
-                        <h3><span>⚙️</span> Agent Settings</h3>
-                        <span class="arrow">▼</span>
+                    <div class="agent-settings-header">
+                        <div class="header-left" onclick="toggleAgentSettings()">
+                            <h3><span>⚙️</span> Agent Settings</h3>
+                            <span class="arrow">▼</span>
+                        </div>
+                        <div class="header-right">
+                            <button type="button" class="button button-small" id="editAgentSettingsBtn">✏️ Edit</button>
+                            <button type="button" class="button button-small" id="cancelEditBtn" style="display: none;">✖️ Cancel</button>
+                        </div>
                     </div>
                     <div class="agent-settings-body">
                         <!-- Settings saved via AJAX to both WordPress (cache) and TalkToPC backend (DB) -->
@@ -115,8 +121,8 @@ function ttp_render_dashboard_page() {
                                 <div class="form-row full-width">
                                     <label for="ttp_override_prompt">System Prompt</label>
                                     <div class="field">
-                                        <textarea id="ttp_override_prompt" rows="5"><?php echo esc_textarea(get_option('ttp_override_prompt', '')); ?></textarea>
-                                        <p class="field-action">
+                                        <textarea id="ttp_override_prompt" rows="5" disabled><?php echo esc_textarea(get_option('ttp_override_prompt', '')); ?></textarea>
+                                        <p class="field-action edit-only" style="display: none;">
                                             <button type="button" class="button button-small" id="ttpGeneratePrompt">🔄 Generate from Site Content</button>
                                         </p>
                                     </div>
@@ -125,14 +131,14 @@ function ttp_render_dashboard_page() {
                                 <div class="form-row full-width">
                                     <label for="ttp_override_first_message">First Message</label>
                                     <div class="field">
-                                        <input type="text" id="ttp_override_first_message" value="<?php echo esc_attr(get_option('ttp_override_first_message', '')); ?>">
+                                        <input type="text" id="ttp_override_first_message" value="<?php echo esc_attr(get_option('ttp_override_first_message', '')); ?>" disabled>
                                     </div>
                                 </div>
                                 
                                 <div class="form-row full-width">
                                     <label for="ttp_override_voice">Voice</label>
                                     <div class="field">
-                                        <select id="ttp_override_voice">
+                                        <select id="ttp_override_voice" disabled>
                                             <option value="">-- Select Voice --</option>
                                         </select>
                                     </div>
@@ -145,37 +151,38 @@ function ttp_render_dashboard_page() {
                             <div class="advanced-settings-grid">
                                 <div class="grid-field">
                                     <label for="ttp_override_voice_speed">Speed</label>
-                                    <input type="number" id="ttp_override_voice_speed" value="<?php echo esc_attr(get_option('ttp_override_voice_speed', '1.0')); ?>" step="0.1" min="0.5" max="2.0">
+                                    <input type="number" id="ttp_override_voice_speed" value="<?php echo esc_attr(get_option('ttp_override_voice_speed', '1.0')); ?>" step="0.1" min="0.5" max="2.0" disabled>
                                 </div>
                                 
                                 <div class="grid-field">
                                     <label for="ttp_override_language">Language</label>
-                                    <select id="ttp_override_language">
+                                    <select id="ttp_override_language" disabled>
                                         <option value="">-- Select Language --</option>
                                     </select>
                                 </div>
                                 
                                 <div class="grid-field">
                                     <label for="ttp_override_temperature">Temperature</label>
-                                    <input type="number" id="ttp_override_temperature" value="<?php echo esc_attr(get_option('ttp_override_temperature', '0.7')); ?>" step="0.1" min="0" max="2">
+                                    <input type="number" id="ttp_override_temperature" value="<?php echo esc_attr(get_option('ttp_override_temperature', '0.7')); ?>" step="0.1" min="0" max="2" disabled>
                                 </div>
                                 
                                 <div class="grid-field">
                                     <label for="ttp_override_max_tokens">Max Tokens</label>
-                                    <input type="number" id="ttp_override_max_tokens" value="<?php echo esc_attr(get_option('ttp_override_max_tokens', '1000')); ?>">
+                                    <input type="number" id="ttp_override_max_tokens" value="<?php echo esc_attr(get_option('ttp_override_max_tokens', '1000')); ?>" disabled>
                                 </div>
                                 
                                 <div class="grid-field">
                                     <label for="ttp_override_max_call_duration">Max Duration</label>
                                     <div class="input-with-suffix">
-                                        <input type="number" id="ttp_override_max_call_duration" value="<?php echo esc_attr(get_option('ttp_override_max_call_duration', '300')); ?>">
+                                        <input type="number" id="ttp_override_max_call_duration" value="<?php echo esc_attr(get_option('ttp_override_max_call_duration', '300')); ?>" disabled>
                                         <span class="suffix">sec</span>
                                     </div>
                                 </div>
                             </div>
                             
-                            <div class="save-area">
+                            <div class="save-area edit-only" style="display: none;">
                                 <button type="button" class="button button-primary" id="saveAgentSettingsBtn">Save Agent Settings</button>
+                                <button type="button" class="button" id="cancelEditBtn2">Cancel</button>
                                 <span class="save-status" id="agentSaveStatus"></span>
                             </div>
                         </div>
@@ -199,21 +206,21 @@ function ttp_render_dashboard_page() {
                 <h2><span class="icon">🚀</span> TalkToPC App</h2>
                 <p style="color: #646970; margin-bottom: 15px; font-size: 13px;">Advanced features available in the TalkToPC web app:</p>
                 <div class="quick-links">
-                    <a href="https://app.talktopc.com/analytics" target="_blank" class="quick-link">
+                    <a href="https://talktopc.com/agents" target="_blank" class="quick-link">
                         <span class="icon">📊</span>
                         <span class="text">Analytics Dashboard</span>
                     </a>
-                    <a href="https://app.talktopc.com/recordings" target="_blank" class="quick-link">
+                    <a href="https://talktopc.com/agents/conversations" target="_blank" class="quick-link">
                         <span class="icon">🎙️</span>
-                        <span class="text">Call Recording</span>
+                        <span class="text">Call Recording & Transcripts</span>
                     </a>
-                    <a href="https://app.talktopc.com/conversations" target="_blank" class="quick-link">
-                        <span class="icon">📝</span>
-                        <span class="text">Conversation History</span>
-                    </a>
-                    <a href="https://app.talktopc.com/integrations" target="_blank" class="quick-link">
+                    <a href="https://talktopc.com/agents/tools" target="_blank" class="quick-link">
                         <span class="icon">🔧</span>
                         <span class="text">Tools & Integrations</span>
+                    </a>
+                    <a href="https://talktopc.com/agents/usage" target="_blank" class="quick-link">
+                        <span class="icon">📈</span>
+                        <span class="text">Usage Tracking</span>
                     </a>
                 </div>
             </div>
@@ -257,6 +264,67 @@ function ttp_render_agent_settings_styles() {
     }
     .agent-loading-indicator.hidden {
         display: none;
+    }
+    
+    /* Agent settings header with Edit button */
+    .agent-settings-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 16px;
+        background: #f6f7f7;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+    
+    .agent-settings-header .header-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+    }
+    
+    .agent-settings-header .header-left h3 {
+        margin: 0;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .agent-settings-header .header-right {
+        display: flex;
+        gap: 8px;
+    }
+    
+    .agent-settings-header .header-right .button {
+        margin: 0;
+    }
+    
+    /* Disabled state for fields */
+    #agentSettingsForm input:disabled,
+    #agentSettingsForm textarea:disabled,
+    #agentSettingsForm select:disabled {
+        background-color: #f6f7f7;
+        color: #50575e;
+        cursor: not-allowed;
+        opacity: 0.8;
+    }
+    
+    /* Edit mode styling */
+    #agentSettingsForm.edit-mode input:not(:disabled),
+    #agentSettingsForm.edit-mode textarea:not(:disabled),
+    #agentSettingsForm.edit-mode select:not(:disabled) {
+        background-color: #fff;
+        border-color: #8c8f94;
+    }
+    
+    #agentSettingsForm.edit-mode input:focus,
+    #agentSettingsForm.edit-mode textarea:focus,
+    #agentSettingsForm.edit-mode select:focus {
+        border-color: #2271b1;
+        box-shadow: 0 0 0 1px #2271b1;
+        outline: none;
     }
     
     /* ============================================

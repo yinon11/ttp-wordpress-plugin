@@ -492,6 +492,74 @@ function ttp_render_dashboard_scripts($current_agent_id) {
             });
         });
         
+        // === EDIT MODE TOGGLE ===
+        var originalValues = {}; // Store original values for cancel
+        
+        function enterEditMode() {
+            // Store original values
+            originalValues = {
+                prompt: $('#ttp_override_prompt').val(),
+                firstMessage: $('#ttp_override_first_message').val(),
+                voice: $('#ttp_override_voice').val(),
+                voiceSpeed: $('#ttp_override_voice_speed').val(),
+                language: $('#ttp_override_language').val(),
+                temperature: $('#ttp_override_temperature').val(),
+                maxTokens: $('#ttp_override_max_tokens').val(),
+                maxCallDuration: $('#ttp_override_max_call_duration').val()
+            };
+            
+            // Enable all fields
+            $('#agentSettingsForm input, #agentSettingsForm textarea, #agentSettingsForm select').prop('disabled', false);
+            $('#agentSettingsForm').addClass('edit-mode');
+            
+            // Show edit-only elements (Generate button, Save area)
+            $('.edit-only').show();
+            
+            // Toggle buttons
+            $('#editAgentSettingsBtn').hide();
+            $('#cancelEditBtn').show();
+        }
+        
+        function exitEditMode(revert) {
+            if (revert) {
+                // Restore original values
+                $('#ttp_override_prompt').val(originalValues.prompt);
+                $('#ttp_override_first_message').val(originalValues.firstMessage);
+                $('#ttp_override_voice').val(originalValues.voice);
+                $('#ttp_override_voice_speed').val(originalValues.voiceSpeed);
+                $('#ttp_override_language').val(originalValues.language);
+                $('#ttp_override_temperature').val(originalValues.temperature);
+                $('#ttp_override_max_tokens').val(originalValues.maxTokens);
+                $('#ttp_override_max_call_duration').val(originalValues.maxCallDuration);
+            }
+            
+            // Disable all fields
+            $('#agentSettingsForm input, #agentSettingsForm textarea, #agentSettingsForm select').prop('disabled', true);
+            $('#agentSettingsForm').removeClass('edit-mode');
+            
+            // Hide edit-only elements
+            $('.edit-only').hide();
+            
+            // Toggle buttons
+            $('#editAgentSettingsBtn').show();
+            $('#cancelEditBtn').hide();
+            
+            // Clear any status messages
+            $('#agentSaveStatus').text('').removeClass('saved error');
+        }
+        
+        // Edit button click
+        $('#editAgentSettingsBtn').on('click', function(e) {
+            e.stopPropagation();
+            enterEditMode();
+        });
+        
+        // Cancel button clicks (both in header and in save area)
+        $('#cancelEditBtn, #cancelEditBtn2').on('click', function(e) {
+            e.stopPropagation();
+            exitEditMode(true); // true = revert changes
+        });
+        
         // === SAVE AGENT SETTINGS ===
         // Saves to both WordPress (for fast UI cache) and TalkToPC backend (actual DB)
         $('#saveAgentSettingsBtn').on('click', function() {
@@ -533,16 +601,17 @@ function ttp_render_dashboard_scripts($current_agent_id) {
                     ...formData
                 }, function(r) {
                     if (r.success) {
-                        $status.text('✓ Saved to TalkToPC').addClass('saved');
+                        $status.text('✓ Saved').addClass('saved');
+                        // Exit edit mode after successful save
                         setTimeout(function() {
-                            $status.text('');
-                        }, 3000);
+                            exitEditMode(false); // false = don't revert, keep new values
+                        }, 1000);
                     } else {
-                        $status.text('⚠ Local saved, backend failed: ' + (r.data?.message || 'Unknown error')).addClass('error');
+                        $status.text('⚠ Failed: ' + (r.data?.message || 'Unknown error')).addClass('error');
+                        $btn.prop('disabled', false).text('Save Agent Settings');
                     }
-                    $btn.prop('disabled', false).text('Save Agent Settings');
                 }).fail(function() {
-                    $status.text('⚠ Local saved, backend unreachable').addClass('error');
+                    $status.text('⚠ Backend unreachable').addClass('error');
                     $btn.prop('disabled', false).text('Save Agent Settings');
                 });
             }).fail(function() {
