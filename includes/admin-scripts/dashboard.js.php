@@ -43,13 +43,18 @@ function talktopc_enqueue_dashboard_scripts($hook) {
     
     // Add inline script
     $js = <<<'JS'
-    console.log("🔧 TalkToPC Voice Widget v" + talktopcDashboard.version + " loaded");
-    var agentsData = {};
-    var voicesData = [];
-    var languageMap = {};
-    var isBackgroundSetup = false;
-    
-    jQuery(document).ready(function($) {
+    (function($) {
+        'use strict';
+        
+        console.log("🔧 TalkToPC Voice Widget v" + talktopcDashboard.version + " loaded");
+        
+        // Variables scoped to IIFE
+        var agentsData = {};
+        var voicesData = [];
+        var languageMap = {};
+        var isBackgroundSetup = false;
+        
+        $(document).ready(function() {
         var ajaxNonce = talktopcDashboard.nonce;
         var currentAgentId = talktopcDashboard.currentAgentId;
         var currentVoice = talktopcDashboard.currentVoice;
@@ -156,7 +161,7 @@ function talktopc_enqueue_dashboard_scripts($hook) {
             
             // Poll every 3 seconds
             setTimeout(function() {
-                $.post(ajaxurl, { action: 'talktopc_get_setup_status', nonce: ajaxNonce }, function(r) {
+                $.post(talktopcDashboard.ajaxUrl, { action: 'talktopc_get_setup_status', nonce: ajaxNonce }, function(r) {
                     if (r.success && r.data.creating) {
                         // Still creating - keep polling
                         showSetupInProgress();
@@ -556,12 +561,13 @@ function talktopc_enqueue_dashboard_scripts($hook) {
             
             $btn.prop('disabled', true).text('Generating...');
             
-            $.post(ajaxurl, { action: 'talktopc_generate_prompt', nonce: ajaxNonce }, function(r) {
+            $.post(talktopcDashboard.ajaxUrl, { action: 'talktopc_generate_prompt', nonce: ajaxNonce }, function(r) {
                 if (r.success && r.data.prompt) {
                     $ta.val(r.data.prompt).css('background-color', '#e8f5e9');
                     setTimeout(function() { $ta.css('background-color', ''); }, 2000);
                 } else {
-                    alert('Error: ' + (r.data?.message || 'Failed to generate prompt'));
+                    var $notice = $('<div class="notice notice-error is-dismissible" style="margin: 10px 0;"><p><strong>Error:</strong> ' + (r.data?.message || 'Failed to generate prompt') + '</p></div>');
+                    $('.talktopc-admin-wrap .wp-header').after($notice);
                 }
                 $btn.prop('disabled', false).text('🔄 Generate from Site Content');
             });
@@ -570,10 +576,14 @@ function talktopc_enqueue_dashboard_scripts($hook) {
         // === CREATE AGENT ===
         $('#createAgentBtn').on('click', function() {
             var name = $('#newAgentName').val().trim();
-            if (!name) { alert('Enter agent name'); return; }
+            if (!name) {
+                $('#newAgentName').closest('.create-agent-section').find('.create-agent-error').remove();
+                $('#newAgentName').closest('.create-agent-inline').after('<div class="create-agent-error notice notice-error" style="margin: 10px 0;"><p>Please enter an agent name.</p></div>');
+                return;
+            }
             var $btn = $(this).prop('disabled', true).text('Creating...');
             
-            $.post(ajaxurl, {
+            $.post(talktopcDashboard.ajaxUrl, {
                 action: 'talktopc_create_agent',
                 nonce: ajaxNonce,
                 agent_name: name,
@@ -582,7 +592,8 @@ function talktopc_enqueue_dashboard_scripts($hook) {
                 if (r.success) {
                     location.reload();
                 } else {
-                    alert('Error: ' + (r.data?.message || 'Failed to create agent'));
+                    var $notice = $('<div class="notice notice-error is-dismissible" style="margin: 10px 0;"><p><strong>Error:</strong> ' + (r.data?.message || 'Failed to create agent') + '</p></div>');
+                    $('.talktopc-admin-wrap .wp-header').after($notice);
                 }
                 $btn.prop('disabled', false).text('Create Agent');
             });
@@ -664,7 +675,7 @@ function talktopc_enqueue_dashboard_scripts($hook) {
             var selectedAgentId = $('#defaultAgentSelect').val();
             
             if (!selectedAgentId || selectedAgentId === 'none') {
-                alert('Please select an agent first');
+                $status.text('Please select an agent first').addClass('error');
                 return;
             }
             
@@ -717,15 +728,19 @@ function talktopc_enqueue_dashboard_scripts($hook) {
         });
     });
     
-    function toggleAgentSettings() {
-        var el = document.getElementById("agentSettings");
-        el.classList.toggle("collapsed");
-        if (el.classList.contains("collapsed")) {
-            el.style.display = "none";
-        } else {
-            el.style.display = "block";
+        function toggleAgentSettings() {
+            var el = document.getElementById("agentSettings");
+            el.classList.toggle("collapsed");
+            if (el.classList.contains("collapsed")) {
+                el.style.display = "none";
+            } else {
+                el.style.display = "block";
+            }
         }
-    }
+        
+        // Expose function needed for onclick handler
+        window.toggleAgentSettings = toggleAgentSettings;
+    })(jQuery);
 JS;
     
     // Replace all ajaxurl references with talktopcDashboard.ajaxUrl
