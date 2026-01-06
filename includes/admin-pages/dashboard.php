@@ -525,7 +525,7 @@ function talktopc_enqueue_agent_settings_styles($hook) {
     }
     
     // Register dummy stylesheet handle
-    wp_register_style('talktopc-agent-settings', false);
+    wp_register_style('talktopc-agent-settings', false, [], TALKTOPC_VERSION);
     wp_enqueue_style('talktopc-agent-settings');
     
     // Add inline styles

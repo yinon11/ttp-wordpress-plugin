@@ -19,7 +19,7 @@ function talktopc_enqueue_common_scripts($hook) {
     }
     
     // Register dummy script handle (required for wp_add_inline_script)
-    wp_register_script('talktopc-common', false, ['jquery'], null, true);
+    wp_register_script('talktopc-common', false, ['jquery'], TALKTOPC_VERSION, true);
     wp_enqueue_script('talktopc-common');
     
     // Pass PHP variables to JavaScript

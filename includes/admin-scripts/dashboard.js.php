@@ -27,7 +27,7 @@ function talktopc_enqueue_dashboard_scripts($hook) {
     $needs_agent_setup = get_transient('talktopc_needs_agent_setup');
     
     // Register dummy script handle (required for wp_add_inline_script)
-    wp_register_script('talktopc-dashboard', false, ['jquery'], null, true);
+    wp_register_script('talktopc-dashboard', false, ['jquery'], TALKTOPC_VERSION, true);
     wp_enqueue_script('talktopc-dashboard');
     
     // Pass PHP variables to JavaScript

@@ -23,6 +23,7 @@ add_action('wp_enqueue_scripts', function() {
     
     // Debug logging (remove in production)
     if (defined('WP_DEBUG') && WP_DEBUG) {
+        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log,WordPress.PHP.DevelopmentFunctions.error_log_print_r
         error_log('TTP Widget - Agent Config: ' . print_r($agent_config, true));
     }
     
@@ -284,11 +285,17 @@ function talktopc_get_agent_for_current_page() {
     
     // Debug logging
     if (defined('WP_DEBUG') && WP_DEBUG && !empty($rules)) {
-        error_log('TTP Page Rules Check - Current URL: ' . $_SERVER['REQUEST_URI']);
+        $request_uri = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '';
+        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log,WordPress.PHP.DevelopmentFunctions.error_log_print_r
+        error_log('TTP Page Rules Check - Current URL: ' . $request_uri);
+        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log,WordPress.PHP.DevelopmentFunctions.error_log_print_r
         error_log('TTP Page Rules - Rules: ' . print_r($rules, true));
+        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
         error_log('TTP Page Rules - is_page(): ' . (is_page() ? 'yes' : 'no'));
+        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
         error_log('TTP Page Rules - is_single(): ' . (is_single() ? 'yes' : 'no'));
         if (is_page() || is_single()) {
+            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
             error_log('TTP Page Rules - Current post ID: ' . get_the_ID());
         }
     }
@@ -296,6 +303,7 @@ function talktopc_get_agent_for_current_page() {
     foreach ($rules as $rule) {
         if (talktopc_rule_matches_current_page($rule)) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
+                // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log,WordPress.PHP.DevelopmentFunctions.error_log_print_r
                 error_log('TTP Page Rules - MATCHED rule: ' . print_r($rule, true));
             }
             return [
@@ -326,6 +334,7 @@ function talktopc_rule_matches_current_page($rule) {
     
     // Debug logging
     if (defined('WP_DEBUG') && WP_DEBUG) {
+        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
         error_log("TTP Rule Check - Type: {$type}, Target: {$target_id}");
     }
     
@@ -335,6 +344,7 @@ function talktopc_rule_matches_current_page($rule) {
             $target_int = intval($target_id);
             $matches = is_page($target_int);
             if (defined('WP_DEBUG') && WP_DEBUG) {
+                // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
                 error_log("TTP Rule Check - is_page({$target_int}): " . ($matches ? 'yes' : 'no'));
             }
             return $matches;

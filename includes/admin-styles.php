@@ -1247,7 +1247,7 @@ function talktopc_enqueue_admin_styles($hook) {
     }
     
     // Register dummy stylesheet handle (required for wp_add_inline_style)
-    wp_register_style('talktopc-admin', false);
+    wp_register_style('talktopc-admin', false, [], TALKTOPC_VERSION);
     wp_enqueue_style('talktopc-admin');
     
     // Add inline styles

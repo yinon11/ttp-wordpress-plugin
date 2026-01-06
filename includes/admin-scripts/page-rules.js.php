@@ -23,7 +23,7 @@ function talktopc_enqueue_page_rules_scripts($hook) {
     $rules = json_decode($rules_json, true) ?: [];
     
     // Register dummy script handle (required for wp_add_inline_script)
-    wp_register_script('talktopc-page-rules', false, ['jquery'], null, true);
+    wp_register_script('talktopc-page-rules', false, ['jquery'], TALKTOPC_VERSION, true);
     wp_enqueue_script('talktopc-page-rules');
     
     // Pass PHP variables to JavaScript

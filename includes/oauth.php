@@ -30,7 +30,7 @@ function talktopc_handle_connect() {
     
     // Verify user has admin permissions
     if (!current_user_can('manage_options')) {
-        wp_die(__('You do not have permission to perform this action.', 'talktopc'));
+        wp_die(esc_html__('You do not have permission to perform this action.', 'talktopc'));
     }
     
     // Generate one-time secret (32 chars, alphanumeric)
@@ -84,7 +84,7 @@ function talktopc_handle_oauth_callback() {
     
     // 2. Capability check
     if (!current_user_can('manage_options')) {
-        wp_die(__('You do not have permission to perform this action.', 'talktopc'));
+        wp_die(esc_html__('You do not have permission to perform this action.', 'talktopc'));
     }
     
     // 3. Nonce check (reuse same nonce from Connect flow)
@@ -99,13 +99,13 @@ function talktopc_handle_oauth_callback() {
     
     // 5. Validate required fields
     if (empty($api_key) || empty($app_id) || empty($secret)) {
-        wp_die(__('Missing required fields.', 'talktopc'));
+        wp_die(esc_html__('Missing required fields.', 'talktopc'));
     }
     
     // 6. Validate secret against stored transient
     $stored_secret = get_transient('talktopc_connect_secret');
     if (!$stored_secret || !hash_equals($stored_secret, $secret)) {
-        wp_die(__('Invalid or expired session. Please try connecting again.', 'talktopc'));
+        wp_die(esc_html__('Invalid or expired session. Please try connecting again.', 'talktopc'));
     }
     
     // 7. Delete transient immediately (one-time use)

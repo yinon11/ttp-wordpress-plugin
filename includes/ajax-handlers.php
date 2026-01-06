@@ -394,7 +394,7 @@ add_action('wp_ajax_talktopc_review_action', 'talktopc_handle_review_action');
 function talktopc_handle_review_action() {
     check_ajax_referer('talktopc_ajax_nonce', 'nonce');
     
-    $type = sanitize_text_field($_POST['type'] ?? '');
+    $type = sanitize_text_field(wp_unslash($_POST['type'] ?? ''));
     
     if ($type === 'done') {
         update_option('talktopc_review_done', true);
@@ -485,7 +485,7 @@ function talktopc_get_agent_for_current_page_ajax() {
     $default_agent_name = get_option('talktopc_agent_name', '');
     
     // Get the page URL from referer
-    $referer = isset($_SERVER['HTTP_REFERER']) ? esc_url_raw($_SERVER['HTTP_REFERER']) : '';
+    $referer = isset($_SERVER['HTTP_REFERER']) ? esc_url_raw(wp_unslash($_SERVER['HTTP_REFERER'])) : '';
     
     if (!empty($referer) && !empty($rules)) {
         // Try to get page ID from URL
