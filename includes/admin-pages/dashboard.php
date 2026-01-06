@@ -10,27 +10,28 @@
 if (!defined('ABSPATH')) exit;
 
 
-function ttp_render_dashboard_page() {
-    $is_connected = !empty(get_option('ttp_api_key'));
-    $user_email = get_option('ttp_user_email', '');
-    $current_agent_id = get_option('ttp_agent_id', '');
-    $current_agent_name = get_option('ttp_agent_name', '');
+function talktopc_render_dashboard_page() {
+    $is_connected = !empty(get_option('talktopc_api_key'));
+    $user_email = get_option('talktopc_user_email', '');
+    $current_agent_id = get_option('talktopc_agent_id', '');
+    $current_agent_name = get_option('talktopc_agent_name', '');
     
     // Build OAuth URLs
-    $connect_url = admin_url('admin-post.php?action=ttp_connect');
-    $disconnect_url = wp_nonce_url(admin_url('admin.php?page=talktopc&action=disconnect'), 'ttp_disconnect');
+    $connect_url = admin_url('admin-post.php?action=talktopc_connect');
+    $connect_url = wp_nonce_url($connect_url, 'talktopc_connect_action');
+    $disconnect_url = wp_nonce_url(admin_url('admin.php?page=talktopc&action=disconnect'), 'talktopc_disconnect');
     
     // Enqueue WordPress color picker
     wp_enqueue_style('wp-color-picker');
     wp_enqueue_script('wp-color-picker');
     
-    ttp_render_admin_styles();
-    ttp_render_agent_settings_styles(); // New: Additional styles for agent settings
+    talktopc_render_admin_styles();
+    talktopc_render_agent_settings_styles(); // New: Additional styles for agent settings
     ?>
     <div class="wrap ttp-admin-wrap">
         <div class="wp-header">
             <h1>Dashboard</h1>
-            <span class="version">v<?php echo esc_html(TTP_VERSION); ?></span>
+            <span class="version">v<?php echo esc_html(TALKTOPC_VERSION); ?></span>
         </div>
         
         <?php settings_errors(); ?>
@@ -76,7 +77,7 @@ function ttp_render_dashboard_page() {
                 <div id="agentSelectorArea">
                 <div class="agent-selector-big">
                     <label>Select Agent</label>
-                    <select id="defaultAgentSelect" name="ttp_agent_id">
+                    <select id="defaultAgentSelect" name="talktopc_agent_id">
                         <option value="">-- Select Agent --</option>
                         <?php 
                         // FIX #1: Show saved agent immediately from PHP
@@ -119,9 +120,9 @@ function ttp_render_dashboard_page() {
                             <!-- FIX #3: Better aligned form layout -->
                             <div class="agent-form-grid">
                                 <div class="form-row full-width">
-                                    <label for="ttp_override_prompt">System Prompt</label>
+                                    <label for="talktopc_override_prompt">System Prompt</label>
                                     <div class="field">
-                                        <textarea id="ttp_override_prompt" rows="5" disabled><?php echo esc_textarea(get_option('ttp_override_prompt', '')); ?></textarea>
+                                        <textarea id="talktopc_override_prompt" rows="5" disabled><?php echo esc_textarea(get_option('talktopc_override_prompt', '')); ?></textarea>
                                         <p class="field-action edit-only" style="display: none;">
                                             <button type="button" class="button button-small" id="ttpGeneratePrompt">🔄 Generate from Site Content</button>
                                         </p>
@@ -129,16 +130,16 @@ function ttp_render_dashboard_page() {
                                 </div>
                                 
                                 <div class="form-row full-width">
-                                    <label for="ttp_override_first_message">First Message</label>
+                                    <label for="talktopc_override_first_message">First Message</label>
                                     <div class="field">
-                                        <input type="text" id="ttp_override_first_message" value="<?php echo esc_attr(get_option('ttp_override_first_message', '')); ?>" disabled>
+                                        <input type="text" id="talktopc_override_first_message" value="<?php echo esc_attr(get_option('talktopc_override_first_message', '')); ?>" disabled>
                                     </div>
                                 </div>
                                 
                                 <div class="form-row full-width">
-                                    <label for="ttp_override_voice">Voice</label>
+                                    <label for="talktopc_override_voice">Voice</label>
                                     <div class="field">
-                                        <select id="ttp_override_voice" disabled>
+                                        <select id="talktopc_override_voice" disabled>
                                             <option value="">-- Select Voice --</option>
                                         </select>
                                     </div>
@@ -150,31 +151,31 @@ function ttp_render_dashboard_page() {
                             <!-- FIX #3: CSS Grid for aligned inline fields -->
                             <div class="advanced-settings-grid">
                                 <div class="grid-field">
-                                    <label for="ttp_override_voice_speed">Speed</label>
-                                    <input type="number" id="ttp_override_voice_speed" value="<?php echo esc_attr(get_option('ttp_override_voice_speed', '1.0')); ?>" step="0.1" min="0.5" max="2.0" disabled>
+                                    <label for="talktopc_override_voice_speed">Speed</label>
+                                    <input type="number" id="talktopc_override_voice_speed" value="<?php echo esc_attr(get_option('talktopc_override_voice_speed', '1.0')); ?>" step="0.1" min="0.5" max="2.0" disabled>
                                 </div>
                                 
                                 <div class="grid-field">
-                                    <label for="ttp_override_language">Language</label>
-                                    <select id="ttp_override_language" disabled>
+                                    <label for="talktopc_override_language">Language</label>
+                                    <select id="talktopc_override_language" disabled>
                                         <option value="">-- Select Language --</option>
                                     </select>
                                 </div>
                                 
                                 <div class="grid-field">
-                                    <label for="ttp_override_temperature">Temperature</label>
-                                    <input type="number" id="ttp_override_temperature" value="<?php echo esc_attr(get_option('ttp_override_temperature', '0.7')); ?>" step="0.1" min="0" max="2" disabled>
+                                    <label for="talktopc_override_temperature">Temperature</label>
+                                    <input type="number" id="talktopc_override_temperature" value="<?php echo esc_attr(get_option('talktopc_override_temperature', '0.7')); ?>" step="0.1" min="0" max="2" disabled>
                                 </div>
                                 
                                 <div class="grid-field">
-                                    <label for="ttp_override_max_tokens">Max Tokens</label>
-                                    <input type="number" id="ttp_override_max_tokens" value="<?php echo esc_attr(get_option('ttp_override_max_tokens', '1000')); ?>" disabled>
+                                    <label for="talktopc_override_max_tokens">Max Tokens</label>
+                                    <input type="number" id="talktopc_override_max_tokens" value="<?php echo esc_attr(get_option('talktopc_override_max_tokens', '1000')); ?>" disabled>
                                 </div>
                                 
                                 <div class="grid-field">
-                                    <label for="ttp_override_max_call_duration">Max Duration</label>
+                                    <label for="talktopc_override_max_call_duration">Max Duration</label>
                                     <div class="input-with-suffix">
-                                        <input type="number" id="ttp_override_max_call_duration" value="<?php echo esc_attr(get_option('ttp_override_max_call_duration', '300')); ?>" disabled>
+                                        <input type="number" id="talktopc_override_max_call_duration" value="<?php echo esc_attr(get_option('talktopc_override_max_call_duration', '300')); ?>" disabled>
                                         <span class="suffix">sec</span>
                                     </div>
                                 </div>
@@ -228,21 +229,21 @@ function ttp_render_dashboard_page() {
             <div class="card">
                 <h2><span class="icon">🔗</span> Account Connection</h2>
                 <p>Connect your TalkToPC account to get started.</p>
-                <a href="<?php echo esc_url($connect_url); ?>" class="button button-primary button-hero">Connect to TalkToPC</a>
+                <a href="<?php echo esc_url($connect_url); ?>" class="button button-primary button-hero"><?php echo esc_html__('Connect to TalkToPC', 'talktopc'); ?></a>
             </div>
         <?php endif; ?>
     </div>
     <?php
     wp_enqueue_style('wp-color-picker');
     wp_enqueue_script('wp-color-picker');
-    ttp_render_common_scripts();
-    ttp_render_dashboard_scripts($current_agent_id);
+    talktopc_render_common_scripts();
+    talktopc_render_dashboard_scripts($current_agent_id);
 }
 
 /**
  * FIX #3: Additional CSS for better Agent Settings alignment
  */
-function ttp_render_agent_settings_styles() {
+function talktopc_render_agent_settings_styles() {
     ?>
     <style>
     /* Agent loading indicator */

@@ -9,12 +9,12 @@
 if (!defined('ABSPATH')) exit;
 
 
-function ttp_render_advanced_page() {
-    ttp_render_admin_styles();
+function talktopc_render_advanced_page() {
+    talktopc_render_admin_styles();
     
     // FIX #2: Get current agent values to preserve them
-    $current_agent_id = get_option('ttp_agent_id', '');
-    $current_agent_name = get_option('ttp_agent_name', '');
+    $current_agent_id = get_option('talktopc_agent_id', '');
+    $current_agent_name = get_option('talktopc_agent_name', '');
     ?>
     <div class="wrap ttp-admin-wrap">
         <div class="wp-header">
@@ -22,23 +22,23 @@ function ttp_render_advanced_page() {
         </div>
         
         <form method="post" action="options.php">
-            <?php settings_fields('ttp_settings'); ?>
+            <?php settings_fields('talktopc_settings'); ?>
             
             <!-- FIX #2: Hidden fields to preserve agent selection -->
-            <input type="hidden" name="ttp_agent_id" value="<?php echo esc_attr($current_agent_id); ?>">
-            <input type="hidden" name="ttp_agent_name" value="<?php echo esc_attr($current_agent_name); ?>">
+            <input type="hidden" name="talktopc_agent_id" value="<?php echo esc_attr($current_agent_id); ?>">
+            <input type="hidden" name="talktopc_agent_name" value="<?php echo esc_attr($current_agent_name); ?>">
             
-            <?php ttp_render_animation_settings(); ?>
-            <?php ttp_render_accessibility_settings(); ?>
-            <?php ttp_render_tooltip_settings(); ?>
+            <?php talktopc_render_animation_settings(); ?>
+            <?php talktopc_render_accessibility_settings(); ?>
+            <?php talktopc_render_tooltip_settings(); ?>
             
             <!-- Custom CSS Section -->
             <div class="card">
                 <h2><span class="icon">🎨</span> Custom CSS</h2>
                 <div class="form-row">
-                    <label for="ttp_custom_css">Custom Styles</label>
+                    <label for="talktopc_custom_css">Custom Styles</label>
                     <div class="field">
-                        <textarea name="ttp_custom_css" id="ttp_custom_css" rows="10" style="font-family: monospace; width: 100%;"><?php echo esc_textarea(get_option('ttp_custom_css')); ?></textarea>
+                        <textarea name="talktopc_custom_css" id="talktopc_custom_css" rows="10" style="font-family: monospace; width: 100%;"><?php echo esc_textarea(get_option('talktopc_custom_css')); ?></textarea>
                         <p class="description">
                             Add custom CSS to style the widget. Use <code>.ttp-widget</code> as the root selector.<br>
                             <strong>Example:</strong> <code>.ttp-widget .ttp-button { box-shadow: none; }</code>
@@ -65,5 +65,5 @@ function ttp_render_advanced_page() {
     <?php
     wp_enqueue_style('wp-color-picker');
     wp_enqueue_script('wp-color-picker');
-    ttp_render_common_scripts();
+    talktopc_render_common_scripts();
 }

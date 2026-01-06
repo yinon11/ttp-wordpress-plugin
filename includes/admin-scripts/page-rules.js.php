@@ -6,9 +6,9 @@
 if (!defined('ABSPATH')) exit;
 
 
-function ttp_render_page_rules_scripts() {
-    $ajax_nonce = wp_create_nonce('ttp_ajax_nonce');
-    $rules_json = get_option('ttp_page_rules', '[]');
+function talktopc_render_page_rules_scripts() {
+    $ajax_nonce = wp_create_nonce('talktopc_ajax_nonce');
+    $rules_json = get_option('talktopc_page_rules', '[]');
     $rules = json_decode($rules_json, true) ?: [];
     ?>
     <script>
@@ -22,7 +22,7 @@ function ttp_render_page_rules_scripts() {
         var rules = ttpRules;
         
         // Fetch agents for dropdowns
-        $.post(ajaxurl, { action: 'ttp_fetch_agents', nonce: ajaxNonce }, function(r) {
+        $.post(ajaxurl, { action: 'talktopc_fetch_agents', nonce: ajaxNonce }, function(r) {
             if (r.success && r.data) {
                 // Handle different response formats: array or {data: [...]}
                 ttpAgentsList = Array.isArray(r.data) ? r.data : (r.data.data || []);
@@ -60,7 +60,7 @@ function ttp_render_page_rules_scripts() {
         
         // Fetch pages list for modal
         var pagesData = null;
-        $.post(ajaxurl, { action: 'ttp_get_pages_list', nonce: ajaxNonce }, function(r) {
+        $.post(ajaxurl, { action: 'talktopc_get_pages_list', nonce: ajaxNonce }, function(r) {
             if (r.success) {
                 pagesData = r.data;
                 renderPageSelector();
@@ -158,7 +158,7 @@ function ttp_render_page_rules_scripts() {
     
     function saveRules() {
         jQuery.post(ajaxurl, {
-            action: 'ttp_save_page_rules',
+            action: 'talktopc_save_page_rules',
             nonce: ttpAjaxNonce,
             rules: JSON.stringify(ttpRules)
         }, function(r) {
@@ -181,7 +181,7 @@ function ttp_render_page_rules_scripts() {
         if (!confirm('Delete this rule?')) return;
         ttpRules = ttpRules.filter(function(r, i) { return i !== index; });
         jQuery.post(ajaxurl, {
-            action: 'ttp_save_page_rules',
+            action: 'talktopc_save_page_rules',
             nonce: ttpAjaxNonce,
             rules: JSON.stringify(ttpRules)
         }, function(r) {
@@ -226,7 +226,7 @@ function ttp_render_page_rules_scripts() {
         ttpRules.push(newRule);
         
         jQuery.post(ajaxurl, {
-            action: 'ttp_save_page_rules',
+            action: 'talktopc_save_page_rules',
             nonce: ttpAjaxNonce,
             rules: JSON.stringify(ttpRules)
         }, function(r) {

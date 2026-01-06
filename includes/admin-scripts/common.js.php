@@ -10,54 +10,54 @@ if (!defined('ABSPATH')) exit;
 /**
  * Render common admin scripts (color pickers, collapsibles, etc.)
  */
-function ttp_render_common_scripts() {
+function talktopc_render_common_scripts() {
     ?>
     <script>
     jQuery(document).ready(function($) {
         // Initialize color pickers
-        $('.ttp-color-picker').wpColorPicker({
+        $('.talktopc-color-picker').wpColorPicker({
             change: function(event, ui) {
                 $(this).closest('.color-picker-row').find('.color-preview').css('background-color', ui.color.toString());
             }
         });
         
         // Collapsible sections
-        $('.ttp-collapsible-header, .collapsible-header').on('click', function() {
-            $(this).closest('.ttp-collapsible, .collapsible').toggleClass('open');
+        $('.talktopc-collapsible-header, .collapsible-header').on('click', function() {
+            $(this).closest('.talktopc-collapsible, .collapsible').toggleClass('open');
         });
         
         // Icon type toggle
-        $('#ttp_icon_type').on('change', function() {
+        $('#talktopc_icon_type').on('change', function() {
             var type = $(this).val();
-            $('.ttp-icon-custom-row, .ttp-icon-emoji-row, .ttp-icon-text-row').hide();
-            if (type === 'custom') $('.ttp-icon-custom-row').show();
-            else if (type === 'emoji') $('.ttp-icon-emoji-row').show();
-            else if (type === 'text') $('.ttp-icon-text-row').show();
+            $('.talktopc-icon-custom-row, .talktopc-icon-emoji-row, .talktopc-icon-text-row').hide();
+            if (type === 'custom') $('.talktopc-icon-custom-row').show();
+            else if (type === 'emoji') $('.talktopc-icon-emoji-row').show();
+            else if (type === 'text') $('.talktopc-icon-text-row').show();
         }).trigger('change');
         
         // Feature discovery banner dismiss
-        $('.ttp-dismiss-banner').on('click', function() {
-            var $banner = $('#ttp-feature-discovery-banner');
+        $('.talktopc-dismiss-banner').on('click', function() {
+            var $banner = $('#talktopc-feature-discovery-banner');
             $banner.fadeOut(300, function() { $(this).remove(); });
             
-            var ajaxNonce = '<?php echo esc_js(wp_create_nonce('ttp_ajax_nonce')); ?>';
+            var ajaxNonce = '<?php echo esc_js(wp_create_nonce('talktopc_ajax_nonce')); ?>';
             $.post(ajaxurl, {
-                action: 'ttp_dismiss_feature_banner',
+                action: 'talktopc_dismiss_feature_banner',
                 nonce: ajaxNonce
             });
         });
         
         // Review request handlers
-        $('#ttp-review-yes, #ttp-review-support').on('click', function() {
-            var ajaxNonce = '<?php echo esc_js(wp_create_nonce('ttp_ajax_nonce')); ?>';
-            $.post(ajaxurl, { action: 'ttp_review_action', type: 'done', nonce: ajaxNonce });
-            $('#ttp-review-request-card').fadeOut(300);
+        $('#talktopc-review-yes, #talktopc-review-support').on('click', function() {
+            var ajaxNonce = '<?php echo esc_js(wp_create_nonce('talktopc_ajax_nonce')); ?>';
+            $.post(ajaxurl, { action: 'talktopc_review_action', type: 'done', nonce: ajaxNonce });
+            $('#talktopc-review-request-card').fadeOut(300);
         });
         
-        $('#ttp-review-dismiss').on('click', function() {
-            var ajaxNonce = '<?php echo esc_js(wp_create_nonce('ttp_ajax_nonce')); ?>';
-            $.post(ajaxurl, { action: 'ttp_review_action', type: 'later', nonce: ajaxNonce });
-            $('#ttp-review-request-card').fadeOut(300);
+        $('#talktopc-review-dismiss').on('click', function() {
+            var ajaxNonce = '<?php echo esc_js(wp_create_nonce('talktopc_ajax_nonce')); ?>';
+            $.post(ajaxurl, { action: 'talktopc_review_action', type: 'later', nonce: ajaxNonce });
+            $('#talktopc-review-request-card').fadeOut(300);
         });
     });
     </script>

@@ -9,13 +9,13 @@
 if (!defined('ABSPATH')) exit;
 
 
-function ttp_render_dashboard_scripts($current_agent_id) {
-    $ajax_nonce = wp_create_nonce('ttp_ajax_nonce');
-    $current_voice = get_option('ttp_override_voice');
-    $current_language = get_option('ttp_override_language');
+function talktopc_render_dashboard_scripts($current_agent_id) {
+    $ajax_nonce = wp_create_nonce('talktopc_ajax_nonce');
+    $current_voice = get_option('talktopc_override_voice');
+    $current_language = get_option('talktopc_override_language');
     ?>
     <script>
-    console.log('🔧 TTP Voice Widget v<?php echo esc_js(TTP_VERSION); ?> loaded');
+    console.log('🔧 TalkToPC Voice Widget v<?php echo esc_js(TALKTOPC_VERSION); ?> loaded');
     var agentsData = {};
     var voicesData = [];
     var languageMap = {};
@@ -37,7 +37,7 @@ function ttp_render_dashboard_scripts($current_agent_id) {
         
         // === SETUP STATUS CHECK ===
         function checkSetupStatus() {
-            $.post(ajaxurl, { action: 'ttp_get_setup_status', nonce: ajaxNonce }, function(r) {
+            $.post(ajaxurl, { action: 'talktopc_get_setup_status', nonce: ajaxNonce }, function(r) {
                 if (r.success && r.data.creating) {
                     // Still creating agent - show overlay and poll
                     showSetupInProgress();
@@ -54,7 +54,7 @@ function ttp_render_dashboard_scripts($current_agent_id) {
         
         function showSetupInProgress() {
             // Show overlay if not exists and not in background mode
-            if ($('#ttp-setup-overlay').length === 0 && !isBackgroundSetup) {
+            if ($('#talktopc-setup-overlay').length === 0 && !isBackgroundSetup) {
                 var overlay = $(
                     '<div id="ttp-setup-overlay" class="ttp-setup-overlay">' +
                         '<div class="ttp-setup-modal">' +
@@ -69,9 +69,9 @@ function ttp_render_dashboard_scripts($current_agent_id) {
                 $('body').append(overlay);
                 
                 // Handle "Run in Background" button
-                $('#ttp-run-background-btn').on('click', function() {
+                $('#talktopc-run-background-btn').on('click', function() {
                     isBackgroundSetup = true;
-                    $('#ttp-setup-overlay').remove();
+                    $('#talktopc-setup-overlay').remove();
                     showBackgroundBanner();
                     // Load voices but keep agents area disabled
                     fetchVoices(function() {
@@ -85,7 +85,7 @@ function ttp_render_dashboard_scripts($current_agent_id) {
             
             // Poll every 3 seconds
             setTimeout(function() {
-                $.post(ajaxurl, { action: 'ttp_get_setup_status', nonce: ajaxNonce }, function(r) {
+                $.post(ajaxurl, { action: 'talktopc_get_setup_status', nonce: ajaxNonce }, function(r) {
                     if (r.success && r.data.creating) {
                         // Still creating - keep polling
                         showSetupInProgress();
@@ -93,14 +93,14 @@ function ttp_render_dashboard_scripts($current_agent_id) {
                         // Done!
                         if (isBackgroundSetup) {
                             // Remove banner and reload agents
-                            $('#ttp-background-setup-banner').remove();
+                            $('#talktopc-background-setup-banner').remove();
                             $('#defaultAgentSelect').prop('disabled', false);
                             $('#agentSelectorArea').show();
                             $('#createAgentBtn').prop('disabled', false);
                             fetchAgents();
                             // Show success notice
                             var $notice = $('<div class="notice notice-success is-dismissible" style="margin: 10px 0;"><p>✅ Your AI assistant is ready!</p></div>');
-                            $('.ttp-admin-wrap .wp-header').after($notice);
+                            $('.talktopc-admin-wrap .wp-header').after($notice);
                         } else {
                             // Reload page to show everything fresh
                             window.location.reload();
@@ -116,7 +116,7 @@ function ttp_render_dashboard_scripts($current_agent_id) {
         }
         
         function showBackgroundBanner() {
-            if ($('#ttp-background-setup-banner').length === 0) {
+            if ($('#talktopc-background-setup-banner').length === 0) {
                 var banner = $(
                     '<div id="ttp-background-setup-banner" class="ttp-background-setup-banner">' +
                         '<div class="ttp-banner-spinner"></div>' +
@@ -126,20 +126,20 @@ function ttp_render_dashboard_scripts($current_agent_id) {
                         '</div>' +
                     '</div>'
                 );
-                $('.ttp-admin-wrap .card').first().before(banner);
+                $('.talktopc-admin-wrap .card').first().before(banner);
             }
         }
         
         function hideSetupInProgress() {
-            $('#ttp-setup-overlay').remove();
-            $('#ttp-background-setup-banner').remove();
+            $('#talktopc-setup-overlay').remove();
+            $('#talktopc-background-setup-banner').remove();
         }
         
         // === FETCH CREDITS ===
         // Start in loading state
         $('#ttpCreditsBox').addClass('loading');
         
-        $.post(ajaxurl, { action: 'ttp_fetch_credits', nonce: ajaxNonce }, function(r) {
+        $.post(ajaxurl, { action: 'talktopc_fetch_credits', nonce: ajaxNonce }, function(r) {
             $('#ttpCreditsBox').removeClass('loading');
             
             if (r.success && r.data) {
@@ -245,7 +245,7 @@ function ttp_render_dashboard_scripts($current_agent_id) {
         
         // === AGENTS ===
         function fetchAgents() {
-            $.post(ajaxurl, { action: 'ttp_fetch_agents', nonce: ajaxNonce }, function(r) {
+            $.post(ajaxurl, { action: 'talktopc_fetch_agents', nonce: ajaxNonce }, function(r) {
                 var agents = r.success && r.data ? (Array.isArray(r.data) ? r.data : (r.data.data || [])) : [];
                 
                 // Populate dropdown
@@ -291,7 +291,7 @@ function ttp_render_dashboard_scripts($current_agent_id) {
                 // Always save the selection (including "none" for disabled)
                 if (selectedId) {
                     $.post(ajaxurl, {
-                        action: 'ttp_save_agent_selection',
+                        action: 'talktopc_save_agent_selection',
                         nonce: ajaxNonce,
                         agent_id: selectedId,
                         agent_name: selectedName
@@ -348,10 +348,10 @@ function ttp_render_dashboard_scripts($current_agent_id) {
             
             // Always populate fields with agent data
             var agentPrompt = config.systemPrompt || config.prompt || '';
-            $('#ttp_override_prompt').val(agentPrompt);
+            $('#talktopc_override_prompt').val(agentPrompt);
             
             var firstMessage = config.firstMessage || '';
-            $('#ttp_override_first_message').val(firstMessage);
+            $('#talktopc_override_first_message').val(firstMessage);
             
             var voiceId = config.voiceId || '';
             var voiceSpeed = config.voiceSpeed || 1.0;
@@ -368,37 +368,37 @@ function ttp_render_dashboard_scripts($current_agent_id) {
             
             // Set language first (this filters voices)
             if (lang) {
-                $('#ttp_override_language').val(lang);
+                $('#talktopc_override_language').val(lang);
                 populateVoicesDropdown(lang);
             }
             
             // Then set voice (after dropdown is populated)
-            $('#ttp_override_voice').val(voiceId);
-            $('#ttp_override_voice_speed').val(voiceSpeed);
+            $('#talktopc_override_voice').val(voiceId);
+            $('#talktopc_override_voice_speed').val(voiceSpeed);
             
-            $('#ttp_override_temperature').val(config.temperature || '0.7');
-            $('#ttp_override_max_tokens').val(config.maxTokens || '1000');
-            $('#ttp_override_max_call_duration').val(config.maxCallDuration || '300');
+            $('#talktopc_override_temperature').val(config.temperature || '0.7');
+            $('#talktopc_override_max_tokens').val(config.maxTokens || '1000');
+            $('#talktopc_override_max_call_duration').val(config.maxCallDuration || '300');
         }
         
         function autoSaveSettings(agentId, agentName) {
             if (!agentId) return;
             var $notice = $('<div class="notice notice-info" id="ttp-autosave-notice" style="margin: 10px 0; padding: 10px;"><p>⏳ Auto-saving...</p></div>');
-            $('.ttp-admin-wrap .wp-header').after($notice);
+            $('.talktopc-admin-wrap .wp-header').after($notice);
             
-            $.post(ajaxurl, { action: 'ttp_save_agent_selection', nonce: ajaxNonce, agent_id: agentId, agent_name: agentName }, function(r) {
+            $.post(ajaxurl, { action: 'talktopc_save_agent_selection', nonce: ajaxNonce, agent_id: agentId, agent_name: agentName }, function(r) {
                 if (r.success) {
-                    $('#ttp-autosave-notice').removeClass('notice-info').addClass('notice-success').html('<p>✅ Saved! Reloading...</p>');
+                    $('#talktopc-autosave-notice').removeClass('notice-info').addClass('notice-success').html('<p>✅ Saved! Reloading...</p>');
                     setTimeout(function() { window.location.reload(); }, 300);
                 } else {
-                    $('#ttp-autosave-notice').removeClass('notice-info').addClass('notice-error').html('<p>❌ Failed. Save manually.</p>');
+                    $('#talktopc-autosave-notice').removeClass('notice-info').addClass('notice-error').html('<p>❌ Failed. Save manually.</p>');
                 }
             });
         }
         
         // === VOICES ===
         function fetchVoices(callback) {
-            $.post(ajaxurl, { action: 'ttp_fetch_voices', nonce: ajaxNonce }, function(r) {
+            $.post(ajaxurl, { action: 'talktopc_fetch_voices', nonce: ajaxNonce }, function(r) {
                 voicesData = r.success && r.data ? (Array.isArray(r.data) ? r.data : (r.data.data || r.data.voices || [])) : [];
                 
                 var langNames = {
@@ -417,7 +417,7 @@ function ttp_render_dashboard_scripts($current_agent_id) {
                     }); 
                 });
                 
-                var $lang = $('#ttp_override_language');
+                var $lang = $('#talktopc_override_language');
                 $lang.find('option:not(:first)').remove();
                 Object.keys(languageMap).sort(function(a,b) { 
                     return languageMap[a].localeCompare(languageMap[b]); 
@@ -434,7 +434,7 @@ function ttp_render_dashboard_scripts($current_agent_id) {
         }
         
         function populateVoicesDropdown(filterLang) {
-            var $v = $('#ttp_override_voice');
+            var $v = $('#talktopc_override_voice');
             $v.find('option:not(:first)').remove();
             var filtered = filterLang ? voicesData.filter(function(v) {
                 return (v.languages || []).some(function(l) { 
@@ -448,19 +448,19 @@ function ttp_render_dashboard_scripts($current_agent_id) {
             });
         }
         
-        $('#ttp_override_voice').on('change', function() {
+        $('#talktopc_override_voice').on('change', function() {
             var speed = $(this).find('option:selected').data('default-speed');
-            if (speed) $('#ttp_override_voice_speed').val(speed);
+            if (speed) $('#talktopc_override_voice_speed').val(speed);
         });
         
         // === GENERATE PROMPT ===
         $('#ttpGeneratePrompt').on('click', function() {
-            var $btn = $(this), $ta = $('#ttp_override_prompt');
+            var $btn = $(this), $ta = $('#talktopc_override_prompt');
             if ($ta.val().trim() !== '' && !confirm('Replace current prompt?')) return;
             
             $btn.prop('disabled', true).text('Generating...');
             
-            $.post(ajaxurl, { action: 'ttp_generate_prompt', nonce: ajaxNonce }, function(r) {
+            $.post(ajaxurl, { action: 'talktopc_generate_prompt', nonce: ajaxNonce }, function(r) {
                 if (r.success && r.data.prompt) {
                     $ta.val(r.data.prompt).css('background-color', '#e8f5e9');
                     setTimeout(function() { $ta.css('background-color', ''); }, 2000);
@@ -478,7 +478,7 @@ function ttp_render_dashboard_scripts($current_agent_id) {
             var $btn = $(this).prop('disabled', true).text('Creating...');
             
             $.post(ajaxurl, {
-                action: 'ttp_create_agent',
+                action: 'talktopc_create_agent',
                 nonce: ajaxNonce,
                 agent_name: name,
                 auto_generate_prompt: 'true'
@@ -498,14 +498,14 @@ function ttp_render_dashboard_scripts($current_agent_id) {
         function enterEditMode() {
             // Store original values
             originalValues = {
-                prompt: $('#ttp_override_prompt').val(),
-                firstMessage: $('#ttp_override_first_message').val(),
-                voice: $('#ttp_override_voice').val(),
-                voiceSpeed: $('#ttp_override_voice_speed').val(),
-                language: $('#ttp_override_language').val(),
-                temperature: $('#ttp_override_temperature').val(),
-                maxTokens: $('#ttp_override_max_tokens').val(),
-                maxCallDuration: $('#ttp_override_max_call_duration').val()
+                prompt: $('#talktopc_override_prompt').val(),
+                firstMessage: $('#talktopc_override_first_message').val(),
+                voice: $('#talktopc_override_voice').val(),
+                voiceSpeed: $('#talktopc_override_voice_speed').val(),
+                language: $('#talktopc_override_language').val(),
+                temperature: $('#talktopc_override_temperature').val(),
+                maxTokens: $('#talktopc_override_max_tokens').val(),
+                maxCallDuration: $('#talktopc_override_max_call_duration').val()
             };
             
             // Enable all fields
@@ -523,14 +523,14 @@ function ttp_render_dashboard_scripts($current_agent_id) {
         function exitEditMode(revert) {
             if (revert) {
                 // Restore original values
-                $('#ttp_override_prompt').val(originalValues.prompt);
-                $('#ttp_override_first_message').val(originalValues.firstMessage);
-                $('#ttp_override_voice').val(originalValues.voice);
-                $('#ttp_override_voice_speed').val(originalValues.voiceSpeed);
-                $('#ttp_override_language').val(originalValues.language);
-                $('#ttp_override_temperature').val(originalValues.temperature);
-                $('#ttp_override_max_tokens').val(originalValues.maxTokens);
-                $('#ttp_override_max_call_duration').val(originalValues.maxCallDuration);
+                $('#talktopc_override_prompt').val(originalValues.prompt);
+                $('#talktopc_override_first_message').val(originalValues.firstMessage);
+                $('#talktopc_override_voice').val(originalValues.voice);
+                $('#talktopc_override_voice_speed').val(originalValues.voiceSpeed);
+                $('#talktopc_override_language').val(originalValues.language);
+                $('#talktopc_override_temperature').val(originalValues.temperature);
+                $('#talktopc_override_max_tokens').val(originalValues.maxTokens);
+                $('#talktopc_override_max_call_duration').val(originalValues.maxCallDuration);
             }
             
             // Disable all fields
@@ -574,14 +574,14 @@ function ttp_render_dashboard_scripts($current_agent_id) {
             
             // Collect form data
             var formData = {
-                system_prompt: $('#ttp_override_prompt').val(),
-                first_message: $('#ttp_override_first_message').val(),
-                voice_id: $('#ttp_override_voice').val(),
-                voice_speed: $('#ttp_override_voice_speed').val(),
-                language: $('#ttp_override_language').val(),
-                temperature: $('#ttp_override_temperature').val(),
-                max_tokens: $('#ttp_override_max_tokens').val(),
-                max_call_duration: $('#ttp_override_max_call_duration').val()
+                system_prompt: $('#talktopc_override_prompt').val(),
+                first_message: $('#talktopc_override_first_message').val(),
+                voice_id: $('#talktopc_override_voice').val(),
+                voice_speed: $('#talktopc_override_voice_speed').val(),
+                language: $('#talktopc_override_language').val(),
+                temperature: $('#talktopc_override_temperature').val(),
+                max_tokens: $('#talktopc_override_max_tokens').val(),
+                max_call_duration: $('#talktopc_override_max_call_duration').val()
             };
             
             $btn.prop('disabled', true).text('Saving...');
@@ -589,13 +589,13 @@ function ttp_render_dashboard_scripts($current_agent_id) {
             
             // Step 1: Save to WordPress options (for fast UI cache)
             $.post(ajaxurl, {
-                action: 'ttp_save_agent_settings_local',
+                action: 'talktopc_save_agent_settings_local',
                 nonce: ajaxNonce,
                 ...formData
             }, function(localResult) {
                 // Step 2: Save to TalkToPC backend (actual DB)
                 $.post(ajaxurl, {
-                    action: 'ttp_update_agent',
+                    action: 'talktopc_update_agent',
                     nonce: ajaxNonce,
                     agent_id: selectedAgentId,
                     ...formData

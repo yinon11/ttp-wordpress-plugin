@@ -6,14 +6,14 @@
 if (!defined('ABSPATH')) exit;
 
 
-function ttp_render_page_rules_page() {
-    $default_agent_id = get_option('ttp_agent_id', '');
-    $default_agent_name = get_option('ttp_agent_name', 'Default Agent');
-    $rules_json = get_option('ttp_page_rules', '[]');
+function talktopc_render_page_rules_page() {
+    $default_agent_id = get_option('talktopc_agent_id', '');
+    $default_agent_name = get_option('talktopc_agent_name', 'Default Agent');
+    $rules_json = get_option('talktopc_page_rules', '[]');
     $rules = json_decode($rules_json, true);
     if (!is_array($rules)) $rules = [];
     
-    ttp_render_admin_styles();
+    talktopc_render_admin_styles();
     ?>
     <div class="wrap ttp-admin-wrap">
         <div class="wp-header">
@@ -48,7 +48,7 @@ function ttp_render_page_rules_page() {
                     </div>
                 <?php else: ?>
                     <?php foreach ($rules as $index => $rule): ?>
-                        <?php ttp_render_rule_card($rule, $index); ?>
+                        <?php talktopc_render_rule_card($rule, $index); ?>
                     <?php endforeach; ?>
                 <?php endif; ?>
             </div>
@@ -95,16 +95,16 @@ function ttp_render_page_rules_page() {
     <?php
     wp_enqueue_style('wp-color-picker');
     wp_enqueue_script('wp-color-picker');
-    ttp_render_common_scripts();
-    ttp_render_page_rules_scripts();
+    talktopc_render_common_scripts();
+    talktopc_render_page_rules_scripts();
 }
 
 /**
  * Render a single rule card
  */
-function ttp_render_rule_card($rule, $index) {
+function talktopc_render_rule_card($rule, $index) {
     $is_disabled = ($rule['agent_id'] ?? '') === 'none';
-    $icon = ttp_get_rule_icon($rule['type'] ?? 'page');
+    $icon = talktopc_get_rule_icon($rule['type'] ?? 'page');
     ?>
     <div class="rule-card <?php echo $is_disabled ? 'disabled-rule' : ''; ?>" data-index="<?php echo esc_attr($index); ?>">
         <div class="rule-header" onclick="toggleRule(this)">
@@ -149,7 +149,7 @@ function ttp_render_rule_card($rule, $index) {
 /**
  * Get icon for rule type
  */
-function ttp_get_rule_icon($type) {
+function talktopc_get_rule_icon($type) {
     $icons = [
         'page' => '📄',
         'post' => '📝',

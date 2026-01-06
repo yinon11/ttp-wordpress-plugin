@@ -10,9 +10,9 @@ if (!defined('ABSPATH')) exit;
 /**
  * Render feature discovery banner
  */
-function ttp_render_feature_discovery_banner() {
+function talktopc_render_feature_discovery_banner() {
     // Check if banner was dismissed
-    if (get_option('ttp_feature_banner_dismissed', false)) {
+    if (get_option('talktopc_feature_banner_dismissed', false)) {
         return;
     }
     ?>
@@ -33,14 +33,14 @@ function ttp_render_feature_discovery_banner() {
 /**
  * Render review request card (shows 7 days after successful connection)
  */
-function ttp_render_review_request_card() {
+function talktopc_render_review_request_card() {
     // Don't show if dismissed or already reviewed
-    if (get_option('ttp_review_dismissed') || get_option('ttp_review_done')) {
+    if (get_option('talktopc_review_dismissed') || get_option('talktopc_review_done')) {
         return;
     }
     
     // Check when user connected
-    $connected_time = get_option('ttp_connected_time');
+    $connected_time = get_option('talktopc_connected_time');
     if (!$connected_time) {
         return;
     }

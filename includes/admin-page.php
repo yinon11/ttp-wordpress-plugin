@@ -8,17 +8,17 @@
 if (!defined('ABSPATH')) exit;
 
 // Include all required files
-require_once TTP_PLUGIN_DIR . 'includes/admin-styles.php';
-require_once TTP_PLUGIN_DIR . 'includes/admin-helpers.php';
-require_once TTP_PLUGIN_DIR . 'includes/admin-settings-sections.php';
-require_once TTP_PLUGIN_DIR . 'includes/admin-pages/dashboard.php';
-require_once TTP_PLUGIN_DIR . 'includes/admin-pages/page-rules.php';
-require_once TTP_PLUGIN_DIR . 'includes/admin-pages/appearance.php';
-require_once TTP_PLUGIN_DIR . 'includes/admin-pages/chat.php';
-require_once TTP_PLUGIN_DIR . 'includes/admin-pages/advanced.php';
-require_once TTP_PLUGIN_DIR . 'includes/admin-scripts/common.js.php';
-require_once TTP_PLUGIN_DIR . 'includes/admin-scripts/dashboard.js.php';
-require_once TTP_PLUGIN_DIR . 'includes/admin-scripts/page-rules.js.php';
+require_once TALKTOPC_PLUGIN_DIR . 'includes/admin-styles.php';
+require_once TALKTOPC_PLUGIN_DIR . 'includes/admin-helpers.php';
+require_once TALKTOPC_PLUGIN_DIR . 'includes/admin-settings-sections.php';
+require_once TALKTOPC_PLUGIN_DIR . 'includes/admin-pages/dashboard.php';
+require_once TALKTOPC_PLUGIN_DIR . 'includes/admin-pages/page-rules.php';
+require_once TALKTOPC_PLUGIN_DIR . 'includes/admin-pages/appearance.php';
+require_once TALKTOPC_PLUGIN_DIR . 'includes/admin-pages/chat.php';
+require_once TALKTOPC_PLUGIN_DIR . 'includes/admin-pages/advanced.php';
+require_once TALKTOPC_PLUGIN_DIR . 'includes/admin-scripts/common.js.php';
+require_once TALKTOPC_PLUGIN_DIR . 'includes/admin-scripts/dashboard.js.php';
+require_once TALKTOPC_PLUGIN_DIR . 'includes/admin-scripts/page-rules.js.php';
 
 /**
  * Remove third-party admin notices from TalkToPC settings page
@@ -39,6 +39,6 @@ add_action('admin_head', function() {
 /**
  * Main settings page function (called from admin menu) - routes to dashboard
  */
-function ttp_settings_page() {
-    ttp_render_dashboard_page();
+function talktopc_settings_page() {
+    talktopc_render_dashboard_page();
 }

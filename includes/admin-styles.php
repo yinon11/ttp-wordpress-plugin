@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) exit;
 /**
  * Render admin styles (all CSS from mockup)
  */
-function ttp_render_admin_styles() {
+function talktopc_render_admin_styles() {
     ?>
     <style>
         * {
