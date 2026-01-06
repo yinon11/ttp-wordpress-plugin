@@ -20,6 +20,9 @@ if (!defined('ABSPATH')) exit;
 // =============================================================================
 add_action('wp_ajax_talktopc_fetch_agents', function() {
     check_ajax_referer('talktopc_ajax_nonce', 'nonce');
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(['message' => 'Unauthorized']);
+    }
     $api_key = get_option('talktopc_api_key');
     if (empty($api_key)) wp_send_json_error(['message' => 'Not connected']);
     
@@ -28,7 +31,18 @@ add_action('wp_ajax_talktopc_fetch_agents', function() {
         'timeout' => 30
     ]);
     
-    if (is_wp_error($response)) wp_send_json_error(['message' => $response->get_error_message()]);
+    if (is_wp_error($response)) {
+        wp_send_json_error(['message' => $response->get_error_message()]);
+        return;
+    }
+    
+    $status_code = wp_remote_retrieve_response_code($response);
+    if ($status_code !== 200) {
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+        wp_send_json_error(['message' => $body['error'] ?? 'API request failed']);
+        return;
+    }
+    
     wp_send_json_success(json_decode(wp_remote_retrieve_body($response), true));
 });
 
@@ -37,6 +51,9 @@ add_action('wp_ajax_talktopc_fetch_agents', function() {
 // =============================================================================
 add_action('wp_ajax_talktopc_fetch_voices', function() {
     check_ajax_referer('talktopc_ajax_nonce', 'nonce');
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(['message' => 'Unauthorized']);
+    }
     $api_key = get_option('talktopc_api_key');
     if (empty($api_key)) wp_send_json_error(['message' => 'Not connected']);
     
@@ -45,7 +62,18 @@ add_action('wp_ajax_talktopc_fetch_voices', function() {
         'timeout' => 30
     ]);
     
-    if (is_wp_error($response)) wp_send_json_error(['message' => $response->get_error_message()]);
+    if (is_wp_error($response)) {
+        wp_send_json_error(['message' => $response->get_error_message()]);
+        return;
+    }
+    
+    $status_code = wp_remote_retrieve_response_code($response);
+    if ($status_code !== 200) {
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+        wp_send_json_error(['message' => $body['error'] ?? 'API request failed']);
+        return;
+    }
+    
     wp_send_json_success(json_decode(wp_remote_retrieve_body($response), true));
 });
 
@@ -54,6 +82,9 @@ add_action('wp_ajax_talktopc_fetch_voices', function() {
 // =============================================================================
 add_action('wp_ajax_talktopc_fetch_credits', function() {
     check_ajax_referer('talktopc_ajax_nonce', 'nonce');
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(['message' => 'Unauthorized']);
+    }
     $api_key = get_option('talktopc_api_key');
     if (empty($api_key)) wp_send_json_error(['message' => 'Not connected']);
     
@@ -84,6 +115,9 @@ add_action('wp_ajax_talktopc_fetch_credits', function() {
 // =============================================================================
 add_action('wp_ajax_talktopc_get_setup_status', function() {
     check_ajax_referer('talktopc_ajax_nonce', 'nonce');
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(['message' => 'Unauthorized']);
+    }
     
     $is_creating = (bool) get_transient('talktopc_agent_creating');
     $agent_id = get_option('talktopc_agent_id', '');
@@ -102,6 +136,9 @@ add_action('wp_ajax_talktopc_get_setup_status', function() {
 // =============================================================================
 add_action('wp_ajax_talktopc_create_agent', function() {
     check_ajax_referer('talktopc_ajax_nonce', 'nonce');
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(['message' => 'Unauthorized']);
+    }
     $api_key = get_option('talktopc_api_key');
     if (empty($api_key)) wp_send_json_error(['message' => 'Not connected']);
     
@@ -129,13 +166,13 @@ add_action('wp_ajax_talktopc_create_agent', function() {
         $agent_data['voice_id'] = sanitize_text_field(wp_unslash($_POST['voice_id']));
     }
     if (isset($_POST['voice_speed']) && $_POST['voice_speed'] !== '') {
-        $agent_data['voice_speed'] = floatval($_POST['voice_speed']);
+        $agent_data['voice_speed'] = max(0.5, min(2.0, floatval($_POST['voice_speed'])));
     }
     if (!empty($_POST['language'])) {
         $agent_data['language'] = sanitize_text_field(wp_unslash($_POST['language']));
     }
     if (isset($_POST['temperature']) && $_POST['temperature'] !== '') {
-        $agent_data['temperature'] = floatval($_POST['temperature']);
+        $agent_data['temperature'] = max(0.0, min(2.0, floatval($_POST['temperature'])));
     }
     if (isset($_POST['max_tokens']) && $_POST['max_tokens'] !== '') {
         $agent_data['max_tokens'] = intval($_POST['max_tokens']);
@@ -190,6 +227,9 @@ add_action('wp_ajax_talktopc_create_agent', function() {
 // =============================================================================
 add_action('wp_ajax_talktopc_update_agent', function() {
     check_ajax_referer('talktopc_ajax_nonce', 'nonce');
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(['message' => 'Unauthorized']);
+    }
     $api_key = get_option('talktopc_api_key');
     if (empty($api_key)) wp_send_json_error(['message' => 'Not connected']);
     
@@ -209,13 +249,13 @@ add_action('wp_ajax_talktopc_update_agent', function() {
         $update_data['voiceId'] = sanitize_text_field(wp_unslash($_POST['voice_id']));
     }
     if (isset($_POST['voice_speed']) && $_POST['voice_speed'] !== '') {
-        $update_data['voiceSpeed'] = floatval($_POST['voice_speed']);
+        $update_data['voiceSpeed'] = max(0.5, min(2.0, floatval($_POST['voice_speed'])));
     }
     if (isset($_POST['language']) && $_POST['language'] !== '') {
         $update_data['agentLanguage'] = sanitize_text_field(wp_unslash($_POST['language']));
     }
     if (isset($_POST['temperature']) && $_POST['temperature'] !== '') {
-        $update_data['temperature'] = floatval($_POST['temperature']);
+        $update_data['temperature'] = max(0.0, min(2.0, floatval($_POST['temperature'])));
     }
     if (isset($_POST['max_tokens']) && $_POST['max_tokens'] !== '') {
         $update_data['maxTokens'] = intval($_POST['max_tokens']);
@@ -255,6 +295,9 @@ add_action('wp_ajax_talktopc_update_agent', function() {
 // =============================================================================
 add_action('wp_ajax_talktopc_generate_prompt', function() {
     check_ajax_referer('talktopc_ajax_nonce', 'nonce');
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(['message' => 'Unauthorized']);
+    }
     
     $api_key = get_option('talktopc_api_key');
     $site_content = talktopc_collect_site_content();
@@ -315,6 +358,9 @@ add_action('wp_ajax_talktopc_generate_prompt', function() {
 // =============================================================================
 add_action('wp_ajax_talktopc_save_agent_selection', function() {
     check_ajax_referer('talktopc_ajax_nonce', 'nonce');
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(['message' => 'Unauthorized']);
+    }
     
     $agent_id = isset($_POST['agent_id']) ? sanitize_text_field(wp_unslash($_POST['agent_id'])) : '';
     $agent_name = isset($_POST['agent_name']) ? sanitize_text_field(wp_unslash($_POST['agent_name'])) : '';
@@ -335,6 +381,9 @@ add_action('wp_ajax_talktopc_save_agent_selection', function() {
 // =============================================================================
 add_action('wp_ajax_talktopc_save_agent_settings_local', function() {
     check_ajax_referer('talktopc_ajax_nonce', 'nonce');
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(['message' => 'Unauthorized']);
+    }
     
     // Save to WordPress options for fast UI loading
     if (isset($_POST['system_prompt'])) {
@@ -393,6 +442,9 @@ add_action('wp_ajax_talktopc_review_action', 'talktopc_handle_review_action');
 
 function talktopc_handle_review_action() {
     check_ajax_referer('talktopc_ajax_nonce', 'nonce');
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(['message' => 'Unauthorized']);
+    }
     
     $type = sanitize_text_field(wp_unslash($_POST['type'] ?? ''));
     
@@ -410,6 +462,11 @@ function talktopc_handle_review_action() {
 // GET SIGNED URL (Public - also for non-logged-in users)
 // =============================================================================
 function talktopc_get_signed_url() {
+    // Security:
+    // - Nonce verified via frontend widget nonce
+    // - Read-only: does NOT store or update credentials
+    // - Required for frontend widget operation
+    
     $nonce = isset($_POST['nonce']) ? sanitize_text_field(wp_unslash($_POST['nonce'])) : '';
     if (empty($nonce) || !wp_verify_nonce($nonce, 'talktopc_widget_nonce')) {
         wp_send_json_error(['message' => 'Invalid security token']);
@@ -436,22 +493,25 @@ function talktopc_get_signed_url() {
     ]);
     
     if (!is_wp_error($credits_response)) {
-        $credits_body = json_decode(wp_remote_retrieve_body($credits_response), true);
-        
-        // Use remainingBrowserMinutes if available, fallback to credits
-        $minutes = $credits_body['remainingBrowserMinutes'] ?? $credits_body['credits'] ?? $credits_body['balance'] ?? 0;
-        
-        // Parse if string
-        if (is_string($minutes)) {
-            $minutes = intval(str_replace(',', '', $minutes));
-        }
-        
-        if ($minutes <= 0) {
-            wp_send_json_error([
-                'message' => 'No credits available',
-                'code' => 'NO_CREDITS',
-                'credits' => 0
-            ]);
+        $status_code = wp_remote_retrieve_response_code($credits_response);
+        if ($status_code === 200) {
+            $credits_body = json_decode(wp_remote_retrieve_body($credits_response), true);
+            
+            // Use remainingBrowserMinutes if available, fallback to credits
+            $minutes = $credits_body['remainingBrowserMinutes'] ?? $credits_body['credits'] ?? $credits_body['balance'] ?? 0;
+            
+            // Parse if string
+            if (is_string($minutes)) {
+                $minutes = intval(str_replace(',', '', $minutes));
+            }
+            
+            if ($minutes <= 0) {
+                wp_send_json_error([
+                    'message' => 'No credits available',
+                    'code' => 'NO_CREDITS',
+                    'credits' => 0
+                ]);
+            }
         }
     }
     
@@ -472,6 +532,9 @@ function talktopc_get_signed_url() {
     
     wp_send_json_success(['signedUrl' => $body['signedLink']]);
 }
+// Frontend widget endpoint.
+// Must support unauthenticated visitors (wp_ajax_nopriv_)
+// because site visitors are not logged in.
 add_action('wp_ajax_talktopc_get_signed_url', 'talktopc_get_signed_url');
 add_action('wp_ajax_nopriv_talktopc_get_signed_url', 'talktopc_get_signed_url');
 
@@ -547,6 +610,9 @@ function talktopc_get_agent_for_current_page_ajax() {
 // =============================================================================
 add_action('wp_ajax_talktopc_get_pages_list', function() {
     check_ajax_referer('talktopc_ajax_nonce', 'nonce');
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(['message' => 'Unauthorized']);
+    }
     
     $pages = get_posts(['post_type' => 'page', 'post_status' => 'publish', 'numberposts' => 100, 'orderby' => 'title', 'order' => 'ASC']);
     $pages_list = array_map(function($p) {
@@ -580,6 +646,9 @@ add_action('wp_ajax_talktopc_get_pages_list', function() {
 // =============================================================================
 add_action('wp_ajax_talktopc_save_page_rules', function() {
     check_ajax_referer('talktopc_ajax_nonce', 'nonce');
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(['message' => 'Unauthorized']);
+    }
     $rules = isset($_POST['rules']) ? sanitize_text_field(wp_unslash($_POST['rules'])) : '[]';
     update_option('talktopc_page_rules', $rules);
     wp_send_json_success();
