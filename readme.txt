@@ -3,7 +3,7 @@ Contributors: yinon11
 Tags: voice assistant, ai chatbot, voice chat, customer support, woocommerce
 Requires at least: 5.0
 Tested up to: 6.9
-Stable tag: 1.9.72
+Stable tag: 1.9.75
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -144,7 +144,27 @@ This plugin connects to the TalkToPC service (talktopc.com) to provide AI voice 
 * Voice processing: speech.talktopc.com  
 * Backend API: backend.talktopc.com
 
-By using this plugin, site owners agree to TalkToPC's [Terms of Service](https://talktopc.com/terms) and [Privacy Policy](https://talktopc.com/privacy).
+By using this plugin, site owners agree to TalkToPC's [Terms of Service](https://talktopc.com/terms-of-service) and [Privacy Policy](https://talktopc.com/privacy-agreement).
+
+== External Services ==
+
+This plugin relies on the TalkToPC service (https://talktopc.com) to provide AI voice conversations.
+
+**What data is sent:**
+* Site content (pages, posts, products) during initial setup for AI configuration
+* Voice audio when visitors use the voice widget
+* API credentials for authentication
+
+**External domains used:**
+* https://cdn.talktopc.com - Widget JavaScript files
+* https://speech.talktopc.com - Voice processing
+* https://backend.talktopc.com - API requests
+
+**Service policies:**
+* Terms of Service: https://talktopc.com/terms-of-service
+* Privacy Policy: https://talktopc.com/privacy-agreement
+
+No data is collected without explicit user interaction.
 
 == Plugin Structure (For Developers) ==
 
@@ -191,6 +211,11 @@ talktopc/
 **Add AJAX endpoint:** See `ajax-handlers.php`
 
 == Changelog ==
+
+= 1.9.75 =
+* Fixed: JavaScript function scope issue for page rules
+* Removed: Debug console.log statement
+* Code cleanup for production release
 
 = 1.9.72 =
 * Security: Added capability checks to all AJAX handlers

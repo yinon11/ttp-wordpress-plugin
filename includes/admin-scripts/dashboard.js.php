@@ -46,8 +46,6 @@ function talktopc_enqueue_dashboard_scripts($hook) {
     (function($) {
         'use strict';
         
-        console.log("🔧 TalkToPC Voice Widget v" + talktopcDashboard.version + " loaded");
-        
         // Variables scoped to IIFE
         var agentsData = {};
         var voicesData = [];

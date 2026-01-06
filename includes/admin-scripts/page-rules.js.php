@@ -316,6 +316,7 @@ function talktopc_enqueue_page_rules_scripts($hook) {
         
         // Expose functions needed for onclick handlers
         window.toggleRule = toggleRule;
+        window.updateRuleAgent = updateRuleAgent;
         window.deleteRule = deleteRule;
         window.openAddRuleModal = openAddRuleModal;
         window.closeAddRuleModal = closeAddRuleModal;
