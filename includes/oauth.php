@@ -119,12 +119,11 @@ function talktopc_handle_oauth_callback() {
     }
     update_option('talktopc_connected_at', current_time('mysql'));
     
-    // 9. Auto-setup agent if function exists
-    if (function_exists('talktopc_auto_setup_agent')) {
-        talktopc_auto_setup_agent($api_key);
-    }
+    // 9. Set flag for agent setup (non-blocking)
+    // Agent will be created via AJAX when dashboard loads
+    set_transient('talktopc_needs_agent_setup', true, 300);
     
-    // 10. Redirect to dashboard with success
+    // 10. Redirect to dashboard IMMEDIATELY
     wp_safe_redirect(admin_url('admin.php?page=talktopc&connected=1'));
     exit;
 }

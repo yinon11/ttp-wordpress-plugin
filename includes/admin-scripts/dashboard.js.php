@@ -32,6 +32,44 @@ function talktopc_render_dashboard_scripts($current_agent_id) {
             $('#agentSettings').removeClass('collapsed').show();
         }
         
+        // Check if we need to set up agent (non-blocking AJAX)
+        if (typeof talktopcNeedsAgentSetup !== 'undefined' && talktopcNeedsAgentSetup) {
+            // Trigger AJAX agent creation first to check if agents exist
+            $.ajax({
+                url: ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'talktopc_auto_setup_agent',
+                    nonce: ajaxNonce
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Check if agent was actually created or if agents already existed
+                        if (response.data && response.data.created === true) {
+                            // Agent is being created - show popup overlay
+                            showSetupInProgress();
+                            // Start polling to check status (this will continue until agent is created)
+                            checkSetupStatus();
+                        } else {
+                            // Agents already exist - no popup needed, just reload to show agents
+                            fetchVoices(function() { fetchAgents(); });
+                        }
+                    } else {
+                        // Show error - but don't show popup, just show error notice
+                        var $notice = $('<div class="notice notice-error is-dismissible" style="margin: 10px 0;"><p><strong>Error:</strong> ' + (response.data?.message || 'Failed to set up agent') + '</p></div>');
+                        $('.talktopc-admin-wrap .wp-header').after($notice);
+                        fetchVoices(function() { fetchAgents(); });
+                    }
+                },
+                error: function() {
+                    // Show error notice instead of popup
+                    var $notice = $('<div class="notice notice-error is-dismissible" style="margin: 10px 0;"><p><strong>Error:</strong> Could not connect to server. Please try again.</p></div>');
+                    $('.talktopc-admin-wrap .wp-header').after($notice);
+                    fetchVoices(function() { fetchAgents(); });
+                }
+            });
+        }
+        
         // Check setup status first before loading data
         checkSetupStatus();
         
@@ -56,20 +94,21 @@ function talktopc_render_dashboard_scripts($current_agent_id) {
             // Show overlay if not exists and not in background mode
             if ($('#talktopc-setup-overlay').length === 0 && !isBackgroundSetup) {
                 var overlay = $(
-                    '<div id="ttp-setup-overlay" class="ttp-setup-overlay">' +
-                        '<div class="ttp-setup-modal">' +
-                            '<div class="ttp-setup-spinner"></div>' +
+                    '<div id="talktopc-setup-overlay" class="talktopc-setup-overlay">' +
+                        '<div class="talktopc-setup-modal">' +
+                            '<div class="talktopc-setup-spinner"></div>' +
                             '<h2>🤖 Creating your AI assistant...</h2>' +
                             '<p>We\'re analyzing your website content and generating a personalized AI assistant.</p>' +
-                            '<p class="ttp-setup-note">This usually takes 30-60 seconds.</p>' +
-                            '<button type="button" class="button" id="ttp-run-background-btn">Run in Background</button>' +
+                            '<p class="talktopc-setup-note">This usually takes 30-60 seconds.</p>' +
+                            '<button type="button" class="button" id="talktopc-run-background-btn">Run in Background</button>' +
                         '</div>' +
                     '</div>'
                 );
                 $('body').append(overlay);
                 
-                // Handle "Run in Background" button
-                $('#talktopc-run-background-btn').on('click', function() {
+                // Handle "Run in Background" button (use event delegation to avoid multiple handlers)
+                $(document).off('click', '#talktopc-run-background-btn').on('click', '#talktopc-run-background-btn', function(e) {
+                    e.preventDefault();
                     isBackgroundSetup = true;
                     $('#talktopc-setup-overlay').remove();
                     showBackgroundBanner();
@@ -116,18 +155,43 @@ function talktopc_render_dashboard_scripts($current_agent_id) {
         }
         
         function showBackgroundBanner() {
-            if ($('#talktopc-background-setup-banner').length === 0) {
-                var banner = $(
-                    '<div id="ttp-background-setup-banner" class="ttp-background-setup-banner">' +
-                        '<div class="ttp-banner-spinner"></div>' +
-                        '<div class="ttp-banner-text">' +
-                            '<strong>Creating your AI assistant...</strong>' +
-                            '<span>This is running in the background. You can explore the settings while you wait.</span>' +
-                        '</div>' +
-                    '</div>'
-                );
-                $('.talktopc-admin-wrap .card').first().before(banner);
+            // Remove any existing banner first
+            $('#talktopc-background-setup-banner').remove();
+            
+            var banner = $(
+                '<div id="talktopc-background-setup-banner" class="talktopc-background-setup-banner">' +
+                    '<div class="talktopc-banner-spinner"></div>' +
+                    '<div class="talktopc-banner-text">' +
+                        '<strong>Creating your AI assistant...</strong>' +
+                        '<span>This is running in the background. You can explore the settings while you wait.</span>' +
+                    '</div>' +
+                '</div>'
+            );
+            
+            // Insert banner after settings_errors or after header, before first card
+            var $adminWrap = $('.talktopc-admin-wrap');
+            if ($adminWrap.length) {
+                // Try to insert after settings_errors or after header
+                var $afterElement = $adminWrap.find('.settings-error, .wp-header').last();
+                if ($afterElement.length) {
+                    $afterElement.after(banner);
+                } else {
+                    // Insert before first card
+                    var $firstCard = $adminWrap.find('.card').first();
+                    if ($firstCard.length) {
+                        $firstCard.before(banner);
+                    } else {
+                        // Insert at the beginning of the wrap
+                        $adminWrap.prepend(banner);
+                    }
+                }
+            } else {
+                // Fallback: insert at top of body
+                $('body').prepend(banner);
             }
+            
+            // Make sure banner is visible
+            banner.show();
         }
         
         function hideSetupInProgress() {
@@ -383,7 +447,7 @@ function talktopc_render_dashboard_scripts($current_agent_id) {
         
         function autoSaveSettings(agentId, agentName) {
             if (!agentId) return;
-            var $notice = $('<div class="notice notice-info" id="ttp-autosave-notice" style="margin: 10px 0; padding: 10px;"><p>⏳ Auto-saving...</p></div>');
+            var $notice = $('<div class="notice notice-info" id="talktopc-autosave-notice" style="margin: 10px 0; padding: 10px;"><p>⏳ Auto-saving...</p></div>');
             $('.talktopc-admin-wrap .wp-header').after($notice);
             
             $.post(ajaxurl, { action: 'talktopc_save_agent_selection', nonce: ajaxNonce, agent_id: agentId, agent_name: agentName }, function(r) {

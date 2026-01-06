@@ -15,7 +15,7 @@ function talktopc_render_page_rules_page() {
     
     talktopc_render_admin_styles();
     ?>
-    <div class="wrap ttp-admin-wrap">
+    <div class="wrap talktopc-admin-wrap">
         <div class="wp-header">
             <h1>Page Rules</h1>
         </div>

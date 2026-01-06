@@ -22,7 +22,7 @@ function talktopc_render_admin_styles() {
         }
         
         /* FIX: Wider layout - use available space */
-        .ttp-admin-wrap {
+        .talktopc-admin-wrap {
             max-width: 1200px;
             padding: 20px;
             width: 100%;
@@ -61,7 +61,7 @@ function talktopc_render_admin_styles() {
         }
         
         /* Force all direct children of wrap to be full width */
-        .ttp-admin-wrap > * {
+        .talktopc-admin-wrap > * {
             width: 100%;
             max-width: 100%;
         }
@@ -326,7 +326,7 @@ function talktopc_render_admin_styles() {
             border: 3px solid rgba(255,255,255,0.3);
             border-top-color: white;
             border-radius: 50%;
-            animation: ttp-spin 0.8s linear infinite;
+            animation: talktopc-spin 0.8s linear infinite;
         }
         
         /* State: Loading */
@@ -499,15 +499,15 @@ function talktopc_render_admin_styles() {
             border: 3px solid #c3e6fb;
             border-top-color: #2271b1;
             border-radius: 50%;
-            animation: ttp-spin 1s linear infinite;
+            animation: talktopc-spin 1s linear infinite;
         }
         
-        @keyframes ttp-spin {
+        @keyframes talktopc-spin {
             to { transform: rotate(360deg); }
         }
         
         /* Setup Overlay Modal */
-        .ttp-setup-overlay {
+        .talktopc-setup-overlay {
             position: fixed;
             top: 0;
             left: 0;
@@ -520,7 +520,7 @@ function talktopc_render_admin_styles() {
             z-index: 100000;
         }
         
-        .ttp-setup-modal {
+        .talktopc-setup-modal {
             background: #fff;
             padding: 40px 50px;
             border-radius: 8px;
@@ -529,7 +529,7 @@ function talktopc_render_admin_styles() {
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
         }
         
-        .ttp-setup-modal h2 {
+        .talktopc-setup-modal h2 {
             margin: 20px 0 10px;
             color: #1d2327;
             border: none;
@@ -537,30 +537,30 @@ function talktopc_render_admin_styles() {
             font-size: 20px;
         }
         
-        .ttp-setup-modal p {
+        .talktopc-setup-modal p {
             color: #666;
             margin: 0 0 10px;
             line-height: 1.5;
         }
         
-        .ttp-setup-modal .ttp-setup-note {
+        .talktopc-setup-modal .talktopc-setup-note {
             font-size: 12px;
             color: #999;
             margin-top: 15px;
         }
         
-        .ttp-setup-spinner {
+        .talktopc-setup-spinner {
             width: 50px;
             height: 50px;
             border: 4px solid #f3f3f3;
             border-top: 4px solid #7C3AED;
             border-radius: 50%;
-            animation: ttp-spin 1s linear infinite;
+            animation: talktopc-spin 1s linear infinite;
             margin: 0 auto;
         }
         
         /* Background Setup Banner */
-        .ttp-background-setup-banner {
+        .talktopc-background-setup-banner {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #fff;
             padding: 15px 20px;
@@ -571,27 +571,27 @@ function talktopc_render_admin_styles() {
             gap: 15px;
         }
         
-        .ttp-banner-spinner {
+        .talktopc-banner-spinner {
             width: 24px;
             height: 24px;
             border: 3px solid rgba(255,255,255,0.3);
             border-top: 3px solid #fff;
             border-radius: 50%;
-            animation: ttp-spin 1s linear infinite;
+            animation: talktopc-spin 1s linear infinite;
             flex-shrink: 0;
         }
         
-        .ttp-banner-text {
+        .talktopc-banner-text {
             flex: 1;
         }
         
-        .ttp-banner-text strong {
+        .talktopc-banner-text strong {
             display: block;
             font-size: 14px;
             margin-bottom: 4px;
         }
         
-        .ttp-banner-text span {
+        .talktopc-banner-text span {
             font-size: 12px;
             opacity: 0.9;
         }
@@ -1195,7 +1195,7 @@ function talktopc_render_admin_styles() {
            Responsive adjustments
            =========================================== */
         @media (max-width: 1400px) {
-            .ttp-admin-wrap {
+            .talktopc-admin-wrap {
                 max-width: 100%;
                 padding: 20px;
             }

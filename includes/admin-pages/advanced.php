@@ -16,7 +16,7 @@ function talktopc_render_advanced_page() {
     $current_agent_id = get_option('talktopc_agent_id', '');
     $current_agent_name = get_option('talktopc_agent_name', '');
     ?>
-    <div class="wrap ttp-admin-wrap">
+    <div class="wrap talktopc-admin-wrap">
         <div class="wp-header">
             <h1>Advanced Settings</h1>
         </div>
@@ -40,11 +40,11 @@ function talktopc_render_advanced_page() {
                     <div class="field">
                         <textarea name="talktopc_custom_css" id="talktopc_custom_css" rows="10" style="font-family: monospace; width: 100%;"><?php echo esc_textarea(get_option('talktopc_custom_css')); ?></textarea>
                         <p class="description">
-                            Add custom CSS to style the widget. Use <code>.ttp-widget</code> as the root selector.<br>
-                            <strong>Example:</strong> <code>.ttp-widget .ttp-button { box-shadow: none; }</code>
+                            Add custom CSS to style the widget. Use <code>.talktopc-widget</code> as the root selector.<br>
+                            <strong>Example:</strong> <code>.talktopc-widget .talktopc-button { box-shadow: none; }</code>
                         </p>
                         <!-- FIX #4: Help text explaining how custom CSS works -->
-                        <div class="ttp-css-help" style="margin-top: 12px; padding: 12px; background: #f0f6fc; border-left: 4px solid #2271b1; border-radius: 2px;">
+                        <div class="talktopc-css-help" style="margin-top: 12px; padding: 12px; background: #f0f6fc; border-left: 4px solid #2271b1; border-radius: 2px;">
                             <strong>💡 How Custom CSS Works:</strong>
                             <ul style="margin: 8px 0 0 20px; list-style: disc;">
                                 <li>Your CSS is passed to the widget as <code>customStyles</code></li>

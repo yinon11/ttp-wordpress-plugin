@@ -15,7 +15,7 @@ function talktopc_render_appearance_page() {
     $current_agent_id = get_option('talktopc_agent_id', '');
     $current_agent_name = get_option('talktopc_agent_name', '');
     ?>
-    <div class="wrap ttp-admin-wrap">
+    <div class="wrap talktopc-admin-wrap">
         <div class="wp-header">
             <h1>Appearance</h1>
         </div>
@@ -65,8 +65,8 @@ function talktopc_render_appearance_page() {
                     <label>Background</label>
                     <div class="field">
                         <div class="color-picker-row">
-                            <div class="color-preview ttp-color-picker-preview" style="background: <?php echo esc_attr(get_option('talktopc_button_bg_color', '#7C3AED')); ?>;"></div>
-                            <input type="text" name="talktopc_button_bg_color" class="ttp-color-picker" value="<?php echo esc_attr(get_option('talktopc_button_bg_color', '#7C3AED')); ?>">
+                            <div class="color-preview talktopc-color-picker-preview" style="background: <?php echo esc_attr(get_option('talktopc_button_bg_color', '#7C3AED')); ?>;"></div>
+                            <input type="text" name="talktopc_button_bg_color" class="talktopc-color-picker" value="<?php echo esc_attr(get_option('talktopc_button_bg_color', '#7C3AED')); ?>">
                         </div>
                     </div>
                 </div>

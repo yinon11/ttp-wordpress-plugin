@@ -28,13 +28,24 @@ function talktopc_render_dashboard_page() {
     talktopc_render_admin_styles();
     talktopc_render_agent_settings_styles(); // New: Additional styles for agent settings
     ?>
-    <div class="wrap ttp-admin-wrap">
+    <div class="wrap talktopc-admin-wrap">
         <div class="wp-header">
             <h1>Dashboard</h1>
             <span class="version">v<?php echo esc_html(TALKTOPC_VERSION); ?></span>
         </div>
         
         <?php settings_errors(); ?>
+        
+        <?php 
+        // Check if agent setup is needed (from OAuth callback)
+        $needs_agent_setup = false;
+        if ($is_connected) {
+            $needs_agent_setup = get_transient('talktopc_needs_agent_setup');
+            if ($needs_agent_setup) {
+                delete_transient('talktopc_needs_agent_setup');
+            }
+        }
+        ?>
         
         <?php if ($is_connected): ?>
             <!-- Credits Box - Dynamic states based on credit amount -->
@@ -237,6 +248,13 @@ function talktopc_render_dashboard_page() {
     wp_enqueue_style('wp-color-picker');
     wp_enqueue_script('wp-color-picker');
     talktopc_render_common_scripts();
+    
+    // Pass agent setup flag to JavaScript
+    ?>
+    <script>
+    var talktopcNeedsAgentSetup = <?php echo $needs_agent_setup ? 'true' : 'false'; ?>;
+    </script>
+    <?php
     talktopc_render_dashboard_scripts($current_agent_id);
 }
 
@@ -261,7 +279,7 @@ function talktopc_render_agent_settings_styles() {
         border: 2px solid #ddd;
         border-top-color: #7C3AED;
         border-radius: 50%;
-        animation: ttp-spin 0.8s linear infinite;
+        animation: talktopc-spin 0.8s linear infinite;
     }
     .agent-loading-indicator.hidden {
         display: none;

@@ -16,15 +16,15 @@ function talktopc_render_feature_discovery_banner() {
         return;
     }
     ?>
-    <div id="ttp-feature-discovery-banner" class="ttp-discovery-banner">
-        <div class="ttp-discovery-icon">💡</div>
-        <div class="ttp-discovery-content">
+    <div id="talktopc-feature-discovery-banner" class="talktopc-discovery-banner">
+        <div class="talktopc-discovery-icon">💡</div>
+        <div class="talktopc-discovery-content">
             <strong>Did you know?</strong>
             <p>You can enable call recording, export transcripts, customize AI models, and view conversation analytics in the TTP app.</p>
         </div>
-        <div class="ttp-discovery-actions">
+        <div class="talktopc-discovery-actions">
             <a href="https://talktopc.com/agents" target="_blank" class="button button-primary">Explore Features →</a>
-            <button type="button" class="button ttp-dismiss-banner">Dismiss</button>
+            <button type="button" class="button talktopc-dismiss-banner">Dismiss</button>
         </div>
     </div>
     <?php
@@ -51,16 +51,16 @@ function talktopc_render_review_request_card() {
     }
     
     ?>
-    <div id="ttp-review-request-card" class="ttp-review-banner">
-        <div class="ttp-review-icon">💬</div>
-        <div class="ttp-review-content">
+    <div id="talktopc-review-request-card" class="talktopc-review-banner">
+        <div class="talktopc-review-icon">💬</div>
+        <div class="talktopc-review-content">
             <strong>We'd love your feedback!</strong>
             <p>Your review helps other WordPress users discover TalkToPC. Have a question or issue? We're here to help!</p>
         </div>
-        <div class="ttp-review-actions">
-            <a href="https://wordpress.org/support/plugin/talktopc/reviews/#new-post" target="_blank" class="button button-primary" id="ttp-review-yes">⭐ Leave a Review</a>
-            <a href="https://wordpress.org/support/plugin/talktopc/" target="_blank" class="button" id="ttp-review-support">💬 Get Support</a>
-            <button type="button" class="button ttp-review-dismiss-btn" id="ttp-review-dismiss">Dismiss</button>
+        <div class="talktopc-review-actions">
+            <a href="https://wordpress.org/support/plugin/talktopc/reviews/#new-post" target="_blank" class="button button-primary" id="talktopc-review-yes">⭐ Leave a Review</a>
+            <a href="https://wordpress.org/support/plugin/talktopc/" target="_blank" class="button" id="talktopc-review-support">💬 Get Support</a>
+            <button type="button" class="button talktopc-review-dismiss-btn" id="talktopc-review-dismiss">Dismiss</button>
         </div>
     </div>
     <?php

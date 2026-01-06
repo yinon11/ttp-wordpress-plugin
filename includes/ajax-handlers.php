@@ -586,6 +586,58 @@ add_action('wp_ajax_talktopc_save_page_rules', function() {
 });
 
 // =============================================================================
+// AUTO-SETUP AGENT (AJAX - Non-blocking)
+// =============================================================================
+add_action('wp_ajax_talktopc_auto_setup_agent', 'talktopc_ajax_auto_setup_agent');
+
+function talktopc_ajax_auto_setup_agent() {
+    // Verify nonce
+    check_ajax_referer('talktopc_ajax_nonce', 'nonce');
+    
+    // Verify capability
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(['message' => 'Unauthorized']);
+        return;
+    }
+    
+    // Get API key
+    $api_key = get_option('talktopc_api_key');
+    if (empty($api_key)) {
+        wp_send_json_error(['message' => 'Not connected']);
+        return;
+    }
+    
+    // Run agent setup
+    if (function_exists('talktopc_auto_setup_agent')) {
+        // Set transient BEFORE calling agent setup so polling can detect it
+        // This ensures the popup overlay stays visible during agent creation
+        set_transient('talktopc_agent_creating', true, 180);
+        
+        // Call agent setup (this will also set/clear the transient internally)
+        $result = talktopc_auto_setup_agent($api_key);
+        
+        if (isset($result['error'])) {
+            // Clear transient on error
+            delete_transient('talktopc_agent_creating');
+            wp_send_json_error(['message' => $result['error']]);
+        } else {
+            // If agent was created, transient will be cleared by talktopc_auto_setup_agent()
+            // If agent already existed, clear it here
+            if (!($result['agent_created'] ?? false)) {
+                delete_transient('talktopc_agent_creating');
+            }
+            wp_send_json_success([
+                'agent_id' => $result['agent_id'],
+                'agent_name' => $result['agent_name'],
+                'created' => $result['agent_created'] ?? false
+            ]);
+        }
+    } else {
+        wp_send_json_error(['message' => 'Setup function not found']);
+    }
+}
+
+// =============================================================================
 // HELPER FUNCTIONS
 // =============================================================================
 

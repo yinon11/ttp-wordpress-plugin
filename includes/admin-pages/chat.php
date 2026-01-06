@@ -15,7 +15,7 @@ function talktopc_render_chat_page() {
     $current_agent_id = get_option('talktopc_agent_id', '');
     $current_agent_name = get_option('talktopc_agent_name', '');
     ?>
-    <div class="wrap ttp-admin-wrap">
+    <div class="wrap talktopc-admin-wrap">
         <div class="wp-header">
             <h1>Chat Interface</h1>
         </div>
