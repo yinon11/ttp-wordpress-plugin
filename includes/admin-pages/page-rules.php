@@ -13,7 +13,7 @@ function talktopc_render_page_rules_page() {
     $rules = json_decode($rules_json, true);
     if (!is_array($rules)) $rules = [];
     
-    talktopc_render_admin_styles();
+    // Styles are now enqueued via admin_enqueue_scripts hook
     ?>
     <div class="wrap talktopc-admin-wrap">
         <div class="wp-header">
@@ -95,8 +95,7 @@ function talktopc_render_page_rules_page() {
     <?php
     wp_enqueue_style('wp-color-picker');
     wp_enqueue_script('wp-color-picker');
-    talktopc_render_common_scripts();
-    talktopc_render_page_rules_scripts();
+    // Scripts are now enqueued via admin_enqueue_scripts hook
 }
 
 /**

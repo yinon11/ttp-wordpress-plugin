@@ -6,15 +6,38 @@
 if (!defined('ABSPATH')) exit;
 
 
-function talktopc_render_page_rules_scripts() {
-    $ajax_nonce = wp_create_nonce('talktopc_ajax_nonce');
+/**
+ * Enqueue page rules scripts using WordPress enqueue functions
+ * 
+ * WordPress Plugin Review: Uses wp_add_inline_script() instead of inline <script> tags
+ */
+function talktopc_enqueue_page_rules_scripts($hook) {
+    // Only load on page rules page
+    // WordPress hook format: {parent-slug}_page_{submenu-slug}
+    if (strpos($hook, 'talktopc-page-rules') === false) {
+        return;
+    }
+    
+    // Get PHP variables for JavaScript
     $rules_json = get_option('talktopc_page_rules', '[]');
     $rules = json_decode($rules_json, true) ?: [];
-    ?>
-    <script>
+    
+    // Register dummy script handle (required for wp_add_inline_script)
+    wp_register_script('talktopc-page-rules', false, ['jquery'], null, true);
+    wp_enqueue_script('talktopc-page-rules');
+    
+    // Pass PHP variables to JavaScript
+    wp_localize_script('talktopc-page-rules', 'talktopcPageRules', [
+        'ajaxUrl' => admin_url('admin-ajax.php'),
+        'nonce' => wp_create_nonce('talktopc_ajax_nonce'),
+        'rules' => $rules,
+    ]);
+    
+    // Add inline script
+    $js = <<<'JS'
     // Global variables for rule management
-    var ttpAjaxNonce = '<?php echo esc_js($ajax_nonce); ?>';
-    var ttpRules = <?php echo wp_json_encode($rules); ?>;
+    var ttpAjaxNonce = talktopcPageRules.nonce;
+    var ttpRules = talktopcPageRules.rules || [];
     var ttpAgentsList = [];
     
     jQuery(document).ready(function($) {
@@ -22,7 +45,7 @@ function talktopc_render_page_rules_scripts() {
         var rules = ttpRules;
         
         // Fetch agents for dropdowns
-        $.post(ajaxurl, { action: 'talktopc_fetch_agents', nonce: ajaxNonce }, function(r) {
+        $.post(talktopcPageRules.ajaxUrl, { action: "talktopc_fetch_agents", nonce: ajaxNonce }, function(r) {
             if (r.success && r.data) {
                 // Handle different response formats: array or {data: [...]}
                 ttpAgentsList = Array.isArray(r.data) ? r.data : (r.data.data || []);
@@ -60,7 +83,7 @@ function talktopc_render_page_rules_scripts() {
         
         // Fetch pages list for modal
         var pagesData = null;
-        $.post(ajaxurl, { action: 'talktopc_get_pages_list', nonce: ajaxNonce }, function(r) {
+        $.post(talktopcPageRules.ajaxUrl, { action: "talktopc_get_pages_list", nonce: ajaxNonce }, function(r) {
             if (r.success) {
                 pagesData = r.data;
                 renderPageSelector();
@@ -157,8 +180,8 @@ function talktopc_render_page_rules_scripts() {
     }
     
     function saveRules() {
-        jQuery.post(ajaxurl, {
-            action: 'talktopc_save_page_rules',
+        jQuery.post(talktopcPageRules.ajaxUrl, {
+            action: "talktopc_save_page_rules",
             nonce: ttpAjaxNonce,
             rules: JSON.stringify(ttpRules)
         }, function(r) {
@@ -178,10 +201,10 @@ function talktopc_render_page_rules_scripts() {
     }
     
     function deleteRule(index) {
-        if (!confirm('Delete this rule?')) return;
+        if (!confirm("Delete this rule?")) return;
         ttpRules = ttpRules.filter(function(r, i) { return i !== index; });
-        jQuery.post(ajaxurl, {
-            action: 'talktopc_save_page_rules',
+        jQuery.post(talktopcPageRules.ajaxUrl, {
+            action: "talktopc_save_page_rules",
             nonce: ttpAjaxNonce,
             rules: JSON.stringify(ttpRules)
         }, function(r) {
@@ -225,8 +248,8 @@ function talktopc_render_page_rules_scripts() {
         
         ttpRules.push(newRule);
         
-        jQuery.post(ajaxurl, {
-            action: 'talktopc_save_page_rules',
+        jQuery.post(talktopcPageRules.ajaxUrl, {
+            action: "talktopc_save_page_rules",
             nonce: ttpAjaxNonce,
             rules: JSON.stringify(ttpRules)
         }, function(r) {
@@ -289,9 +312,24 @@ function talktopc_render_page_rules_scripts() {
     initDragDrop();
     
     // Close modal on overlay click
-    document.getElementById('addRuleModal')?.addEventListener('click', function(e) {
+    document.getElementById("addRuleModal")?.addEventListener("click", function(e) {
         if (e.target === this) closeAddRuleModal();
     });
-    </script>
-    <?php
+JS;
+    
+    // Replace all ajaxurl references with talktopcPageRules.ajaxUrl
+    $js = str_replace('ajaxurl', 'talktopcPageRules.ajaxUrl', $js);
+    
+    wp_add_inline_script('talktopc-page-rules', $js);
+}
+add_action('admin_enqueue_scripts', 'talktopc_enqueue_page_rules_scripts');
+
+/**
+ * Render page rules scripts (deprecated - kept for backwards compatibility)
+ * 
+ * @deprecated Use talktopc_enqueue_page_rules_scripts() instead
+ */
+function talktopc_render_page_rules_scripts() {
+    // This function is deprecated but kept for backwards compatibility
+    // Scripts are now enqueued via admin_enqueue_scripts hook
 }

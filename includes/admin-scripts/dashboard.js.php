@@ -9,23 +9,51 @@
 if (!defined('ABSPATH')) exit;
 
 
-function talktopc_render_dashboard_scripts($current_agent_id) {
-    $ajax_nonce = wp_create_nonce('talktopc_ajax_nonce');
-    $current_voice = get_option('talktopc_override_voice');
-    $current_language = get_option('talktopc_override_language');
-    ?>
-    <script>
-    console.log('🔧 TalkToPC Voice Widget v<?php echo esc_js(TALKTOPC_VERSION); ?> loaded');
+/**
+ * Enqueue dashboard scripts using WordPress enqueue functions
+ * 
+ * WordPress Plugin Review: Uses wp_add_inline_script() instead of inline <script> tags
+ */
+function talktopc_enqueue_dashboard_scripts($hook) {
+    // Only load on dashboard page
+    if ($hook !== 'toplevel_page_talktopc') {
+        return;
+    }
+    
+    // Get PHP variables for JavaScript
+    $current_agent_id = get_option('talktopc_agent_id', '');
+    $current_voice = get_option('talktopc_override_voice', '');
+    $current_language = get_option('talktopc_override_language', '');
+    $needs_agent_setup = get_transient('talktopc_needs_agent_setup');
+    
+    // Register dummy script handle (required for wp_add_inline_script)
+    wp_register_script('talktopc-dashboard', false, ['jquery'], null, true);
+    wp_enqueue_script('talktopc-dashboard');
+    
+    // Pass PHP variables to JavaScript
+    wp_localize_script('talktopc-dashboard', 'talktopcDashboard', [
+        'ajaxUrl' => admin_url('admin-ajax.php'),
+        'nonce' => wp_create_nonce('talktopc_ajax_nonce'),
+        'version' => TALKTOPC_VERSION,
+        'currentAgentId' => $current_agent_id,
+        'currentVoice' => $current_voice,
+        'currentLanguage' => $current_language,
+        'needsAgentSetup' => !empty($needs_agent_setup),
+    ]);
+    
+    // Add inline script
+    $js = <<<'JS'
+    console.log("🔧 TalkToPC Voice Widget v" + talktopcDashboard.version + " loaded");
     var agentsData = {};
     var voicesData = [];
     var languageMap = {};
     var isBackgroundSetup = false;
     
     jQuery(document).ready(function($) {
-        var ajaxNonce = '<?php echo esc_js($ajax_nonce); ?>';
-        var currentAgentId = '<?php echo esc_js($current_agent_id); ?>';
-        var currentVoice = '<?php echo esc_js($current_voice); ?>';
-        var currentLanguage = '<?php echo esc_js($current_language); ?>';
+        var ajaxNonce = talktopcDashboard.nonce;
+        var currentAgentId = talktopcDashboard.currentAgentId;
+        var currentVoice = talktopcDashboard.currentVoice;
+        var currentLanguage = talktopcDashboard.currentLanguage;
         
         // FIX #1: If we have a saved agent, show settings immediately (don't wait for AJAX)
         if (currentAgentId && currentAgentId !== 'none') {
@@ -33,10 +61,13 @@ function talktopc_render_dashboard_scripts($current_agent_id) {
         }
         
         // Check if we need to set up agent (non-blocking AJAX)
-        if (typeof talktopcNeedsAgentSetup !== 'undefined' && talktopcNeedsAgentSetup) {
-            // Trigger AJAX agent creation first to check if agents exist
+        if (talktopcDashboard.needsAgentSetup) {
+            // Show popup IMMEDIATELY - don't wait for AJAX
+            showSetupInProgress();
+            
+            // Then trigger AJAX agent creation in the background
             $.ajax({
-                url: ajaxurl,
+                url: talktopcDashboard.ajaxUrl,
                 type: 'POST',
                 data: {
                     action: 'talktopc_auto_setup_agent',
@@ -46,36 +77,37 @@ function talktopc_render_dashboard_scripts($current_agent_id) {
                     if (response.success) {
                         // Check if agent was actually created or if agents already existed
                         if (response.data && response.data.created === true) {
-                            // Agent is being created - show popup overlay
-                            showSetupInProgress();
-                            // Start polling to check status (this will continue until agent is created)
+                            // Agent is being created - popup already showing, start polling
                             checkSetupStatus();
                         } else {
-                            // Agents already exist - no popup needed, just reload to show agents
+                            // Agents already exist - hide popup and reload to show agents
+                            hideSetupInProgress();
                             fetchVoices(function() { fetchAgents(); });
                         }
                     } else {
-                        // Show error - but don't show popup, just show error notice
+                        // Show error - hide popup and show error notice
+                        hideSetupInProgress();
                         var $notice = $('<div class="notice notice-error is-dismissible" style="margin: 10px 0;"><p><strong>Error:</strong> ' + (response.data?.message || 'Failed to set up agent') + '</p></div>');
                         $('.talktopc-admin-wrap .wp-header').after($notice);
                         fetchVoices(function() { fetchAgents(); });
                     }
                 },
                 error: function() {
-                    // Show error notice instead of popup
+                    // Show error - hide popup and show error notice
+                    hideSetupInProgress();
                     var $notice = $('<div class="notice notice-error is-dismissible" style="margin: 10px 0;"><p><strong>Error:</strong> Could not connect to server. Please try again.</p></div>');
                     $('.talktopc-admin-wrap .wp-header').after($notice);
                     fetchVoices(function() { fetchAgents(); });
                 }
             });
+        } else {
+            // Not setting up agent - check setup status first before loading data
+            checkSetupStatus();
         }
-        
-        // Check setup status first before loading data
-        checkSetupStatus();
         
         // === SETUP STATUS CHECK ===
         function checkSetupStatus() {
-            $.post(ajaxurl, { action: 'talktopc_get_setup_status', nonce: ajaxNonce }, function(r) {
+            $.post(talktopcDashboard.ajaxUrl, { action: 'talktopc_get_setup_status', nonce: ajaxNonce }, function(r) {
                 if (r.success && r.data.creating) {
                     // Still creating agent - show overlay and poll
                     showSetupInProgress();
@@ -686,14 +718,30 @@ function talktopc_render_dashboard_scripts($current_agent_id) {
     });
     
     function toggleAgentSettings() {
-        var el = document.getElementById('agentSettings');
-        el.classList.toggle('collapsed');
-        if (el.classList.contains('collapsed')) {
-            el.style.display = 'none';
+        var el = document.getElementById("agentSettings");
+        el.classList.toggle("collapsed");
+        if (el.classList.contains("collapsed")) {
+            el.style.display = "none";
         } else {
-            el.style.display = 'block';
+            el.style.display = "block";
         }
     }
-    </script>
-    <?php
+JS;
+    
+    // Replace all ajaxurl references with talktopcDashboard.ajaxUrl
+    $js = str_replace('ajaxurl', 'talktopcDashboard.ajaxUrl', $js);
+    
+    wp_add_inline_script('talktopc-dashboard', $js);
+}
+add_action('admin_enqueue_scripts', 'talktopc_enqueue_dashboard_scripts');
+
+/**
+ * Render dashboard scripts (deprecated - kept for backwards compatibility)
+ * 
+ * @deprecated Use talktopc_enqueue_dashboard_scripts() instead
+ * @param string $current_agent_id Current agent ID (unused, kept for compatibility)
+ */
+function talktopc_render_dashboard_scripts($current_agent_id = '') {
+    // This function is deprecated but kept for backwards compatibility
+    // Scripts are now enqueued via admin_enqueue_scripts hook
 }

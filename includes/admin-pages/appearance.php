@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) exit;
 
 
 function talktopc_render_appearance_page() {
-    talktopc_render_admin_styles();
+    // Styles are now enqueued via admin_enqueue_scripts hook
     
     // FIX #2: Get current agent values to preserve them
     $current_agent_id = get_option('talktopc_agent_id', '');
@@ -86,5 +86,5 @@ function talktopc_render_appearance_page() {
     <?php
     wp_enqueue_style('wp-color-picker');
     wp_enqueue_script('wp-color-picker');
-    talktopc_render_common_scripts();
+    // Scripts are now enqueued via admin_enqueue_scripts hook
 }

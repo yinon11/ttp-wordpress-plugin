@@ -25,8 +25,8 @@ function talktopc_render_dashboard_page() {
     wp_enqueue_style('wp-color-picker');
     wp_enqueue_script('wp-color-picker');
     
-    talktopc_render_admin_styles();
-    talktopc_render_agent_settings_styles(); // New: Additional styles for agent settings
+    // Styles and scripts are now enqueued via admin_enqueue_scripts hook
+    // No need to call render functions here
     ?>
     <div class="wrap talktopc-admin-wrap">
         <div class="wp-header">
@@ -247,23 +247,22 @@ function talktopc_render_dashboard_page() {
     <?php
     wp_enqueue_style('wp-color-picker');
     wp_enqueue_script('wp-color-picker');
-    talktopc_render_common_scripts();
-    
-    // Pass agent setup flag to JavaScript
-    ?>
-    <script>
-    var talktopcNeedsAgentSetup = <?php echo $needs_agent_setup ? 'true' : 'false'; ?>;
-    </script>
-    <?php
-    talktopc_render_dashboard_scripts($current_agent_id);
+    // Scripts and styles are now enqueued via admin_enqueue_scripts hook
+    // No need to call render functions here
 }
 
 /**
  * FIX #3: Additional CSS for better Agent Settings alignment
  */
-function talktopc_render_agent_settings_styles() {
-    ?>
-    <style>
+/**
+ * Get agent settings CSS content
+ * 
+ * WordPress Plugin Review: Returns CSS as string for wp_add_inline_style()
+ * 
+ * @return string CSS content
+ */
+function talktopc_get_agent_settings_styles_css() {
+    return '
     /* Agent loading indicator */
     .agent-loading-indicator {
         display: inline-flex;
@@ -511,6 +510,35 @@ function talktopc_render_agent_settings_styles() {
             grid-template-columns: repeat(2, 1fr);
         }
     }
-    </style>
-    <?php
+    ';
+}
+
+/**
+ * Enqueue agent settings styles using WordPress enqueue functions
+ * 
+ * WordPress Plugin Review: Uses wp_add_inline_style() instead of inline <style> tags
+ */
+function talktopc_enqueue_agent_settings_styles($hook) {
+    // Only load on dashboard page
+    if ($hook !== 'toplevel_page_talktopc') {
+        return;
+    }
+    
+    // Register dummy stylesheet handle
+    wp_register_style('talktopc-agent-settings', false);
+    wp_enqueue_style('talktopc-agent-settings');
+    
+    // Add inline styles
+    wp_add_inline_style('talktopc-agent-settings', talktopc_get_agent_settings_styles_css());
+}
+add_action('admin_enqueue_scripts', 'talktopc_enqueue_agent_settings_styles');
+
+/**
+ * Render agent settings styles (deprecated - kept for backwards compatibility)
+ * 
+ * @deprecated Use talktopc_enqueue_agent_settings_styles() instead
+ */
+function talktopc_render_agent_settings_styles() {
+    // This function is deprecated but kept for backwards compatibility
+    // Styles are now enqueued via admin_enqueue_scripts hook
 }

@@ -10,11 +10,14 @@
 if (!defined('ABSPATH')) exit;
 
 /**
- * Render admin styles (all CSS from mockup)
+ * Get admin styles CSS content
+ * 
+ * WordPress Plugin Review: Returns CSS as string for wp_add_inline_style()
+ * 
+ * @return string CSS content
  */
-function talktopc_render_admin_styles() {
-    ?>
-    <style>
+function talktopc_get_admin_styles_css() {
+    return '
         * {
             margin: 0;
             padding: 0;
@@ -1229,6 +1232,35 @@ function talktopc_render_admin_styles() {
                 max-width: 100%;
             }
         }
-    </style>
-    <?php
+    ';
+}
+
+/**
+ * Enqueue admin styles using WordPress enqueue functions
+ * 
+ * WordPress Plugin Review: Uses wp_add_inline_style() instead of inline <style> tags
+ */
+function talktopc_enqueue_admin_styles($hook) {
+    // Only load on TalkToPC admin pages
+    if (strpos($hook, 'talktopc') === false) {
+        return;
+    }
+    
+    // Register dummy stylesheet handle (required for wp_add_inline_style)
+    wp_register_style('talktopc-admin', false);
+    wp_enqueue_style('talktopc-admin');
+    
+    // Add inline styles
+    wp_add_inline_style('talktopc-admin', talktopc_get_admin_styles_css());
+}
+add_action('admin_enqueue_scripts', 'talktopc_enqueue_admin_styles');
+
+/**
+ * Render admin styles (deprecated - kept for backwards compatibility)
+ * 
+ * @deprecated Use talktopc_enqueue_admin_styles() instead
+ */
+function talktopc_render_admin_styles() {
+    // This function is deprecated but kept for backwards compatibility
+    // Styles are now enqueued via admin_enqueue_scripts hook
 }
