@@ -3,7 +3,7 @@ Contributors: yinon11
 Tags: voice assistant, ai chatbot, voice chat, customer support, woocommerce
 Requires at least: 5.0
 Tested up to: 6.9
-Stable tag: 1.9.71
+Stable tag: 1.9.72
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -191,6 +191,13 @@ talktopc/
 **Add AJAX endpoint:** See `ajax-handlers.php`
 
 == Changelog ==
+
+= 1.9.72 =
+* Security: Added capability checks to all AJAX handlers
+* Security: Added proper error handling for all remote API requests
+* Security: Float values now clamped to valid ranges in all entry points
+* Fixed: Renamed all 'ttp' prefixes to 'talktopc' for WordPress.org compliance
+* Improved: Added reviewer-facing security comments for nopriv endpoint
 
 = 1.9.30 =
 * Maintenance release

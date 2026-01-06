@@ -48,9 +48,9 @@ else
     
     echo "New version: $NEW_VERSION"
     
-    # Update version in plugin file (two places: header comment and TTP_VERSION constant)
+    # Update version in plugin file (two places: header comment and TALKTOPC_VERSION constant)
     sed -i "s/^ \* Version: $CURRENT_VERSION/ * Version: $NEW_VERSION/" "$PLUGIN_FILE"
-    sed -i "s/define('TTP_VERSION', '$CURRENT_VERSION');/define('TTP_VERSION', '$NEW_VERSION');/" "$PLUGIN_FILE"
+    sed -i "s/define('TALKTOPC_VERSION', '$CURRENT_VERSION');/define('TALKTOPC_VERSION', '$NEW_VERSION');/" "$PLUGIN_FILE"
     
     # Update version in readme.txt (Stable tag)
     README_FILE="$PLUGIN_DIR/readme.txt"
