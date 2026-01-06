@@ -55,9 +55,17 @@ add_action('admin_init', function() {
     register_setting('talktopc_settings', 'talktopc_override_prompt', ['sanitize_callback' => 'sanitize_textarea_field']);
     register_setting('talktopc_settings', 'talktopc_override_first_message', ['sanitize_callback' => 'sanitize_text_field']);
     register_setting('talktopc_settings', 'talktopc_override_voice', ['sanitize_callback' => 'sanitize_text_field']);
-    register_setting('talktopc_settings', 'talktopc_override_voice_speed', ['sanitize_callback' => 'talktopc_sanitize_float']);
+    register_setting('talktopc_settings', 'talktopc_override_voice_speed', [
+        'type' => 'number',
+        'sanitize_callback' => 'talktopc_sanitize_voice_speed',
+        'default' => 1.0
+    ]);
     register_setting('talktopc_settings', 'talktopc_override_language', ['sanitize_callback' => 'sanitize_text_field']);
-    register_setting('talktopc_settings', 'talktopc_override_temperature', ['sanitize_callback' => 'talktopc_sanitize_float']);
+    register_setting('talktopc_settings', 'talktopc_override_temperature', [
+        'type' => 'number',
+        'sanitize_callback' => 'talktopc_sanitize_temperature',
+        'default' => 0.7
+    ]);
     register_setting('talktopc_settings', 'talktopc_override_max_tokens', ['sanitize_callback' => 'absint']);
     register_setting('talktopc_settings', 'talktopc_override_max_call_duration', ['sanitize_callback' => 'absint']);
     
@@ -195,7 +203,11 @@ add_action('admin_init', function() {
     register_setting('talktopc_settings', 'talktopc_anim_enable_hover', ['sanitize_callback' => 'rest_sanitize_boolean', 'default' => true]);
     register_setting('talktopc_settings', 'talktopc_anim_enable_pulse', ['sanitize_callback' => 'rest_sanitize_boolean', 'default' => true]);
     register_setting('talktopc_settings', 'talktopc_anim_enable_slide', ['sanitize_callback' => 'rest_sanitize_boolean', 'default' => true]);
-    register_setting('talktopc_settings', 'talktopc_anim_duration', ['sanitize_callback' => 'talktopc_sanitize_float', 'default' => 0.3]);
+    register_setting('talktopc_settings', 'talktopc_anim_duration', [
+        'type' => 'number',
+        'sanitize_callback' => 'talktopc_sanitize_anim_duration',
+        'default' => 0.3
+    ]);
     
     // =========================================================================
     // ACCESSIBILITY
@@ -213,6 +225,72 @@ add_action('admin_init', function() {
 // =============================================================================
 // CUSTOM SANITIZERS
 // =============================================================================
+
+/**
+ * Sanitize float value with range validation
+ * 
+ * WordPress Plugin Review: Ensures values are within allowed min/max bounds
+ * 
+ * @param mixed $value The value to sanitize
+ * @param float $min Minimum allowed value
+ * @param float $max Maximum allowed value
+ * @param float $default Default value if invalid
+ * @return float Sanitized and clamped value
+ */
+function talktopc_sanitize_float_range($value, $min, $max, $default) {
+    // Check if value is numeric
+    if (!is_numeric($value)) {
+        return $default;
+    }
+    
+    // Convert to float
+    $value = floatval($value);
+    
+    // Clamp to min/max range
+    if ($value < $min) {
+        return $min;
+    }
+    if ($value > $max) {
+        return $max;
+    }
+    
+    return $value;
+}
+
+/**
+ * Sanitize voice speed (0.5 - 2.0, default 1.0)
+ * 
+ * WordPress Plugin Review: Enforces valid range for voice speed setting
+ */
+function talktopc_sanitize_voice_speed($value) {
+    return talktopc_sanitize_float_range($value, 0.5, 2.0, 1.0);
+}
+
+/**
+ * Sanitize temperature (0.0 - 2.0, default 0.7)
+ * 
+ * WordPress Plugin Review: Enforces valid range for temperature setting
+ */
+function talktopc_sanitize_temperature($value) {
+    return talktopc_sanitize_float_range($value, 0.0, 2.0, 0.7);
+}
+
+/**
+ * Sanitize animation duration (0.1 - 2.0, default 0.3)
+ * 
+ * WordPress Plugin Review: Enforces valid range for animation duration setting
+ */
+function talktopc_sanitize_anim_duration($value) {
+    return talktopc_sanitize_float_range($value, 0.1, 2.0, 0.3);
+}
+
+/**
+ * Generic float sanitizer (for backwards compatibility)
+ * 
+ * Note: This function does not enforce ranges. Use specific sanitizers
+ * (talktopc_sanitize_voice_speed, talktopc_sanitize_temperature, etc.)
+ * for fields that require range validation.
+ */
 function talktopc_sanitize_float($input) {
     if ($input === '' || $input === null) return '';
     return filter_var($input, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
