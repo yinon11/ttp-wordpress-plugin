@@ -33,7 +33,7 @@ add_action('wp_enqueue_scripts', function() {
     $agent_id = $agent_config['agent_id'];
     
     // Enqueue widget script from CDN
-    wp_enqueue_script('ttp-agent-widget', 'https://cdn.talktopc.com/agent-widget.js', [], TALKTOPC_VERSION, true);
+    wp_enqueue_script('talktopc-agent-widget', 'https://cdn.talktopc.com/agent-widget.js', [], TALKTOPC_VERSION, true);
     
     // Build configuration object (pass agent_id from page rules)
     $config = talktopc_build_widget_config($agent_id);
@@ -49,7 +49,7 @@ add_action('wp_enqueue_scripts', function() {
         wp_json_encode($nonce)
     );
     
-    wp_add_inline_script('ttp-agent-widget', $script);
+    wp_add_inline_script('talktopc-agent-widget', $script);
 });
 
 /**

@@ -238,10 +238,10 @@ function talktopc_enqueue_dashboard_scripts($hook) {
         
         // === FETCH CREDITS ===
         // Start in loading state
-        $('#ttpCreditsBox').addClass('loading');
+        $('#talktopcCreditsBox').addClass('loading');
         
         $.post(ajaxurl, { action: 'talktopc_fetch_credits', nonce: ajaxNonce }, function(r) {
-            $('#ttpCreditsBox').removeClass('loading');
+            $('#talktopcCreditsBox').removeClass('loading');
             
             if (r.success && r.data) {
                 // Use remainingBrowserMinutes if available, fallback to credits
@@ -253,7 +253,7 @@ function talktopc_enqueue_dashboard_scripts($hook) {
                 showCreditsError(r.data?.message || 'Unable to load credits');
             }
         }).fail(function() {
-            $('#ttpCreditsBox').removeClass('loading');
+            $('#talktopcCreditsBox').removeClass('loading');
             showCreditsError('Connection failed');
         });
         
@@ -265,15 +265,15 @@ function talktopc_enqueue_dashboard_scripts($hook) {
             
             if (isNaN(credits)) credits = 0;
             
-            var $box = $('#ttpCreditsBox');
-            var $icon = $('#ttpCreditsIcon');
-            var $title = $('#ttpCreditsTitle');
-            var $amount = $('#ttpCreditsAmount');
-            var $unit = $('#ttpCreditsUnit');
-            var $label = $('#ttpCreditsLabel');
-            var $warning = $('#ttpCreditsWarning');
-            var $button = $('#ttpCreditsButton');
-            var $hint = $('#ttpCreditsHint');
+            var $box = $('#talktopcCreditsBox');
+            var $icon = $('#talktopcCreditsIcon');
+            var $title = $('#talktopcCreditsTitle');
+            var $amount = $('#talktopcCreditsAmount');
+            var $unit = $('#talktopcCreditsUnit');
+            var $label = $('#talktopcCreditsLabel');
+            var $warning = $('#talktopcCreditsWarning');
+            var $button = $('#talktopcCreditsButton');
+            var $hint = $('#talktopcCreditsHint');
             
             // Reset classes
             $box.removeClass('loading low-credits critical-credits no-credits error');
@@ -332,16 +332,16 @@ function talktopc_enqueue_dashboard_scripts($hook) {
         }
         
         function showCreditsError(message) {
-            var $box = $('#ttpCreditsBox');
+            var $box = $('#talktopcCreditsBox');
             $box.removeClass('loading').addClass('error');
-            $('#ttpCreditsIcon').text('⚡');
-            $('#ttpCreditsTitle').text('Credits');
-            $('#ttpCreditsAmount').text('—');
-            $('#ttpCreditsUnit').html('<button class="retry-btn" onclick="location.reload()">↻ Retry</button>');
-            $('#ttpCreditsLabel').text(message);
-            $('#ttpCreditsWarning').removeClass('visible').html('');
-            $('#ttpCreditsHint').text('');
-            $('#ttpCreditsButton').text('Buy More →');
+            $('#talktopcCreditsIcon').text('⚡');
+            $('#talktopcCreditsTitle').text('Credits');
+            $('#talktopcCreditsAmount').text('—');
+            $('#talktopcCreditsUnit').html('<button class="retry-btn" onclick="location.reload()">↻ Retry</button>');
+            $('#talktopcCreditsLabel').text(message);
+            $('#talktopcCreditsWarning').removeClass('visible').html('');
+            $('#talktopcCreditsHint').text('');
+            $('#talktopcCreditsButton').text('Buy More →');
         }
         
         // === AGENTS ===
@@ -555,7 +555,7 @@ function talktopc_enqueue_dashboard_scripts($hook) {
         });
         
         // === GENERATE PROMPT ===
-        $('#ttpGeneratePrompt').on('click', function() {
+        $('#talktopcGeneratePrompt').on('click', function() {
             var $btn = $(this), $ta = $('#talktopc_override_prompt');
             if ($ta.val().trim() !== '' && !confirm('Replace current prompt?')) return;
             

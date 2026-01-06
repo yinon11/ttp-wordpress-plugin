@@ -49,24 +49,24 @@ function talktopc_render_dashboard_page() {
         
         <?php if ($is_connected): ?>
             <!-- Credits Box - Dynamic states based on credit amount -->
-            <div class="credits-box" id="ttpCreditsBox">
+            <div class="credits-box" id="talktopcCreditsBox">
                 <div class="credits-left">
-                    <div class="credits-icon" id="ttpCreditsIcon">💳</div>
+                    <div class="credits-icon" id="talktopcCreditsIcon">💳</div>
                     <div class="credits-info">
-                        <h3 id="ttpCreditsTitle">Available Credits</h3>
+                        <h3 id="talktopcCreditsTitle">Available Credits</h3>
                         <div class="credits-amount">
-                            <span class="amount" id="ttpCreditsAmount">
+                            <span class="amount" id="talktopcCreditsAmount">
                                 <span class="spinner"></span> Loading...
                             </span>
-                            <span class="unit" id="ttpCreditsUnit"></span>
+                            <span class="unit" id="talktopcCreditsUnit"></span>
                         </div>
-                        <div class="credits-label" id="ttpCreditsLabel">Checking your account...</div>
-                        <div class="credits-warning" id="ttpCreditsWarning"></div>
+                        <div class="credits-label" id="talktopcCreditsLabel">Checking your account...</div>
+                        <div class="credits-warning" id="talktopcCreditsWarning"></div>
                     </div>
                 </div>
                 <div class="credits-right">
-                    <a href="https://talktopc.com/upgrade" target="_blank" class="button" id="ttpCreditsButton">Buy More →</a>
-                    <div class="credits-hint" id="ttpCreditsHint"></div>
+                    <a href="https://talktopc.com/upgrade" target="_blank" class="button" id="talktopcCreditsButton">Buy More →</a>
+                    <div class="credits-hint" id="talktopcCreditsHint"></div>
                 </div>
             </div>
             
@@ -135,7 +135,7 @@ function talktopc_render_dashboard_page() {
                                     <div class="field">
                                         <textarea id="talktopc_override_prompt" rows="5" disabled><?php echo esc_textarea(get_option('talktopc_override_prompt', '')); ?></textarea>
                                         <p class="field-action edit-only" style="display: none;">
-                                            <button type="button" class="button button-small" id="ttpGeneratePrompt">🔄 Generate from Site Content</button>
+                                            <button type="button" class="button button-small" id="talktopcGeneratePrompt">🔄 Generate from Site Content</button>
                                         </p>
                                     </div>
                                 </div>

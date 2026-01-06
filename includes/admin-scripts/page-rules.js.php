@@ -39,20 +39,20 @@ function talktopc_enqueue_page_rules_scripts($hook) {
         'use strict';
         
         // Variables for rule management (scoped to IIFE)
-        var ttpAjaxNonce = talktopcPageRules.nonce;
-        var ttpRules = talktopcPageRules.rules || [];
-        var ttpAgentsList = [];
+        var talktopcAjaxNonce = talktopcPageRules.nonce;
+        var talktopcRules = talktopcPageRules.rules || [];
+        var talktopcAgentsList = [];
         var pagesData = null;
         
         $(document).ready(function() {
-            var ajaxNonce = ttpAjaxNonce;
-            var rules = ttpRules;
+            var ajaxNonce = talktopcAjaxNonce;
+            var rules = talktopcRules;
             
             // Fetch agents for dropdowns
             $.post(talktopcPageRules.ajaxUrl, { action: "talktopc_fetch_agents", nonce: ajaxNonce }, function(r) {
                 if (r.success && r.data) {
                     // Handle different response formats: array or {data: [...]}
-                    ttpAgentsList = Array.isArray(r.data) ? r.data : (r.data.data || []);
+                    talktopcAgentsList = Array.isArray(r.data) ? r.data : (r.data.data || []);
                     populateAgentSelects();
                 }
             });
@@ -61,11 +61,11 @@ function talktopc_enqueue_page_rules_scripts($hook) {
                 $('.rule-agent-select-field').each(function() {
                     var select = $(this);
                     var index = parseInt(select.data('index') || select.closest('.rule-card').data('index'));
-                    var rule = ttpRules[index];
+                    var rule = talktopcRules[index];
                     var currentAgentId = rule ? (rule.agent_id || '') : '';
                     
                     select.html('<option value="">-- Select Agent --</option>');
-                    ttpAgentsList.forEach(function(agent) {
+                    talktopcAgentsList.forEach(function(agent) {
                         var agentId = agent.agentId || agent.id;
                         var agentName = agent.name || '';
                         var selected = agentId === currentAgentId ? ' selected' : '';
@@ -76,7 +76,7 @@ function talktopc_enqueue_page_rules_scripts($hook) {
                 
                 // Populate modal select
                 $('#modalAgentSelect').html('<option value="">-- Select Agent --</option>');
-                ttpAgentsList.forEach(function(agent) {
+                talktopcAgentsList.forEach(function(agent) {
                     var agentId = agent.agentId || agent.id;
                     var agentName = agent.name || '';
                     $('#modalAgentSelect').append('<option value="' + agentId + '">' + agentName + '</option>');
@@ -162,11 +162,11 @@ function talktopc_enqueue_page_rules_scripts($hook) {
                         var newRules = [];
                         rulesList.querySelectorAll('.rule-card').forEach(function(card) {
                             var index = parseInt(card.dataset.index);
-                            if (index >= 0 && index < ttpRules.length) {
-                                newRules.push(ttpRules[index]);
+                            if (index >= 0 && index < talktopcRules.length) {
+                                newRules.push(talktopcRules[index]);
                             }
                         });
-                        ttpRules = newRules;
+                        talktopcRules = newRules;
                         saveRules();
                     }
                 });
@@ -181,15 +181,15 @@ function talktopc_enqueue_page_rules_scripts($hook) {
         }
         
         function updateRuleAgent(index, agentId) {
-            if (index < 0 || index >= ttpRules.length) return;
+            if (index < 0 || index >= talktopcRules.length) return;
             
-            var rule = ttpRules[index];
+            var rule = talktopcRules[index];
             rule.agent_id = agentId;
             
             // Find agent name
             var agentName = '🚫 No Widget';
             if (agentId && agentId !== 'none') {
-                var agent = ttpAgentsList.find(function(a) {
+                var agent = talktopcAgentsList.find(function(a) {
                     return (a.agentId || a.id) === agentId;
                 });
                 if (agent) agentName = agent.name || '';
@@ -213,8 +213,8 @@ function talktopc_enqueue_page_rules_scripts($hook) {
         function saveRules() {
             $.post(talktopcPageRules.ajaxUrl, {
                 action: "talktopc_save_page_rules",
-                nonce: ttpAjaxNonce,
-                rules: JSON.stringify(ttpRules)
+                nonce: talktopcAjaxNonce,
+                rules: JSON.stringify(talktopcRules)
             }, function(r) {
                 if (r.success) {
                     // Show save status
@@ -233,11 +233,11 @@ function talktopc_enqueue_page_rules_scripts($hook) {
         
         function deleteRule(index) {
             if (!confirm("Delete this rule?")) return;
-            ttpRules = ttpRules.filter(function(r, i) { return i !== index; });
+            talktopcRules = talktopcRules.filter(function(r, i) { return i !== index; });
             $.post(talktopcPageRules.ajaxUrl, {
                 action: "talktopc_save_page_rules",
-                nonce: ttpAjaxNonce,
-                rules: JSON.stringify(ttpRules)
+                nonce: talktopcAjaxNonce,
+                rules: JSON.stringify(talktopcRules)
             }, function(r) {
                 if (r.success) location.reload();
             });
@@ -263,7 +263,7 @@ function talktopc_enqueue_page_rules_scripts($hook) {
             // Find agent name
             var agentName = '🚫 No Widget';
             if (agentId && agentId !== 'none') {
-                var agent = ttpAgentsList.find(function(a) {
+                var agent = talktopcAgentsList.find(function(a) {
                     return (a.agentId || a.id) === agentId;
                 });
                 if (agent) agentName = agent.name || '';
@@ -278,19 +278,19 @@ function talktopc_enqueue_page_rules_scripts($hook) {
                 agent_name: agentName
             };
             
-            ttpRules.push(newRule);
+            talktopcRules.push(newRule);
             
             $.post(talktopcPageRules.ajaxUrl, {
                 action: "talktopc_save_page_rules",
-                nonce: ttpAjaxNonce,
-                rules: JSON.stringify(ttpRules)
+                nonce: talktopcAjaxNonce,
+                rules: JSON.stringify(talktopcRules)
             }, function(r) {
                 if (r.success) location.reload();
             });
         }
         
         function saveRuleSettings(index) {
-            if (index < 0 || index >= ttpRules.length) return;
+            if (index < 0 || index >= talktopcRules.length) return;
             
             var card = document.querySelector('.rule-card[data-index="' + index + '"]');
             if (!card) return;

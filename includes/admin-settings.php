@@ -356,9 +356,13 @@ function talktopc_sync_agent_to_backend() {
     if (!empty($prompt)) $update_data['systemPrompt'] = $prompt;
     if (!empty($first_message)) $update_data['firstMessage'] = $first_message;
     if (!empty($voice)) $update_data['voiceId'] = $voice;
-    if (!empty($voice_speed)) $update_data['voiceSpeed'] = floatval($voice_speed);
+    if (!empty($voice_speed)) {
+        $update_data['voiceSpeed'] = max(0.5, min(2.0, floatval($voice_speed)));
+    }
     if (!empty($language)) $update_data['agentLanguage'] = $language;
-    if (!empty($temperature)) $update_data['temperature'] = floatval($temperature);
+    if (!empty($temperature)) {
+        $update_data['temperature'] = max(0.0, min(2.0, floatval($temperature)));
+    }
     if (!empty($max_tokens)) $update_data['maxTokens'] = intval($max_tokens);
     if (!empty($max_call_duration)) $update_data['maxCallDuration'] = intval($max_call_duration);
     
