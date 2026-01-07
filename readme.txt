@@ -3,7 +3,7 @@ Contributors: yinon11
 Tags: voice assistant, ai chatbot, voice chat, customer support, woocommerce
 Requires at least: 5.0
 Tested up to: 6.9
-Stable tag: 1.9.75
+Stable tag: 1.9.78
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -212,6 +212,17 @@ talktopc/
 
 == Changelog ==
 
+= 1.9.78 =
+* Fixed: Replaced heredoc syntax with output buffering for WordPress.org compliance
+* Updated: All admin JavaScript files now use ob_start()/ob_get_clean() pattern
+* Improved: Better code readability without escaping nightmares
+* Technical: dashboard.js.php, common.js.php, and page-rules.js.php refactored
+
+= 1.9.76 =
+* Updated: Readme.txt prepared for WordPress Plugin Review
+* Added: External Services section with data transmission details
+* Fixed: Terms of Service and Privacy Policy URLs
+
 = 1.9.75 =
 * Fixed: JavaScript function scope issue for page rules
 * Removed: Debug console.log statement
@@ -254,6 +265,9 @@ talktopc/
 * Initial release
 
 == Upgrade Notice ==
+
+= 1.9.76 =
+Updated documentation for WordPress Plugin Review submission. Added External Services section and corrected policy URLs.
 
 = 1.9.30 =
 Maintenance release.
