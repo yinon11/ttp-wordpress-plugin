@@ -478,18 +478,6 @@ function talktopc_render_accessibility_settings() {
     <?php
 }
 
-function talktopc_render_custom_css() {
-    ?>
-    <div class="talktopc-card talktopc-collapsible">
-        <h2 class="talktopc-collapsible-header">Custom CSS <span class="dashicons dashicons-arrow-down-alt2"></span></h2>
-        <div class="talktopc-collapsible-content">
-            <p class="description">Add custom CSS to further customize the widget.</p>
-            <textarea id="talktopc_custom_css" name="talktopc_custom_css" rows="8" class="large-text code" placeholder="#text-chat-button { /* your styles */ }"><?php echo esc_textarea(get_option('talktopc_custom_css')); ?></textarea>
-        </div>
-    </div>
-    <?php
-}
-
 function talktopc_render_advanced_features() {
     ?>
     <div class="talktopc-card talktopc-advanced-features">

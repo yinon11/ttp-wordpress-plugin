@@ -3,7 +3,7 @@
  * Plugin Name: TalkToPC Voice Widget
  * Plugin URI: https://wordpress.org/plugins/talktopc/
  * Description: Add AI voice conversations to your WordPress site.
- * Version: 1.9.78
+ * Version: 1.9.79
  * Author: TalkToPC
  * Author URI: https://talktopc.com
  * License: GPL-2.0-or-later
@@ -37,7 +37,7 @@ if (!defined('ABSPATH')) exit;
 // =============================================================================
 define('TALKTOPC_API_URL', 'https://backend.talktopc.com');
 define('TALKTOPC_CONNECT_URL', 'https://talktopc.com/connect/wordpress');
-define('TALKTOPC_VERSION', '1.9.78');
+define('TALKTOPC_VERSION', '1.9.79');
 define('TALKTOPC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 
 // =============================================================================
@@ -175,12 +175,7 @@ function talktopc_get_all_option_names() {
         // =========================
         // ACCESSIBILITY
         // =========================
-        'talktopc_a11y_aria_label', 'talktopc_a11y_aria_description', 'talktopc_a11y_keyboard_nav',
-        
-        // =========================
-        // CUSTOM CSS
-        // =========================
-        'talktopc_custom_css'
+        'talktopc_a11y_aria_label', 'talktopc_a11y_aria_description', 'talktopc_a11y_keyboard_nav'
     ];
 }
 

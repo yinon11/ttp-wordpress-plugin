@@ -265,11 +265,6 @@ function talktopc_build_widget_config($agent_id = null) {
     // If you need per-page overrides, use Page Rules with custom settings.
     // ==========================================================================
     
-    // ==========================================================================
-    // CUSTOM CSS
-    // ==========================================================================
-    if ($css = get_option('talktopc_custom_css')) $config['customStyles'] = $css;
-    
     return $config;
 }
 

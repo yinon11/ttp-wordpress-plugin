@@ -215,11 +215,6 @@ add_action('admin_init', function() {
     register_setting('talktopc_settings', 'talktopc_a11y_aria_label', ['sanitize_callback' => 'sanitize_text_field']);
     register_setting('talktopc_settings', 'talktopc_a11y_aria_description', ['sanitize_callback' => 'sanitize_text_field']);
     register_setting('talktopc_settings', 'talktopc_a11y_keyboard_nav', ['sanitize_callback' => 'rest_sanitize_boolean', 'default' => true]);
-    
-    // =========================================================================
-    // CUSTOM CSS
-    // =========================================================================
-    register_setting('talktopc_settings', 'talktopc_custom_css', ['sanitize_callback' => 'wp_strip_all_tags']);
 });
 
 // =============================================================================
