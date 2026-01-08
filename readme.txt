@@ -1,6 +1,6 @@
 === TalkToPC Voice Widget ===
 Contributors: yinon11
-Tags: voice assistant, ai chatbot, voice chat, customer support, woocommerce
+Tags: voice, ai agent, accessibility, voice control, faq, customer-support, chatbot, speech to text, conversational ai, voice assistant, ai voice, artificial intelligence
 Requires at least: 5.0
 Tested up to: 6.9
 Stable tag: 1.9.79
@@ -8,7 +8,7 @@ Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Add AI voice conversations to your WordPress site. Connect your TalkToPC account and get a fully configured AI assistant in under 2 minutes!
+The first voice AI agent for WordPress. Let visitors talk to your site—no typing needed. Real conversations, not chatbots. Set up in under 2 mins.
 
 == Description ==
 
