@@ -3,7 +3,7 @@ Contributors: yinon11
 Tags: talk to pc, talktopc, voice, ai agent, voice assistant, accessibility, customer support, chatbot, speech to text, conversational ai, ai voice
 Requires at least: 5.0
 Tested up to: 6.9
-Stable tag: 1.9.79
+Stable tag: 1.9.81
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
