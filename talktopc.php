@@ -3,7 +3,7 @@
  * Plugin Name: TalkToPC Voice Widget
  * Plugin URI: https://wordpress.org/plugins/talktopc/
  * Description: Add AI voice conversations to your WordPress site.
- * Version: 1.9.79
+ * Version: 1.9.97
  * Author: TalkToPC
  * Author URI: https://talktopc.com
  * License: GPL-2.0-or-later
@@ -37,7 +37,7 @@ if (!defined('ABSPATH')) exit;
 // =============================================================================
 define('TALKTOPC_API_URL', 'https://backend.talktopc.com');
 define('TALKTOPC_CONNECT_URL', 'https://talktopc.com/connect/wordpress');
-define('TALKTOPC_VERSION', '1.9.79');
+define('TALKTOPC_VERSION', '1.9.97');
 define('TALKTOPC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 
 // =============================================================================
@@ -48,6 +48,77 @@ require_once TALKTOPC_PLUGIN_DIR . 'includes/admin-page.php';
 require_once TALKTOPC_PLUGIN_DIR . 'includes/oauth.php';
 require_once TALKTOPC_PLUGIN_DIR . 'includes/ajax-handlers.php';
 require_once TALKTOPC_PLUGIN_DIR . 'includes/frontend-widget.php';
+require_once TALKTOPC_PLUGIN_DIR . 'includes/migration.php';
+
+// =============================================================================
+// AUTOMATIC MIGRATION ON UPGRADE
+// =============================================================================
+add_action('admin_init', 'talktopc_check_and_run_migration');
+
+function talktopc_check_and_run_migration() {
+    // Only run in admin area
+    if (!is_admin()) {
+        return;
+    }
+    
+    // Get stored version
+    $stored_version = get_option('talktopc_db_version', '0.0.0');
+    $current_version = TALKTOPC_VERSION;
+    
+    // If versions match, migration already ran
+    if (version_compare($stored_version, $current_version, '>=')) {
+        return;
+    }
+    
+    // Check if migration has already been attempted for this version
+    $migration_flag = get_option('talktopc_migration_' . $current_version, false);
+    if ($migration_flag) {
+        // Already migrated, just update version
+        update_option('talktopc_db_version', $current_version);
+        return;
+    }
+    
+    // Run automatic migration
+    $migration_result = talktopc_auto_migrate();
+    
+    // Mark migration as attempted for this version
+    update_option('talktopc_migration_' . $current_version, true);
+    
+    // Update stored version
+    update_option('talktopc_db_version', $current_version);
+    
+    // Store migration result for admin notice
+    if ($migration_result['migrated'] > 0) {
+        set_transient('talktopc_migration_notice', [
+            'migrated' => $migration_result['migrated'],
+            'skipped' => $migration_result['skipped'],
+            'sources' => $migration_result['sources']
+        ], 60); // Show notice for 60 seconds
+    }
+    
+    // Log migration result (for debugging)
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Only runs when WP_DEBUG is enabled
+        error_log('TalkToPC Migration: ' . json_encode($migration_result));
+    }
+}
+
+// Show admin notice if migration occurred
+add_action('admin_notices', function() {
+    $notice = get_transient('talktopc_migration_notice');
+    if ($notice) {
+        ?>
+        <div class="notice notice-success is-dismissible">
+            <p><strong>TalkToPC:</strong> Successfully migrated <?php echo esc_html($notice['migrated']); ?> settings from old database structure. 
+            <?php if ($notice['skipped'] > 0): ?>
+                <?php echo esc_html($notice['skipped']); ?> settings were skipped (already exist).
+            <?php endif; ?>
+            </p>
+        </div>
+        <?php
+        delete_transient('talktopc_migration_notice');
+    }
+});
 
 // =============================================================================
 // UNINSTALL CLEANUP
@@ -133,10 +204,12 @@ function talktopc_get_all_option_names() {
         // LANDING SCREEN
         // =========================
         'talktopc_landing_bg_color', 'talktopc_landing_logo', 'talktopc_landing_title',
-        'talktopc_landing_title_color', 'talktopc_landing_card_bg_color', 'talktopc_landing_card_border_color',
+        'talktopc_landing_title_color', 'talktopc_landing_subtitle_color',
+        'talktopc_landing_card_bg_color', 'talktopc_landing_card_border_color',
         'talktopc_landing_card_hover_border_color', 'talktopc_landing_card_icon_bg_color',
         'talktopc_landing_card_title_color', 'talktopc_landing_voice_icon', 'talktopc_landing_text_icon',
-        'talktopc_landing_voice_title', 'talktopc_landing_text_title',
+        'talktopc_landing_voice_title', 'talktopc_landing_voice_desc',
+        'talktopc_landing_text_title', 'talktopc_landing_text_desc',
         
         // =========================
         // VOICE INTERFACE
@@ -150,6 +223,11 @@ function talktopc_get_all_option_names() {
         'talktopc_voice_transcript_label_color',
         'talktopc_voice_control_btn_color', 'talktopc_voice_control_btn_secondary_color',
         'talktopc_voice_end_btn_color',
+        
+        // =========================
+        // CUSTOMIZATION PAGE ADDITIONS
+        // =========================
+        'talktopc_landing_subtitle_color', 'talktopc_landing_voice_desc', 'talktopc_landing_text_desc',
         
         // =========================
         // TEXT INTERFACE

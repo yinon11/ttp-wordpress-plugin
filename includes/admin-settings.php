@@ -18,9 +18,7 @@ add_action('admin_menu', function() {
     add_menu_page('TalkToPC Voice Widget', 'TalkToPC', 'manage_options', 'talktopc', 'talktopc_render_dashboard_page', 'dashicons-microphone', 30);
     add_submenu_page('talktopc', 'Dashboard', 'Dashboard', 'manage_options', 'talktopc', 'talktopc_render_dashboard_page');
     add_submenu_page('talktopc', 'Page Rules', 'Page Rules', 'manage_options', 'talktopc-page-rules', 'talktopc_render_page_rules_page');
-    add_submenu_page('talktopc', 'Appearance', 'Appearance', 'manage_options', 'talktopc-appearance', 'talktopc_render_appearance_page');
-    add_submenu_page('talktopc', 'Chat', 'Chat', 'manage_options', 'talktopc-chat', 'talktopc_render_chat_page');
-    add_submenu_page('talktopc', 'Advanced', 'Advanced', 'manage_options', 'talktopc-advanced', 'talktopc_render_advanced_page');
+    add_submenu_page('talktopc', 'Customization', 'Customization', 'manage_options', 'talktopc-widget-customization', 'talktopc_render_widget_customization_page');
 });
 
 // =============================================================================
@@ -102,7 +100,7 @@ add_action('admin_init', function() {
     // PANEL
     // =========================================================================
     register_setting('talktopc_settings', 'talktopc_panel_width', ['sanitize_callback' => 'absint', 'default' => 350]);
-    register_setting('talktopc_settings', 'talktopc_panel_height', ['sanitize_callback' => 'absint', 'default' => 500]);
+    register_setting('talktopc_settings', 'talktopc_panel_height', ['sanitize_callback' => 'absint', 'default' => 550]);
     register_setting('talktopc_settings', 'talktopc_panel_border_radius', ['sanitize_callback' => 'absint', 'default' => 12]);
     register_setting('talktopc_settings', 'talktopc_panel_bg_color', ['sanitize_callback' => 'sanitize_hex_color']);
     register_setting('talktopc_settings', 'talktopc_panel_border', ['sanitize_callback' => 'sanitize_text_field', 'default' => '1px solid #E5E7EB']);

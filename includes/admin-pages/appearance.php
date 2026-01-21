@@ -65,8 +65,8 @@ function talktopc_render_appearance_page() {
                     <label>Background</label>
                     <div class="field">
                         <div class="color-picker-row">
-                            <div class="color-preview talktopc-color-picker-preview" style="background: <?php echo esc_attr(get_option('talktopc_button_bg_color', '#7C3AED')); ?>;"></div>
-                            <input type="text" name="talktopc_button_bg_color" class="talktopc-color-picker" value="<?php echo esc_attr(get_option('talktopc_button_bg_color', '#7C3AED')); ?>">
+                            <div class="color-preview talktopc-color-picker-preview" style="background: <?php echo esc_attr(get_option('talktopc_button_bg_color', '#FFFFFF')); ?>;"></div>
+                            <input type="text" name="talktopc_button_bg_color" class="talktopc-color-picker" value="<?php echo esc_attr(get_option('talktopc_button_bg_color', '#FFFFFF')); ?>">
                         </div>
                     </div>
                 </div>

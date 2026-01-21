@@ -659,6 +659,291 @@ add_action('wp_ajax_talktopc_save_page_rules', function() {
 // =============================================================================
 add_action('wp_ajax_talktopc_auto_setup_agent', 'talktopc_ajax_auto_setup_agent');
 
+// =============================================================================
+// TEST ENDPOINT - Verify file is deployed (Docker-friendly)
+// =============================================================================
+add_action('wp_ajax_talktopc_test_handler', function() {
+    $file_mtime = file_exists(__FILE__) ? filemtime(__FILE__) : 0;
+    wp_send_json_success([
+        'message' => 'Handler file is deployed correctly!',
+        'version' => '1.9.96-fixed-docker-v2',
+        'timestamp' => time(),
+        'file' => __FILE__,
+        'file_exists' => file_exists(__FILE__),
+        'file_mtime' => $file_mtime,
+        'file_mtime_formatted' => $file_mtime > 0 ? gmdate('Y-m-d H:i:s', $file_mtime) : 'Unknown',
+        'php_version' => PHP_VERSION,
+        'wordpress_version' => get_bloginfo('version')
+    ]);
+});
+
+// =============================================================================
+// SAVE WIDGET CUSTOMIZATION
+// =============================================================================
+add_action('wp_ajax_talktopc_save_widget_customization', function() {
+    // Prevent any output before JSON
+    @ob_clean();
+    
+    // Log immediately to verify handler is called (only in debug mode)
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log,WordPress.Security.NonceVerification.Missing -- Only runs when WP_DEBUG is enabled, logging only
+        error_log('TalkToPC Save Handler: START - version 1.9.96-fixed-docker-v2');
+        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log,WordPress.Security.NonceVerification.Missing -- Only runs when WP_DEBUG is enabled, logging only
+        error_log('TalkToPC Save Handler: POST count: ' . count($_POST));
+        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log,WordPress.Security.NonceVerification.Missing -- Only runs when WP_DEBUG is enabled, logging only
+        error_log('TalkToPC Save Handler: POST keys: ' . implode(', ', array_keys($_POST)));
+    }
+    
+    try {
+        // Check nonce
+        if (!isset($_POST['nonce'])) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Only runs when WP_DEBUG is enabled
+                error_log('TalkToPC Save Handler: Missing nonce');
+            }
+            wp_send_json_error(['message' => 'Missing security token. Please refresh the page.', 'version' => '1.9.96-fixed-docker-v2']);
+            return;
+        }
+        
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce verification handles sanitization
+        if (!wp_verify_nonce(wp_unslash($_POST['nonce']), 'talktopc_customization_nonce')) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Only runs when WP_DEBUG is enabled
+                error_log('TalkToPC Save Handler: Nonce verification failed');
+            }
+            wp_send_json_error(['message' => 'Security check failed. Please refresh the page and try again.', 'version' => '1.9.96-fixed-docker-v2']);
+            return;
+        }
+        
+        if (!current_user_can('manage_options')) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Only runs when WP_DEBUG is enabled
+                error_log('TalkToPC Save Handler: User lacks manage_options capability');
+            }
+            wp_send_json_error(['message' => 'Unauthorized. You do not have permission to save settings.', 'version' => '1.9.96-fixed-docker-v2']);
+            return;
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Only runs when WP_DEBUG is enabled
+            error_log('TalkToPC Save Handler: Security checks passed');
+        }
+        
+        // Save all widget settings from the form
+        $settings_map = [
+        // Button
+        'talktopc_button_size' => 'sanitize_text_field',
+        'talktopc_button_shape' => 'sanitize_text_field',
+        'talktopc_button_bg_color' => 'sanitize_hex_color',
+        'talktopc_button_hover_color' => 'sanitize_hex_color',
+        
+        // Icon
+        'talktopc_icon_type' => 'sanitize_text_field',
+        'talktopc_icon_custom_image' => 'esc_url_raw',
+        'talktopc_icon_emoji' => 'sanitize_text_field',
+        'talktopc_icon_text' => 'sanitize_text_field',
+        'talktopc_icon_size' => 'sanitize_text_field',
+        'talktopc_icon_bg_color' => 'sanitize_hex_color',
+        
+        // Panel
+        'talktopc_panel_width' => 'absint',
+        'talktopc_panel_height' => 'absint',
+        'talktopc_panel_border_radius' => 'absint',
+        'talktopc_panel_bg_color' => 'sanitize_hex_color',
+        
+        // Header
+        'talktopc_header_title' => 'sanitize_text_field',
+        'talktopc_header_bg_color' => 'sanitize_hex_color',
+        'talktopc_header_text_color' => 'sanitize_hex_color',
+        'talktopc_header_show_close' => 'talktopc_sanitize_checkbox',
+        
+        // Messages
+        'talktopc_msg_user_bg' => 'sanitize_hex_color',
+        'talktopc_msg_agent_bg' => 'sanitize_hex_color',
+        'talktopc_msg_text_color' => 'sanitize_hex_color',
+        'talktopc_msg_font_size' => 'sanitize_text_field',
+        'talktopc_msg_border_radius' => 'absint',
+        
+        // Text
+        'talktopc_text_send_btn_text' => 'sanitize_text_field',
+        'talktopc_text_send_btn_color' => 'sanitize_hex_color',
+        'talktopc_text_send_btn_hover_color' => 'sanitize_hex_color',
+        'talktopc_text_input_placeholder' => 'sanitize_text_field',
+        'talktopc_text_input_focus_color' => 'sanitize_hex_color',
+        
+        // Landing
+        'talktopc_landing_title' => 'sanitize_text_field',
+        'talktopc_landing_title_color' => 'sanitize_hex_color',
+        'talktopc_landing_subtitle_color' => 'sanitize_hex_color',
+        'talktopc_landing_logo' => 'sanitize_text_field',
+        'talktopc_landing_voice_title' => 'sanitize_text_field',
+        'talktopc_landing_voice_desc' => 'sanitize_text_field',
+        'talktopc_landing_text_title' => 'sanitize_text_field',
+        'talktopc_landing_text_desc' => 'sanitize_text_field',
+        'talktopc_landing_card_bg_color' => 'sanitize_hex_color',
+        
+        // Voice
+        'talktopc_voice_mic_color' => 'sanitize_hex_color',
+        'talktopc_voice_mic_active_color' => 'sanitize_hex_color',
+        'talktopc_voice_avatar_color' => 'sanitize_hex_color',
+        'talktopc_voice_start_btn_text' => 'sanitize_text_field',
+        'talktopc_voice_start_btn_color' => 'sanitize_hex_color',
+        'talktopc_voice_start_btn_text_color' => 'sanitize_hex_color',
+        'talktopc_voice_status_title_color' => 'sanitize_hex_color',
+        'talktopc_voice_end_btn_color' => 'sanitize_hex_color',
+        'talktopc_voice_control_btn_secondary_color' => 'sanitize_hex_color',
+        
+        // Position & Direction
+        'talktopc_position' => 'sanitize_text_field',
+        'talktopc_direction' => 'sanitize_text_field',
+        ];
+        
+        $saved = 0;
+        $errors = [];
+        
+        foreach ($settings_map as $option_name => $sanitizer) {
+            if (isset($_POST[$option_name])) {
+                // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Value is sanitized below based on $sanitizer
+                $value = wp_unslash($_POST[$option_name]);
+                
+                // Handle empty strings for optional fields
+                if ($value === '' && strpos($option_name, '_color') === false) {
+                    // Skip empty non-color fields (they're optional)
+                    continue;
+                }
+                
+                try {
+                    $sanitized_value = null;
+                    
+                    // Handle different sanitizer types
+                    if ($sanitizer === 'sanitize_hex_color') {
+                        // WordPress sanitize_hex_color returns false for invalid colors
+                        // Load Customizer functions if needed
+                        if (!function_exists('sanitize_hex_color')) {
+                            if (file_exists(ABSPATH . 'wp-includes/class-wp-customize-manager.php')) {
+                                require_once ABSPATH . 'wp-includes/class-wp-customize-manager.php';
+                            }
+                        }
+                        
+                        if (function_exists('sanitize_hex_color')) {
+                            $sanitized_value = sanitize_hex_color($value);
+                            if ($sanitized_value === false || $sanitized_value === '') {
+                                // Invalid hex color - skip it
+                                continue;
+                            }
+                        } else {
+                            // Fallback: validate hex color format
+                            $value = trim($value);
+                            if (preg_match('/^#[a-fA-F0-9]{6}$/', $value)) {
+                                $sanitized_value = $value;
+                            } elseif (preg_match('/^[a-fA-F0-9]{6}$/', $value)) {
+                                // Missing # prefix, add it
+                                $sanitized_value = '#' . $value;
+                            } else {
+                                // Invalid format - skip it
+                                continue;
+                            }
+                        }
+                    } elseif ($sanitizer === 'absint') {
+                        $sanitized_value = absint($value);
+                    } elseif ($sanitizer === 'esc_url_raw') {
+                        $sanitized_value = esc_url_raw($value);
+                    } elseif ($sanitizer === 'talktopc_sanitize_checkbox') {
+                        $sanitized_value = ($value === '1' || $value === 'on' || $value === true) ? '1' : '0';
+                    } elseif (is_callable($sanitizer)) {
+                        $sanitized_value = call_user_func($sanitizer, $value);
+                    } else {
+                        $sanitized_value = sanitize_text_field($value);
+                    }
+                
+                    // Only update if value is valid
+                    if ($sanitized_value !== false && $sanitized_value !== null && $sanitized_value !== '') {
+                        update_option($option_name, $sanitized_value);
+                        $saved++;
+                    }
+                } catch (Exception $e) {
+                    $errors[] = $option_name . ': ' . $e->getMessage();
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Only runs when WP_DEBUG is enabled
+                        error_log('TalkToPC Save Error for ' . $option_name . ': ' . $e->getMessage());
+                    }
+                } catch (Error $e) {
+                    $errors[] = $option_name . ': ' . $e->getMessage();
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Only runs when WP_DEBUG is enabled
+                        error_log('TalkToPC Save Fatal Error for ' . $option_name . ': ' . $e->getMessage());
+                    }
+                }
+            }
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Only runs when WP_DEBUG is enabled
+            error_log('TalkToPC Save Handler: Processed settings, saved: ' . $saved . ', errors: ' . count($errors));
+        }
+        
+        if (!empty($errors)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Only runs when WP_DEBUG is enabled
+                error_log('TalkToPC Save Handler: Errors: ' . implode(', ', $errors));
+            }
+            wp_send_json_error([
+                'message' => "Saved {$saved} settings, but encountered errors: " . implode(', ', $errors),
+                'version' => '1.9.96-fixed-docker-v2'
+            ]);
+            return;
+        }
+        
+        $file_mtime = filemtime(__FILE__);
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Only runs when WP_DEBUG is enabled
+            error_log('TalkToPC Save Handler: SUCCESS - saved ' . $saved . ' settings');
+        }
+        wp_send_json_success([
+            'message' => "Saved {$saved} settings successfully",
+            'version' => '1.9.96-fixed-docker-v2', // This confirms the updated file is deployed
+            'saved_count' => $saved,
+            'file_mtime' => $file_mtime,
+            'file_mtime_formatted' => $file_mtime > 0 ? gmdate('Y-m-d H:i:s', $file_mtime) : 'Unknown'
+        ]);
+    } catch (Throwable $e) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Only runs when WP_DEBUG is enabled
+            error_log('TalkToPC Save Widget Customization Error: ' . $e->getMessage());
+            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Only runs when WP_DEBUG is enabled
+            error_log('Stack trace: ' . $e->getTraceAsString());
+        }
+        $file_mtime = file_exists(__FILE__) ? filemtime(__FILE__) : 0;
+        
+        // Try to send error response
+        if (function_exists('wp_send_json_error')) {
+            wp_send_json_error([
+                'message' => 'Server error: ' . $e->getMessage(),
+                'version' => '1.9.96-fixed-docker-v2',
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'file_mtime' => $file_mtime,
+                'file_mtime_formatted' => $file_mtime > 0 ? gmdate('Y-m-d H:i:s', $file_mtime) : 'Unknown'
+            ]);
+        } else {
+            // Fallback if wp_send_json_error doesn't exist
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => false,
+                'data' => [
+                    'message' => 'Server error: ' . $e->getMessage(),
+                    'version' => '1.9.96-fixed-docker-v2',
+                    'error' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine()
+                ]
+            ]);
+            exit;
+        }
+    }
+});
+
 function talktopc_ajax_auto_setup_agent() {
     // Verify nonce
     check_ajax_referer('talktopc_ajax_nonce', 'nonce');

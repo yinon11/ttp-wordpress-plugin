@@ -1,129 +1,119 @@
-=== Talk To PC – Voice Widget ===
+=== TalkToPC Voice Widget ===
 Contributors: yinon11
-Tags: talk to pc, talktopc, voice, ai agent, voice assistant, accessibility, customer support, chatbot, speech to text, conversational ai, ai voice
+Tags: talktopc, voice, ai agent, voice assistant, chatbot
 Requires at least: 5.0
 Tested up to: 6.9
-Stable tag: 1.9.81
+Stable tag: 1.9.97
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Talk to PC with your website. Add an AI-powered voice assistant to WordPress. Includes a free monthly allowance of 30 minutes. No typing needed.
+Voice AI agent for WordPress. 40+ languages, real-time conversations, 2-minute setup. Let visitors talk to your site—no typing needed.
 
 == Description ==
 
-**Talk to PC** with your website using the **Talk To PC Voice Widget** — an AI-powered voice assistant for WordPress.
-
-Visitors can speak naturally with your site and get real-time answers based on your actual content.  
-No coding, no training, no complex setup.
-
-**Try it live before installing**  
-Live demo: https://talktopc.com/demos/agent_1900570ad
+**Try before you install!**
+Live Demo: https://talktopc.com/demos/agent_1900570ad
 
 ---
 
-### 🚀 Quick Setup (2 Minutes)
+TalkToPC Voice Widget adds an AI-powered voice assistant to your WordPress website. Visitors can have natural voice conversations with your AI agent in over 40 languages — no coding or typing required.
 
-1. Install and activate the plugin
-2. Click **Connect to Talk To PC** and authorize
-3. Done — your voice agent is created automatically
+**🚀 Quick Setup (Under 2 Minutes):**
 
-After connection, the plugin scans your pages, posts, and products to generate an initial AI prompt tailored to your website.
+1. Install the plugin
+2. Click "Connect to TalkToPC" 
+3. Done! Your AI assistant is auto-created with content from your website
 
-> Initial setup may take **30–60 seconds**, depending on site size. This is normal.
+The plugin automatically scans your pages, posts, and products to create a personalized AI assistant that knows your business inside and out.
 
----
+**✨ Features:**
 
-### ✨ Features
+* **One-Click Setup** - OAuth connection with automatic AI agent creation.
+* **40+ Languages Supported** - Full support for English, Hebrew, Spanish, French, Arabic, and dozens more.
+* **AI-Powered Configuration** - System prompt auto-generated from your site content.
+* **Voice & Text Modes** - Visitors can speak naturally or type.
+* **Fully Customizable** - Match your brand with custom colors, icons, and positions.
+* **WooCommerce Support** - AI knows your products, prices, and availability.
+* **Mobile Ready** - Optimized for all devices with microphone access.
+* **Low Latency** - High-speed response for natural, flowing conversations.
 
-* **One-Click Setup** – Secure OAuth connection with automatic AI agent creation
-* **Free Monthly Allowance** – Includes **30 minutes (0.5 hour)** of voice conversations per month with limited features
-* **40+ Languages** – English, Hebrew, Spanish, French, Arabic, German, Chinese, and more
-* **Voice & Text** – Visitors can speak or type naturally
-* **AI-Generated Prompt** – Built automatically from your site content
-* **Fully Customizable** – Colors, logo, text, size, and widget position
-* **WooCommerce Ready** – Products, prices, and availability included
-* **Mobile Friendly** – Optimized for desktop and mobile devices
-* **Low Latency** – Fast responses for natural conversations
-
----
-
-### 🎯 Use Cases
+**🎯 Use Cases:**
 
 * Customer support automation
-* FAQ handling
-* Product discovery and sales assistance
+* Instant FAQ handling
+* Product recommendations and sales
 * Appointment scheduling
 * Lead qualification
 
----
-
-### 🔒 Security & Privacy
+**🔒 Security:**
 
 * Secure OAuth 2.0 connection
 * No passwords stored
-* One-time authorization tokens
-* Encrypted HTTPS communication
-
----
+* One-time secrets with automatic expiration
+* All data transmitted over encrypted HTTPS
 
 == Installation ==
 
-### Automatic Installation
+= Automatic Installation =
 
-1. Go to **Plugins → Add New** in WordPress
-2. Search for **Talk To PC Voice Widget**
-3. Click **Install Now**, then **Activate**
-4. Open **Talk To PC** from the admin menu
-5. Click **Connect to Talk To PC**
-6. Click **Authorize**
-
-Your AI voice agent will be generated automatically.
-
----
+1. Go to Plugins → Add New in your WordPress admin
+2. Search for "TalkToPC Voice Widget"
+3. Click Install Now, then Activate
+4. Go to TalkToPC in the admin menu
+5. Click "Connect to TalkToPC" and authorize
+6. Your AI assistant is ready!
 
 == Frequently Asked Questions ==
 
-= Is there a free version? =
+= How do I connect my account? =
 
-Yes. Talk To PC includes a **free monthly allowance of 30 minutes (0.5 hour)** of voice conversations with limited features.  
-You can upgrade at any time if you need more usage or advanced options.
+Click "Connect to TalkToPC" in the plugin settings. You'll be redirected to TalkToPC to authorize the connection. After authorization, you'll be sent back to WordPress automatically.
 
----
+= Does the AI know about my website? =
 
-= How does the AI know my website content? =
-
-After you connect, the plugin scans your pages, posts, and products to build a knowledge base.  
-You can regenerate the prompt at any time from the settings.
-
----
+Yes! When you first connect, the plugin scans your pages, posts, and products to create a customized knowledge base. You can regenerate the prompt anytime from the settings.
 
 = What languages are supported? =
 
-Over 40 languages, including English, Hebrew, Spanish, French, German, Arabic, Chinese, Japanese, and more.
+The AI supports over 40 languages including English, Hebrew, Spanish, French, German, Arabic, Chinese, Japanese, and more. The plugin automatically detects your site's language for the best experience.
 
----
+= Is this free? =
+
+The WordPress plugin is free to install. TalkToPC offers a free trial and various pricing plans for the AI voice service. Visit [talktopc.com/pricing](https://talktopc.com/upgrade) for details.
 
 = Does it work with WooCommerce? =
 
-Yes. Products, prices, and descriptions are automatically included.
-
----
+Absolutely! The plugin automatically includes your product catalog, prices, and descriptions in the AI's memory.
 
 == Changelog ==
 
 = 1.9.79 =
-* Updated: Clarified free monthly usage allowance
-* Updated: Plugin name and descriptions for improved search clarity
-* Updated: Documentation and onboarding flow
+* Updated: Documentation and short description for better search visibility.
+* Added: Explicit support for 40+ languages in documentation.
+* Fixed: Version consistency for WordPress.org submission.
 
 = 1.9.78 =
-* Fixed: Output buffering changes for WordPress.org compliance
-* Refactored: Admin JavaScript loading logic
+* Fixed: Replaced heredoc syntax with output buffering for WordPress.org compliance.
+* Updated: All admin JavaScript files now use ob_start()/ob_get_clean() pattern.
+* Technical: dashboard.js.php, common.js.php, and page-rules.js.php refactored.
 
 = 1.0.0 =
-* Initial release
+* Initial release.
 
----
+== External Services ==
 
-== External Serv
+This plugin relies on the TalkToPC service (https://talktopc.com) to provide AI voice conversations.
+
+**What data is sent:**
+* Site content (pages, posts, products) during initial setup for AI configuration.
+* Voice audio when visitors use the voice widget.
+* API credentials for authentication.
+
+**External domains used:**
+* https://cdn.talktopc.com - Widget JavaScript files.
+* https://speech.talktopc.com - Voice processing.
+* https://backend.talktopc.com - API requests.
+**Service policies:**
+* Terms of Service: https://talktopc.com/terms-of-service
+* Privacy Policy: https://talktopc.com/privacy-agreement

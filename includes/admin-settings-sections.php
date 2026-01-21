@@ -131,9 +131,9 @@ function talktopc_render_button_settings() {
                         <option value="square" <?php selected(get_option('talktopc_button_shape'), 'square'); ?>>Square</option>
                     </select></td></tr>
                 <tr><th><label for="talktopc_button_bg_color">Background Color</label></th>
-                    <td><input type="text" id="talktopc_button_bg_color" name="talktopc_button_bg_color" value="<?php echo esc_attr(get_option('talktopc_button_bg_color')); ?>" class="talktopc-color-picker" data-default-color="#FFFFFF"></td></tr>
+                    <td><input type="text" id="talktopc_button_bg_color" name="talktopc_button_bg_color" value="<?php echo esc_attr(get_option('talktopc_button_bg_color', '#FFFFFF')); ?>" class="talktopc-color-picker" data-default-color="#FFFFFF"></td></tr>
                 <tr><th><label for="talktopc_button_hover_color">Hover Color</label></th>
-                    <td><input type="text" id="talktopc_button_hover_color" name="talktopc_button_hover_color" value="<?php echo esc_attr(get_option('talktopc_button_hover_color')); ?>" class="talktopc-color-picker" data-default-color="#F5F5F5"></td></tr>
+                    <td><input type="text" id="talktopc_button_hover_color" name="talktopc_button_hover_color" value="<?php echo esc_attr(get_option('talktopc_button_hover_color', '#D3D3D3')); ?>" class="talktopc-color-picker" data-default-color="#D3D3D3"></td></tr>
                 <tr><th>Shadow</th>
                     <td><label><input type="checkbox" name="talktopc_button_shadow" value="1" <?php checked(get_option('talktopc_button_shadow', '1'), '1'); ?>> Enable button shadow</label></td></tr>
                 <tr><th><label for="talktopc_button_shadow_color">Shadow Color</label></th>
