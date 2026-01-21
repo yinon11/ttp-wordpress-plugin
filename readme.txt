@@ -88,6 +88,14 @@ Absolutely! The plugin automatically includes your product catalog, prices, and 
 
 == Changelog ==
 
+= 1.9.97 =
+* Added: Live widget customization page with real-time preview.
+* Added: Database migration utility for upgrading from old table structure.
+* Fixed: Security improvements - SQL injection prevention, output escaping, input sanitization.
+* Fixed: Plugin check compliance - resolved all critical errors and warnings.
+* Improved: Error logging now respects WP_DEBUG setting.
+* Updated: Reduced plugin tags to meet WordPress.org requirements.
+
 = 1.9.79 =
 * Updated: Documentation and short description for better search visibility.
 * Added: Explicit support for 40+ languages in documentation.
