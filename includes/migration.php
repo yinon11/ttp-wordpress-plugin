@@ -27,6 +27,7 @@ function talktopc_check_old_table() {
     ];
     
     foreach ($possible_tables as $table) {
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Migration utility needs direct query
         $table_exists = $wpdb->get_var($wpdb->prepare(
             "SHOW TABLES LIKE %s",
             $table
@@ -53,6 +54,7 @@ function talktopc_get_table_structure($table_name) {
     
     // Use esc_sql for table name (table names can't use prepare placeholders)
     $table_name = esc_sql($table_name);
+    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table names cannot be prepared, migration utility needs direct query
     $columns = $wpdb->get_results("DESCRIBE `{$table_name}`", ARRAY_A);
     return $columns;
 }
@@ -73,6 +75,7 @@ function talktopc_migrate_from_table($table_name) {
     
     // Use esc_sql for table name (table names can't use prepare placeholders)
     $table_name = esc_sql($table_name);
+    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table names cannot be prepared, migration utility needs direct query
     $rows = $wpdb->get_results("SELECT * FROM `{$table_name}`", ARRAY_A);
     
     if (empty($rows)) {
@@ -324,6 +327,7 @@ function talktopc_render_migration_page() {
     // Handle "Find Tables" request
     if (isset($_POST['find_tables']) && check_admin_referer('talktopc_migrate')) {
         // Find all tables that might be related
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Migration utility needs direct query
         $all_tables = $wpdb->get_results("SHOW TABLES", ARRAY_N);
         $possible_tables = [];
         foreach ($all_tables as $table) {
@@ -342,12 +346,14 @@ function talktopc_render_migration_page() {
     $sample_data = null;
     if ($view_table) {
         // Verify table exists
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Migration utility needs direct query
         $table_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $view_table));
         if ($table_exists) {
             $table_structure = talktopc_get_table_structure($view_table);
             // Validate table name before query
             if (preg_match('/^[a-zA-Z0-9_\-]+$/', $view_table)) {
                 $view_table_escaped = esc_sql($view_table);
+                // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table names cannot be prepared, migration utility
                 $sample_data = $wpdb->get_results("SELECT * FROM `{$view_table_escaped}` LIMIT 1", ARRAY_A);
             } else {
                 $sample_data = [];

@@ -13,7 +13,7 @@ require_once TALKTOPC_PLUGIN_DIR . 'includes/admin-helpers.php';
 require_once TALKTOPC_PLUGIN_DIR . 'includes/admin-settings-sections.php';
 require_once TALKTOPC_PLUGIN_DIR . 'includes/admin-pages/dashboard.php';
 require_once TALKTOPC_PLUGIN_DIR . 'includes/admin-pages/page-rules.php';
-require_once TALKTOPC_PLUGIN_DIR . 'includes/admin-pages/widget-customization.php';
+require_once TALKTOPC_PLUGIN_DIR . 'includes/admin-pages/customization2.php';
 require_once TALKTOPC_PLUGIN_DIR . 'includes/admin-scripts/common.js.php';
 require_once TALKTOPC_PLUGIN_DIR . 'includes/admin-scripts/dashboard.js.php';
 require_once TALKTOPC_PLUGIN_DIR . 'includes/admin-scripts/page-rules.js.php';

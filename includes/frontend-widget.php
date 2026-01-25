@@ -48,9 +48,9 @@ add_action('wp_enqueue_scripts', function() {
         error_log('Landing modeCardIconBackgroundColor: ' . ($config['landing']['modeCardIconBackgroundColor'] ?? 'NOT SET'));
         // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log,WordPress.PHP.DevelopmentFunctions.error_log_print_r
         error_log('Landing modeCardBackgroundColor: ' . ($config['landing']['modeCardBackgroundColor'] ?? 'NOT SET'));
-        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log,WordPress.PHP.DevelopmentFunctions.error_log_print_r
+        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log,WordPress.PHP.DevelopmentFunctions.error_log_var_export
         error_log('Saved DB option talktopc_header_bg_color: ' . var_export(get_option('talktopc_header_bg_color'), true));
-        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log,WordPress.PHP.DevelopmentFunctions.error_log_print_r
+        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log,WordPress.PHP.DevelopmentFunctions.error_log_var_export
         error_log('Saved DB option talktopc_landing_card_icon_bg_color: ' . var_export(get_option('talktopc_landing_card_icon_bg_color'), true));
         // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log,WordPress.PHP.DevelopmentFunctions.error_log_print_r
         error_log('Full header config: ' . print_r($config['header'] ?? [], true));
@@ -164,6 +164,46 @@ function talktopc_build_widget_config($agent_id = null) {
     $config['panel'] = $panel;
     
     // ==========================================================================
+    // LANDING SCREEN (SET BEFORE HEADER to prevent SDK fallback)
+    // ==========================================================================
+    // CRITICAL FIX: Always include landing section BEFORE header to prevent SDK
+    // from using header.backgroundColor as fallback for card elements
+    // The SDK may check landing section first, so we must ensure modeCardBackgroundColor
+    // is always explicitly set, even if it's the default white
+    $landing = [];
+    
+    // Optional values (only set if configured)
+    if ($v = get_option('talktopc_landing_logo')) $landing['logo'] = $v;
+    if ($v = get_option('talktopc_landing_title')) $landing['title'] = $v;
+    
+    // Always explicitly set title and subtitle colors to prevent SDK fallback to header colors
+    $title_color = get_option('talktopc_landing_title_color');
+    $landing['titleColor'] = !empty($title_color) ? $title_color : '#1e293b';
+    
+    $subtitle_color = get_option('talktopc_landing_subtitle_color');
+    $landing['subtitleColor'] = !empty($subtitle_color) ? $subtitle_color : '#64748b';
+    
+    // CRITICAL: Mode card background color - ALWAYS set explicitly (never leave undefined/null)
+    // This prevents the SDK from falling back to header.backgroundColor for the cards
+    $card_bg = get_option('talktopc_landing_card_bg_color');
+    if (!empty($card_bg) && is_string($card_bg) && trim($card_bg) !== '' && trim($card_bg) !== 'null') {
+        $landing['modeCardBackgroundColor'] = trim($card_bg);
+    } else {
+        // Always set explicit default - SDK will use header.backgroundColor if this is missing
+        $landing['modeCardBackgroundColor'] = '#FFFFFF';
+    }
+    
+    // Optional card content
+    if ($v = get_option('talktopc_landing_voice_icon')) $landing['voiceCardIcon'] = $v;
+    if ($v = get_option('talktopc_landing_voice_title')) $landing['voiceCardTitle'] = $v;
+    if ($v = get_option('talktopc_landing_text_icon')) $landing['textCardIcon'] = $v;
+    if ($v = get_option('talktopc_landing_text_title')) $landing['textCardTitle'] = $v;
+    
+    // Always include landing section BEFORE header to ensure color isolation
+    // The landing section will always have at least the color defaults set above
+    $config['landing'] = $landing;
+    
+    // ==========================================================================
     // HEADER
     // ==========================================================================
     // FIX: Always explicitly set header backgroundColor to ensure it's applied correctly
@@ -236,71 +276,6 @@ function talktopc_build_widget_config($agent_id = null) {
     $config['messages'] = $messages;
     
     // ==========================================================================
-    // LANDING SCREEN
-    // ==========================================================================
-    // FIX: Always include landing section with explicit color defaults to prevent SDK
-    // from falling back to header.backgroundColor for button/card elements
-    $landing = [];
-    
-    // Optional values (only set if configured)
-    if ($v = get_option('talktopc_landing_bg_color')) $landing['backgroundColor'] = $v;
-    if ($v = get_option('talktopc_landing_logo')) $landing['logo'] = $v;
-    if ($v = get_option('talktopc_landing_title')) $landing['title'] = $v;
-    
-    // FIX: Always explicitly set title and subtitle colors to prevent SDK fallback to header colors
-    $title_color = get_option('talktopc_landing_title_color');
-    $landing['titleColor'] = !empty($title_color) ? $title_color : '#1e293b';
-    
-    $subtitle_color = get_option('talktopc_landing_subtitle_color');
-    $landing['subtitleColor'] = !empty($subtitle_color) ? $subtitle_color : '#64748b';
-    
-    // FIX: CRITICAL - Always explicitly set all card/button colors with defaults
-    // This prevents the SDK from using header.backgroundColor as fallback for the mode selection buttons
-    // IMPORTANT: Only set values if they exist and are not empty - let SDK use its defaults otherwise
-    // This ensures SDK defaults work correctly and prevents empty strings from overriding defaults
-    $card_bg = get_option('talktopc_landing_card_bg_color');
-    if (!empty($card_bg) && trim($card_bg) !== '') {
-        $landing['modeCardBackgroundColor'] = trim($card_bg);
-    }
-    // If not set, SDK will use default '#FFFFFF'
-    
-    $card_border = get_option('talktopc_landing_card_border_color');
-    if (!empty($card_border) && trim($card_border) !== '') {
-        $landing['modeCardBorderColor'] = trim($card_border);
-    }
-    // If not set, SDK will use default '#E2E8F0'
-    
-    $card_hover_border = get_option('talktopc_landing_card_hover_border_color');
-    if (!empty($card_hover_border) && trim($card_hover_border) !== '') {
-        $landing['modeCardHoverBorderColor'] = trim($card_hover_border);
-    }
-    // If not set, SDK will use default '#7C3AED'
-    
-    $icon_bg = get_option('talktopc_landing_card_icon_bg_color');
-    if (!empty($icon_bg) && trim($icon_bg) !== '') {
-        $landing['modeCardIconBackgroundColor'] = trim($icon_bg);
-    }
-    // If not set, SDK will use default '#7C3AED' (explicit, not headerColor)
-    
-    $card_title_color = get_option('talktopc_landing_card_title_color');
-    if (!empty($card_title_color) && trim($card_title_color) !== '') {
-        $landing['modeCardTitleColor'] = trim($card_title_color);
-    }
-    // If not set, SDK will use default '#111827'
-    
-    // Optional card content
-    if ($v = get_option('talktopc_landing_voice_icon')) $landing['voiceCardIcon'] = $v;
-    if ($v = get_option('talktopc_landing_voice_title')) $landing['voiceCardTitle'] = $v;
-    if ($v = get_option('talktopc_landing_voice_desc')) $landing['voiceCardDesc'] = $v;
-    if ($v = get_option('talktopc_landing_text_icon')) $landing['textCardIcon'] = $v;
-    if ($v = get_option('talktopc_landing_text_title')) $landing['textCardTitle'] = $v;
-    if ($v = get_option('talktopc_landing_text_desc')) $landing['textCardDesc'] = $v;
-    
-    // Always include landing section when header is configured to ensure color isolation
-    // The landing section will always have at least the color defaults set above
-    $config['landing'] = $landing;
-    
-    // ==========================================================================
     // VOICE INTERFACE
     // ==========================================================================
     // Always include voice section - SDK has good defaults, but we ensure explicit values when set
@@ -319,7 +294,6 @@ function talktopc_build_widget_config($agent_id = null) {
     
     // Avatar colors - SDK defaults to #667eea if not set
     if ($v = get_option('talktopc_voice_avatar_color')) $voice['avatarBackgroundColor'] = $v;
-    if ($v = get_option('talktopc_voice_avatar_active_color')) $voice['avatarActiveBackgroundColor'] = $v;
     
     // Status colors - SDK has explicit defaults
     if ($v = get_option('talktopc_voice_status_title_color')) $voice['statusTitleColor'] = $v;
@@ -332,15 +306,6 @@ function talktopc_build_widget_config($agent_id = null) {
     if ($v = get_option('talktopc_voice_start_btn_color')) $voice['startCallButtonColor'] = $v;
     if ($v = get_option('talktopc_voice_start_btn_text_color')) $voice['startCallButtonTextColor'] = $v;
     
-    // Transcript colors - SDK defaults to white background
-    if ($v = get_option('talktopc_voice_transcript_bg_color')) $voice['transcriptBackgroundColor'] = $v;
-    if ($v = get_option('talktopc_voice_transcript_text_color')) $voice['transcriptTextColor'] = $v;
-    if ($v = get_option('talktopc_voice_transcript_label_color')) $voice['transcriptLabelColor'] = $v;
-    
-    // Control buttons - SDK has explicit defaults
-    if ($v = get_option('talktopc_voice_control_btn_color')) $voice['controlButtonColor'] = $v;
-    if ($v = get_option('talktopc_voice_control_btn_secondary_color')) $voice['controlButtonSecondaryColor'] = $v;
-    if ($v = get_option('talktopc_voice_end_btn_color')) $voice['endCallButtonColor'] = $v;
     
     // Live indicator colors - SDK has explicit defaults
     if ($v = get_option('talktopc_voice_live_dot_color')) $voice['liveDotColor'] = $v;
@@ -365,12 +330,8 @@ function talktopc_build_widget_config($agent_id = null) {
     $placeholder = get_option('talktopc_text_input_placeholder');
     if ($placeholder !== false) $text['inputPlaceholder'] = $placeholder;
     
-    // Input colors - SDK defaults to white background, dark text
-    if ($v = get_option('talktopc_text_input_bg_color')) $text['inputBackgroundColor'] = $v;
-    if ($v = get_option('talktopc_text_input_text_color')) $text['inputTextColor'] = $v;
-    if ($v = get_option('talktopc_text_input_border_color')) $text['inputBorderColor'] = $v;
+    // Input colors - SDK defaults
     if ($v = get_option('talktopc_text_input_focus_color')) $text['inputFocusColor'] = $v;
-    if ($v = get_option('talktopc_text_input_border_radius')) $text['inputBorderRadius'] = intval($v);
     
     $config['text'] = $text;
     

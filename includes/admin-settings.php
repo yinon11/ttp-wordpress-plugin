@@ -18,7 +18,17 @@ add_action('admin_menu', function() {
     add_menu_page('TalkToPC Voice Widget', 'TalkToPC', 'manage_options', 'talktopc', 'talktopc_render_dashboard_page', 'dashicons-microphone', 30);
     add_submenu_page('talktopc', 'Dashboard', 'Dashboard', 'manage_options', 'talktopc', 'talktopc_render_dashboard_page');
     add_submenu_page('talktopc', 'Page Rules', 'Page Rules', 'manage_options', 'talktopc-page-rules', 'talktopc_render_page_rules_page');
-    add_submenu_page('talktopc', 'Customization', 'Customization', 'manage_options', 'talktopc-widget-customization', 'talktopc_render_widget_customization_page');
+    
+    // Add Customization page (previously Customization2) - check if function exists before registering
+    if (function_exists('talktopc_render_customization2_page')) {
+        add_submenu_page('talktopc', 'Customization', 'Customization', 'manage_options', 'talktopc-customization2', 'talktopc_render_customization2_page');
+    } else {
+        // Debug: Log error if function doesn't exist
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+            error_log('TalkToPC: talktopc_render_customization2_page() function not found. Make sure customization2.php is included.');
+        }
+    }
 });
 
 // =============================================================================
@@ -85,6 +95,8 @@ add_action('admin_init', function() {
     register_setting('talktopc_settings', 'talktopc_button_hover_color', ['sanitize_callback' => 'sanitize_hex_color']);
     register_setting('talktopc_settings', 'talktopc_button_shadow', ['sanitize_callback' => 'rest_sanitize_boolean', 'default' => true]);
     register_setting('talktopc_settings', 'talktopc_button_shadow_color', ['sanitize_callback' => 'sanitize_text_field']);
+    register_setting('talktopc_settings', 'talktopc_position_offset_x', ['sanitize_callback' => 'absint', 'default' => 20]);
+    register_setting('talktopc_settings', 'talktopc_position_offset_y', ['sanitize_callback' => 'absint', 'default' => 20]);
     
     // =========================================================================
     // ICON
@@ -141,10 +153,6 @@ add_action('admin_init', function() {
     register_setting('talktopc_settings', 'talktopc_landing_title', ['sanitize_callback' => 'sanitize_text_field']);
     register_setting('talktopc_settings', 'talktopc_landing_title_color', ['sanitize_callback' => 'sanitize_hex_color']);
     register_setting('talktopc_settings', 'talktopc_landing_card_bg_color', ['sanitize_callback' => 'sanitize_hex_color']);
-    register_setting('talktopc_settings', 'talktopc_landing_card_border_color', ['sanitize_callback' => 'sanitize_hex_color']);
-    register_setting('talktopc_settings', 'talktopc_landing_card_hover_border_color', ['sanitize_callback' => 'sanitize_hex_color']);
-    register_setting('talktopc_settings', 'talktopc_landing_card_icon_bg_color', ['sanitize_callback' => 'sanitize_hex_color']);
-    register_setting('talktopc_settings', 'talktopc_landing_card_title_color', ['sanitize_callback' => 'sanitize_hex_color']);
     register_setting('talktopc_settings', 'talktopc_landing_voice_icon', ['sanitize_callback' => 'sanitize_text_field']);
     register_setting('talktopc_settings', 'talktopc_landing_text_icon', ['sanitize_callback' => 'sanitize_text_field']);
     register_setting('talktopc_settings', 'talktopc_landing_voice_title', ['sanitize_callback' => 'sanitize_text_field']);
@@ -156,7 +164,6 @@ add_action('admin_init', function() {
     register_setting('talktopc_settings', 'talktopc_voice_mic_color', ['sanitize_callback' => 'sanitize_hex_color']);
     register_setting('talktopc_settings', 'talktopc_voice_mic_active_color', ['sanitize_callback' => 'sanitize_hex_color']);
     register_setting('talktopc_settings', 'talktopc_voice_avatar_color', ['sanitize_callback' => 'sanitize_hex_color']);
-    register_setting('talktopc_settings', 'talktopc_voice_avatar_active_color', ['sanitize_callback' => 'sanitize_hex_color']);
     register_setting('talktopc_settings', 'talktopc_voice_status_title_color', ['sanitize_callback' => 'sanitize_hex_color']);
     register_setting('talktopc_settings', 'talktopc_voice_status_subtitle_color', ['sanitize_callback' => 'sanitize_hex_color']);
     register_setting('talktopc_settings', 'talktopc_voice_start_title', ['sanitize_callback' => 'sanitize_text_field']);
@@ -164,12 +171,6 @@ add_action('admin_init', function() {
     register_setting('talktopc_settings', 'talktopc_voice_start_btn_text', ['sanitize_callback' => 'sanitize_text_field']);
     register_setting('talktopc_settings', 'talktopc_voice_start_btn_color', ['sanitize_callback' => 'sanitize_hex_color']);
     register_setting('talktopc_settings', 'talktopc_voice_start_btn_text_color', ['sanitize_callback' => 'sanitize_hex_color']);
-    register_setting('talktopc_settings', 'talktopc_voice_transcript_bg_color', ['sanitize_callback' => 'sanitize_hex_color']);
-    register_setting('talktopc_settings', 'talktopc_voice_transcript_text_color', ['sanitize_callback' => 'sanitize_hex_color']);
-    register_setting('talktopc_settings', 'talktopc_voice_transcript_label_color', ['sanitize_callback' => 'sanitize_hex_color']);
-    register_setting('talktopc_settings', 'talktopc_voice_control_btn_color', ['sanitize_callback' => 'sanitize_hex_color']);
-    register_setting('talktopc_settings', 'talktopc_voice_control_btn_secondary_color', ['sanitize_callback' => 'sanitize_hex_color']);
-    register_setting('talktopc_settings', 'talktopc_voice_end_btn_color', ['sanitize_callback' => 'sanitize_hex_color']);
     register_setting('talktopc_settings', 'talktopc_voice_live_dot_color', ['sanitize_callback' => 'sanitize_hex_color']);
     register_setting('talktopc_settings', 'talktopc_voice_live_text_color', ['sanitize_callback' => 'sanitize_hex_color']);
     
@@ -181,11 +182,7 @@ add_action('admin_init', function() {
     register_setting('talktopc_settings', 'talktopc_text_send_btn_text', ['sanitize_callback' => 'sanitize_text_field']);
     register_setting('talktopc_settings', 'talktopc_text_send_btn_text_color', ['sanitize_callback' => 'sanitize_hex_color']);
     register_setting('talktopc_settings', 'talktopc_text_input_placeholder', ['sanitize_callback' => 'sanitize_text_field']);
-    register_setting('talktopc_settings', 'talktopc_text_input_border_color', ['sanitize_callback' => 'sanitize_hex_color']);
     register_setting('talktopc_settings', 'talktopc_text_input_focus_color', ['sanitize_callback' => 'sanitize_hex_color']);
-    register_setting('talktopc_settings', 'talktopc_text_input_bg_color', ['sanitize_callback' => 'sanitize_hex_color']);
-    register_setting('talktopc_settings', 'talktopc_text_input_text_color', ['sanitize_callback' => 'sanitize_hex_color']);
-    register_setting('talktopc_settings', 'talktopc_text_input_border_radius', ['sanitize_callback' => 'absint']);
     
     // =========================================================================
     // TOOLTIPS
@@ -308,6 +305,15 @@ function talktopc_sanitize_page_rules($input) {
         ];
     }
     return wp_json_encode($sanitized);
+}
+
+/**
+ * Sanitize checkbox value
+ * 
+ * WordPress Plugin Review: Converts checkbox values to '1' or '0'
+ */
+function talktopc_sanitize_checkbox($value) {
+    return ($value === '1' || $value === 'on' || $value === true || $value === 'true') ? '1' : '0';
 }
 
 // =============================================================================

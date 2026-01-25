@@ -755,6 +755,10 @@ add_action('wp_ajax_talktopc_save_widget_customization', function() {
         'talktopc_panel_border' => 'sanitize_text_field',
         'talktopc_panel_backdrop_filter' => 'sanitize_text_field',
         
+        // Position
+        'talktopc_position_offset_x' => 'absint',
+        'talktopc_position_offset_y' => 'absint',
+        
         // Header
         'talktopc_header_title' => 'sanitize_text_field',
         'talktopc_header_bg_color' => 'sanitize_hex_color',
@@ -782,35 +786,27 @@ add_action('wp_ajax_talktopc_save_widget_customization', function() {
         'talktopc_text_send_btn_hover_color' => 'sanitize_hex_color',
         'talktopc_text_send_btn_text_color' => 'sanitize_hex_color',
         'talktopc_text_input_placeholder' => 'sanitize_text_field',
-        'talktopc_text_input_bg_color' => 'sanitize_hex_color',
-        'talktopc_text_input_text_color' => 'sanitize_hex_color',
-        'talktopc_text_input_border_color' => 'sanitize_hex_color',
         'talktopc_text_input_focus_color' => 'sanitize_hex_color',
-        'talktopc_text_input_border_radius' => 'absint',
+        
+        // Button
+        'talktopc_button_shadow' => 'talktopc_sanitize_checkbox',
+        'talktopc_button_shadow_color' => 'sanitize_text_field',
         
         // Landing
-        'talktopc_landing_bg_color' => 'sanitize_hex_color',
         'talktopc_landing_title' => 'sanitize_text_field',
         'talktopc_landing_title_color' => 'sanitize_hex_color',
         'talktopc_landing_subtitle_color' => 'sanitize_hex_color',
         'talktopc_landing_logo' => 'sanitize_text_field',
         'talktopc_landing_voice_icon' => 'sanitize_text_field',
         'talktopc_landing_voice_title' => 'sanitize_text_field',
-        'talktopc_landing_voice_desc' => 'sanitize_text_field',
         'talktopc_landing_text_icon' => 'sanitize_text_field',
         'talktopc_landing_text_title' => 'sanitize_text_field',
-        'talktopc_landing_text_desc' => 'sanitize_text_field',
         'talktopc_landing_card_bg_color' => 'sanitize_hex_color',
-        'talktopc_landing_card_border_color' => 'sanitize_hex_color',
-        'talktopc_landing_card_hover_border_color' => 'sanitize_hex_color',
-        'talktopc_landing_card_icon_bg_color' => 'sanitize_hex_color',
-        'talktopc_landing_card_title_color' => 'sanitize_hex_color',
         
         // Voice
         'talktopc_voice_mic_color' => 'sanitize_hex_color',
         'talktopc_voice_mic_active_color' => 'sanitize_hex_color',
         'talktopc_voice_avatar_color' => 'sanitize_hex_color',
-        'talktopc_voice_avatar_active_color' => 'sanitize_hex_color',
         'talktopc_voice_status_title_color' => 'sanitize_hex_color',
         'talktopc_voice_status_subtitle_color' => 'sanitize_hex_color',
         'talktopc_voice_start_title' => 'sanitize_text_field',
@@ -818,12 +814,6 @@ add_action('wp_ajax_talktopc_save_widget_customization', function() {
         'talktopc_voice_start_btn_text' => 'sanitize_text_field',
         'talktopc_voice_start_btn_color' => 'sanitize_hex_color',
         'talktopc_voice_start_btn_text_color' => 'sanitize_hex_color',
-        'talktopc_voice_transcript_bg_color' => 'sanitize_hex_color',
-        'talktopc_voice_transcript_text_color' => 'sanitize_hex_color',
-        'talktopc_voice_transcript_label_color' => 'sanitize_hex_color',
-        'talktopc_voice_control_btn_color' => 'sanitize_hex_color',
-        'talktopc_voice_control_btn_secondary_color' => 'sanitize_hex_color',
-        'talktopc_voice_end_btn_color' => 'sanitize_hex_color',
         'talktopc_voice_live_dot_color' => 'sanitize_hex_color',
         'talktopc_voice_live_text_color' => 'sanitize_hex_color',
         
@@ -981,6 +971,225 @@ add_action('wp_ajax_talktopc_save_widget_customization', function() {
             exit;
         }
     }
+});
+
+// =============================================================================
+// SAVE WIDGET CUSTOMIZATION2
+// =============================================================================
+add_action('wp_ajax_talktopc_save_widget_customization2', function() {
+    // Prevent any output before JSON
+    @ob_clean();
+    
+    try {
+        // Check nonce
+        if (!isset($_POST['nonce'])) {
+            wp_send_json_error(['message' => 'Missing security token. Please refresh the page.']);
+            return;
+        }
+        
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce verification handles sanitization
+        if (!wp_verify_nonce(wp_unslash($_POST['nonce']), 'talktopc_customization2_nonce')) {
+            wp_send_json_error(['message' => 'Security check failed. Please refresh the page and try again.']);
+            return;
+        }
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Unauthorized. You do not have permission to save settings.']);
+            return;
+        }
+        
+        // Save all widget settings from the form (same settings map as Customization)
+        $settings_map = [
+        // Button
+        'talktopc_button_size' => 'sanitize_text_field',
+        'talktopc_button_shape' => 'sanitize_text_field',
+        'talktopc_button_bg_color' => 'sanitize_hex_color',
+        'talktopc_button_hover_color' => 'sanitize_hex_color',
+        'talktopc_button_shadow' => 'talktopc_sanitize_checkbox',
+        'talktopc_button_shadow_color' => 'sanitize_text_field',
+        
+        // Icon
+        'talktopc_icon_type' => 'sanitize_text_field',
+        'talktopc_icon_custom_image' => 'esc_url_raw',
+        'talktopc_icon_emoji' => 'sanitize_text_field',
+        'talktopc_icon_text' => 'sanitize_text_field',
+        'talktopc_icon_size' => 'sanitize_text_field',
+        'talktopc_icon_bg_color' => 'sanitize_hex_color',
+        
+        // Panel
+        'talktopc_panel_width' => 'absint',
+        'talktopc_panel_height' => 'absint',
+        'talktopc_panel_border_radius' => 'absint',
+        'talktopc_panel_bg_color' => 'sanitize_hex_color',
+        'talktopc_panel_border' => 'sanitize_text_field',
+        'talktopc_panel_backdrop_filter' => 'sanitize_text_field',
+        
+        // Position
+        'talktopc_position_offset_x' => 'absint',
+        'talktopc_position_offset_y' => 'absint',
+        
+        // Header
+        'talktopc_header_title' => 'sanitize_text_field',
+        'talktopc_header_bg_color' => 'sanitize_hex_color',
+        'talktopc_header_text_color' => 'sanitize_hex_color',
+        'talktopc_header_show_title' => 'talktopc_sanitize_checkbox',
+        'talktopc_header_show_close' => 'talktopc_sanitize_checkbox',
+        
+        // Footer
+        'talktopc_footer_bg_color' => 'sanitize_hex_color',
+        'talktopc_footer_text_color' => 'sanitize_hex_color',
+        'talktopc_footer_hover_color' => 'sanitize_hex_color',
+        
+        // Messages
+        'talktopc_msg_user_bg' => 'sanitize_hex_color',
+        'talktopc_msg_agent_bg' => 'sanitize_hex_color',
+        'talktopc_msg_system_bg' => 'sanitize_hex_color',
+        'talktopc_msg_error_bg' => 'sanitize_hex_color',
+        'talktopc_msg_text_color' => 'sanitize_hex_color',
+        'talktopc_msg_font_size' => 'sanitize_text_field',
+        'talktopc_msg_border_radius' => 'absint',
+        
+        // Text
+        'talktopc_text_send_btn_text' => 'sanitize_text_field',
+        'talktopc_text_send_btn_color' => 'sanitize_hex_color',
+        'talktopc_text_send_btn_hover_color' => 'sanitize_hex_color',
+        'talktopc_text_send_btn_text_color' => 'sanitize_hex_color',
+        'talktopc_text_input_placeholder' => 'sanitize_text_field',
+        'talktopc_text_input_focus_color' => 'sanitize_hex_color',
+        
+        // Landing
+        'talktopc_landing_title' => 'sanitize_text_field',
+        'talktopc_landing_title_color' => 'sanitize_hex_color',
+        'talktopc_landing_subtitle_color' => 'sanitize_hex_color',
+        'talktopc_landing_logo' => 'sanitize_text_field',
+        'talktopc_landing_voice_icon' => 'sanitize_text_field',
+        'talktopc_landing_voice_title' => 'sanitize_text_field',
+        'talktopc_landing_text_icon' => 'sanitize_text_field',
+        'talktopc_landing_text_title' => 'sanitize_text_field',
+        'talktopc_landing_card_bg_color' => 'sanitize_hex_color',
+        
+        // Voice
+        'talktopc_voice_mic_color' => 'sanitize_hex_color',
+        'talktopc_voice_mic_active_color' => 'sanitize_hex_color',
+        'talktopc_voice_avatar_color' => 'sanitize_hex_color',
+        'talktopc_voice_status_title_color' => 'sanitize_hex_color',
+        'talktopc_voice_status_subtitle_color' => 'sanitize_hex_color',
+        'talktopc_voice_start_title' => 'sanitize_text_field',
+        'talktopc_voice_start_subtitle' => 'sanitize_text_field',
+        'talktopc_voice_start_btn_text' => 'sanitize_text_field',
+        'talktopc_voice_start_btn_color' => 'sanitize_hex_color',
+        'talktopc_voice_start_btn_text_color' => 'sanitize_hex_color',
+        'talktopc_voice_live_dot_color' => 'sanitize_hex_color',
+        'talktopc_voice_live_text_color' => 'sanitize_hex_color',
+        
+        // Position & Direction
+        'talktopc_position' => 'sanitize_text_field',
+        'talktopc_direction' => 'sanitize_text_field',
+        ];
+        
+        $saved = 0;
+        $errors = [];
+        
+        foreach ($settings_map as $option_name => $sanitizer) {
+            if (isset($_POST[$option_name])) {
+                // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Value is sanitized below based on $sanitizer
+                $value = wp_unslash($_POST[$option_name]);
+                
+                // Handle empty strings for optional fields
+                if ($value === '' && strpos($option_name, '_color') === false && 
+                    strpos($option_name, '_placeholder') === false && 
+                    strpos($option_name, '_text') === false && 
+                    strpos($option_name, '_title') === false &&
+                    strpos($option_name, '_desc') === false) {
+                    continue;
+                }
+                
+                try {
+                    $sanitized_value = null;
+                    
+                    // Handle different sanitizer types
+                    if ($sanitizer === 'sanitize_hex_color') {
+                        if (!function_exists('sanitize_hex_color')) {
+                            if (file_exists(ABSPATH . 'wp-includes/class-wp-customize-manager.php')) {
+                                require_once ABSPATH . 'wp-includes/class-wp-customize-manager.php';
+                            }
+                        }
+                        
+                        if (function_exists('sanitize_hex_color')) {
+                            $sanitized_value = sanitize_hex_color($value);
+                            if ($sanitized_value === false || $sanitized_value === '') {
+                                continue;
+                            }
+                        } else {
+                            $value = trim($value);
+                            if (preg_match('/^#[a-fA-F0-9]{6}$/', $value)) {
+                                $sanitized_value = $value;
+                            } elseif (preg_match('/^[a-fA-F0-9]{6}$/', $value)) {
+                                $sanitized_value = '#' . $value;
+                            } else {
+                                continue;
+                            }
+                        }
+                    } elseif ($sanitizer === 'absint') {
+                        $sanitized_value = absint($value);
+                    } elseif ($sanitizer === 'esc_url_raw') {
+                        $sanitized_value = esc_url_raw($value);
+                    } elseif ($sanitizer === 'talktopc_sanitize_checkbox') {
+                        $sanitized_value = ($value === '1' || $value === 'on' || $value === true) ? '1' : '0';
+                    } elseif (is_callable($sanitizer)) {
+                        $sanitized_value = call_user_func($sanitizer, $value);
+                    } else {
+                        $sanitized_value = sanitize_text_field($value);
+                    }
+                
+                    // Only update if value is valid
+                    if ($sanitized_value !== false && $sanitized_value !== null && $sanitized_value !== '') {
+                        update_option($option_name, $sanitized_value);
+                        $saved++;
+                    }
+                } catch (Exception $e) {
+                    $errors[] = $option_name . ': ' . $e->getMessage();
+                } catch (Error $e) {
+                    $errors[] = $option_name . ': ' . $e->getMessage();
+                }
+            }
+        }
+        
+        if (!empty($errors)) {
+            wp_send_json_error([
+                'message' => "Saved {$saved} settings, but encountered errors: " . implode(', ', $errors)
+            ]);
+            return;
+        }
+        
+        wp_send_json_success([
+            'message' => "Saved {$saved} settings successfully",
+            'saved_count' => $saved
+        ]);
+    } catch (Throwable $e) {
+        wp_send_json_error([
+            'message' => 'Server error: ' . $e->getMessage(),
+            'error' => $e->getMessage()
+        ]);
+    }
+});
+
+// =============================================================================
+// GET WIDGET CONFIG (For reloading after save)
+// =============================================================================
+add_action('wp_ajax_talktopc_get_widget_config', function() {
+    check_ajax_referer('talktopc_customization_nonce', 'nonce');
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(['message' => 'Unauthorized']);
+        return;
+    }
+    
+    // Get the widget config using the same function that builds it for the customization page
+    require_once plugin_dir_path(__FILE__) . 'admin-pages/customization2.php';
+    
+    $config = talktopc_get_all_widget_settings();
+    
+    wp_send_json_success($config);
 });
 
 function talktopc_ajax_auto_setup_agent() {
