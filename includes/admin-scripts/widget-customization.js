@@ -1145,16 +1145,17 @@
     }
     
     function getLiveIndicatorControls() {
+        const config = widgetConfig.voice || {};
         return `
             <div class="customization-group">
                 <h3>Live Indicator</h3>
                 <div class="control-item">
                     <label>Live Dot Color</label>
-                    <input type="text" id="liveDotColor" class="talktopc-color-picker" value="#10b981">
+                    <input type="text" id="liveDotColor" name="talktopc_voice_live_dot_color" class="talktopc-color-picker" value="${config.liveDotColor || '#10b981'}">
                 </div>
                 <div class="control-item">
                     <label>Live Text Color</label>
-                    <input type="text" id="liveTextColor" class="talktopc-color-picker" value="#10b981">
+                    <input type="text" id="liveTextColor" name="talktopc_voice_live_text_color" class="talktopc-color-picker" value="${config.liveTextColor || '#10b981'}">
                 </div>
             </div>
         `;

@@ -38,12 +38,46 @@ add_action('wp_enqueue_scripts', function() {
     // Build configuration object (pass agent_id from page rules)
     $config = talktopc_build_widget_config($agent_id);
     
+    // Debug: Log full config to help diagnose color issues (only in debug mode)
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log,WordPress.PHP.DevelopmentFunctions.error_log_print_r
+        error_log('=== TTP Widget Config Debug ===');
+        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log,WordPress.PHP.DevelopmentFunctions.error_log_print_r
+        error_log('Header backgroundColor: ' . ($config['header']['backgroundColor'] ?? 'NOT SET'));
+        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log,WordPress.PHP.DevelopmentFunctions.error_log_print_r
+        error_log('Landing modeCardIconBackgroundColor: ' . ($config['landing']['modeCardIconBackgroundColor'] ?? 'NOT SET'));
+        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log,WordPress.PHP.DevelopmentFunctions.error_log_print_r
+        error_log('Landing modeCardBackgroundColor: ' . ($config['landing']['modeCardBackgroundColor'] ?? 'NOT SET'));
+        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log,WordPress.PHP.DevelopmentFunctions.error_log_print_r
+        error_log('Saved DB option talktopc_header_bg_color: ' . var_export(get_option('talktopc_header_bg_color'), true));
+        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log,WordPress.PHP.DevelopmentFunctions.error_log_print_r
+        error_log('Saved DB option talktopc_landing_card_icon_bg_color: ' . var_export(get_option('talktopc_landing_card_icon_bg_color'), true));
+        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log,WordPress.PHP.DevelopmentFunctions.error_log_print_r
+        error_log('Full header config: ' . print_r($config['header'] ?? [], true));
+        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log,WordPress.PHP.DevelopmentFunctions.error_log_print_r
+        error_log('Full landing config: ' . print_r($config['landing'] ?? [], true));
+        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+        error_log('=== End Config Debug ===');
+    }
+    
+    // Also add console.log in the JavaScript for browser debugging
+    $debug_script = '';
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        $debug_script = 'console.log("TTP Widget Config:", ' . wp_json_encode($config) . ');';
+        $debug_script .= 'console.log("TTP Widget Header Config:", ' . wp_json_encode($config['header'] ?? []) . ');';
+        $debug_script .= 'console.log("TTP Widget Header backgroundColor:", ' . wp_json_encode($config['header']['backgroundColor'] ?? 'NOT SET') . ');';
+    } else {
+        // Always log header backgroundColor for debugging (even in production)
+        $debug_script = 'console.log("[TTP WP Plugin] Header backgroundColor being sent:", ' . wp_json_encode($config['header']['backgroundColor'] ?? 'NOT SET') . ');';
+    }
+    
     // Create nonce for signed URL requests
     $nonce = wp_create_nonce('talktopc_widget_nonce');
     
     // Build initialization script
     $script = sprintf(
-        '(function(){var c=%s,u=%s,n=%s;function f(){var x=new XMLHttpRequest();x.open("POST",u,true);x.setRequestHeader("Content-Type","application/x-www-form-urlencoded");x.onreadystatechange=function(){if(x.readyState===4&&x.status===200){try{var r=JSON.parse(x.responseText);if(r.success&&r.data.signedUrl){c.signedUrl=r.data.signedUrl;i();}}catch(e){console.error("TTP Widget error",e);}}};x.send("action=talktopc_get_signed_url&nonce="+n);}function i(){if(typeof TTPAgentSDK!=="undefined"&&TTPAgentSDK.TTPChatWidget){new TTPAgentSDK.TTPChatWidget(c);}else{setTimeout(i,100);}}if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",f);}else{f();}})();',
+        '(function(){%s var c=%s,u=%s,n=%s;function f(){var x=new XMLHttpRequest();x.open("POST",u,true);x.setRequestHeader("Content-Type","application/x-www-form-urlencoded");x.onreadystatechange=function(){if(x.readyState===4&&x.status===200){try{var r=JSON.parse(x.responseText);if(r.success&&r.data.signedUrl){c.signedUrl=r.data.signedUrl;i();}}catch(e){console.error("TTP Widget error",e);}}};x.send("action=talktopc_get_signed_url&nonce="+n);}function i(){if(typeof TTPAgentSDK!=="undefined"&&TTPAgentSDK.TTPChatWidget){new TTPAgentSDK.TTPChatWidget(c);}else{setTimeout(i,100);}}if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",f);}else{f();}})();',
+        $debug_script,
         wp_json_encode($config),
         wp_json_encode(admin_url('admin-ajax.php')),
         wp_json_encode($nonce)
@@ -71,96 +105,205 @@ function talktopc_build_widget_config($agent_id = null) {
     if ($v = get_option('talktopc_position')) $config['position'] = $v;
     
     // ==========================================================================
-    // BUTTON
+    // BUTTON (Floating button)
     // ==========================================================================
+    // Always include button section with explicit defaults
     $button = [];
     if ($v = get_option('talktopc_button_size')) $button['size'] = $v;
     if ($v = get_option('talktopc_button_shape')) $button['shape'] = $v;
-    if ($v = get_option('talktopc_button_bg_color')) $button['backgroundColor'] = $v;
-    if ($v = get_option('talktopc_button_hover_color')) $button['hoverColor'] = $v;
+    
+    // Always set backgroundColor explicitly - default to white
+    $btn_bg = get_option('talktopc_button_bg_color');
+    $button['backgroundColor'] = (!empty($btn_bg) && $btn_bg !== '') ? $btn_bg : '#FFFFFF';
+    
+    // Always set hoverColor explicitly
+    $btn_hover = get_option('talktopc_button_hover_color');
+    $button['hoverColor'] = (!empty($btn_hover) && $btn_hover !== '') ? $btn_hover : '#F5F5F5';
+    
     $button['shadow'] = get_option('talktopc_button_shadow', '1') === '1';
+    
+    // Shadow color is optional
     if ($v = get_option('talktopc_button_shadow_color')) $button['shadowColor'] = $v;
-    if (!empty($button)) $config['button'] = $button;
+    
+    $config['button'] = $button;
     
     // ==========================================================================
     // ICON
     // ==========================================================================
+    // Always include icon section with explicit defaults
     $icon = [];
     if ($v = get_option('talktopc_icon_type')) $icon['type'] = $v;
     if ($v = get_option('talktopc_icon_custom_image')) $icon['customImage'] = $v;
     if ($v = get_option('talktopc_icon_emoji')) $icon['emoji'] = $v;
     if ($v = get_option('talktopc_icon_text')) $icon['text'] = $v;
     if ($v = get_option('talktopc_icon_size')) $icon['size'] = $v;
-    if ($v = get_option('talktopc_icon_bg_color')) $icon['backgroundColor'] = $v;
-    if (!empty($icon)) $config['icon'] = $icon;
+    
+    // Always set backgroundColor explicitly - default to white
+    $icon_bg = get_option('talktopc_icon_bg_color');
+    $icon['backgroundColor'] = (!empty($icon_bg) && $icon_bg !== '') ? $icon_bg : '#FFFFFF';
+    
+    $config['icon'] = $icon;
     
     // ==========================================================================
     // PANEL
     // ==========================================================================
+    // Always include panel section with explicit defaults
     $panel = [];
     if ($v = get_option('talktopc_panel_width')) $panel['width'] = intval($v);
     if ($v = get_option('talktopc_panel_height')) $panel['height'] = intval($v);
     if ($v = get_option('talktopc_panel_border_radius')) $panel['borderRadius'] = intval($v);
-    if ($v = get_option('talktopc_panel_bg_color')) $panel['backgroundColor'] = $v;
+    
+    // Always set backgroundColor explicitly - default to white
+    $panel_bg = get_option('talktopc_panel_bg_color');
+    $panel['backgroundColor'] = (!empty($panel_bg) && $panel_bg !== '') ? $panel_bg : '#FFFFFF';
+    
+    // Border and backdrop filter are optional
     if ($v = get_option('talktopc_panel_border')) $panel['border'] = $v;
     if ($v = get_option('talktopc_panel_backdrop_filter')) $panel['backdropFilter'] = $v;
-    if (!empty($panel)) $config['panel'] = $panel;
+    
+    $config['panel'] = $panel;
     
     // ==========================================================================
     // HEADER
     // ==========================================================================
+    // FIX: Always explicitly set header backgroundColor to ensure it's applied correctly
+    // and doesn't get mixed up with other elements
     $header = [];
     if ($v = get_option('talktopc_header_title')) $header['title'] = $v;
     $header['showTitle'] = get_option('talktopc_header_show_title', '1') === '1';
-    if ($v = get_option('talktopc_header_bg_color')) $header['backgroundColor'] = $v;
-    if ($v = get_option('talktopc_header_text_color')) $header['textColor'] = $v;
+    
+    // CRITICAL FIX: Always use the saved header backgroundColor value if it exists
+    // WordPress sanitize_hex_color already validates the format, so trust it
+    $header_bg = get_option('talktopc_header_bg_color', '');
+    
+    // Use the saved value if it's a non-empty string, otherwise use default
+    if (!empty($header_bg) && is_string($header_bg) && trim($header_bg) !== '') {
+        $header['backgroundColor'] = trim($header_bg);
+    } else {
+        // No value saved or empty, use default
+        $header['backgroundColor'] = '#7C3AED';
+    }
+    
+    // Always set textColor explicitly
+    $header_text = get_option('talktopc_header_text_color');
+    $header['textColor'] = (!empty($header_text) && $header_text !== '') ? $header_text : '#FFFFFF';
+    
     $header['showCloseButton'] = get_option('talktopc_header_show_close', '1') === '1';
-    if (!empty($header)) $config['header'] = $header;
+    
+    // Always include header section to ensure colors are properly isolated
+    $config['header'] = $header;
     
     // ==========================================================================
     // FOOTER (TTP Branding)
     // ==========================================================================
-    $footer = ['show' => true]; // Always show for free tier
+    // Always include footer section - always shown for free tier
+    $footer = ['show' => true];
+    
+    // Footer colors - SDK has defaults, but we set explicitly when configured
     if ($v = get_option('talktopc_footer_bg_color')) $footer['backgroundColor'] = $v;
     if ($v = get_option('talktopc_footer_text_color')) $footer['textColor'] = $v;
     if ($v = get_option('talktopc_footer_hover_color')) $footer['hoverColor'] = $v;
+    
     $config['footer'] = $footer;
     
     // ==========================================================================
     // MESSAGES
     // ==========================================================================
+    // Always include messages section with explicit defaults to prevent inheritance issues
     $messages = [];
-    if ($v = get_option('talktopc_msg_user_bg')) $messages['userBackgroundColor'] = $v;
-    if ($v = get_option('talktopc_msg_agent_bg')) $messages['agentBackgroundColor'] = $v;
-    if ($v = get_option('talktopc_msg_system_bg')) $messages['systemBackgroundColor'] = $v;
-    if ($v = get_option('talktopc_msg_error_bg')) $messages['errorBackgroundColor'] = $v;
-    if ($v = get_option('talktopc_msg_text_color')) $messages['textColor'] = $v;
+    
+    // Always set message background colors explicitly
+    $msg_user_bg = get_option('talktopc_msg_user_bg');
+    $messages['userBackgroundColor'] = (!empty($msg_user_bg) && $msg_user_bg !== '') ? $msg_user_bg : '#E5E7EB';
+    
+    $msg_agent_bg = get_option('talktopc_msg_agent_bg');
+    $messages['agentBackgroundColor'] = (!empty($msg_agent_bg) && $msg_agent_bg !== '') ? $msg_agent_bg : '#F3F4F6';
+    
+    $msg_system_bg = get_option('talktopc_msg_system_bg');
+    $messages['systemBackgroundColor'] = (!empty($msg_system_bg) && $msg_system_bg !== '') ? $msg_system_bg : '#FEF3C7';
+    
+    $msg_error_bg = get_option('talktopc_msg_error_bg');
+    $messages['errorBackgroundColor'] = (!empty($msg_error_bg) && $msg_error_bg !== '') ? $msg_error_bg : '#FEE2E2';
+    
+    // Always set text color explicitly
+    $msg_text_color = get_option('talktopc_msg_text_color');
+    $messages['textColor'] = (!empty($msg_text_color) && $msg_text_color !== '') ? $msg_text_color : '#1F2937';
+    
+    // Font size and border radius are optional
     if ($v = get_option('talktopc_msg_font_size')) $messages['fontSize'] = $v;
     if ($v = get_option('talktopc_msg_border_radius')) $messages['borderRadius'] = intval($v);
-    if (!empty($messages)) $config['messages'] = $messages;
+    
+    $config['messages'] = $messages;
     
     // ==========================================================================
     // LANDING SCREEN
     // ==========================================================================
+    // FIX: Always include landing section with explicit color defaults to prevent SDK
+    // from falling back to header.backgroundColor for button/card elements
     $landing = [];
+    
+    // Optional values (only set if configured)
     if ($v = get_option('talktopc_landing_bg_color')) $landing['backgroundColor'] = $v;
     if ($v = get_option('talktopc_landing_logo')) $landing['logo'] = $v;
     if ($v = get_option('talktopc_landing_title')) $landing['title'] = $v;
-    if ($v = get_option('talktopc_landing_title_color')) $landing['titleColor'] = $v;
-    if ($v = get_option('talktopc_landing_card_bg_color')) $landing['modeCardBackgroundColor'] = $v;
-    if ($v = get_option('talktopc_landing_card_border_color')) $landing['modeCardBorderColor'] = $v;
-    if ($v = get_option('talktopc_landing_card_hover_border_color')) $landing['modeCardHoverBorderColor'] = $v;
-    if ($v = get_option('talktopc_landing_card_icon_bg_color')) $landing['modeCardIconBackgroundColor'] = $v;
-    if ($v = get_option('talktopc_landing_card_title_color')) $landing['modeCardTitleColor'] = $v;
+    
+    // FIX: Always explicitly set title and subtitle colors to prevent SDK fallback to header colors
+    $title_color = get_option('talktopc_landing_title_color');
+    $landing['titleColor'] = !empty($title_color) ? $title_color : '#1e293b';
+    
+    $subtitle_color = get_option('talktopc_landing_subtitle_color');
+    $landing['subtitleColor'] = !empty($subtitle_color) ? $subtitle_color : '#64748b';
+    
+    // FIX: CRITICAL - Always explicitly set all card/button colors with defaults
+    // This prevents the SDK from using header.backgroundColor as fallback for the mode selection buttons
+    // IMPORTANT: Only set values if they exist and are not empty - let SDK use its defaults otherwise
+    // This ensures SDK defaults work correctly and prevents empty strings from overriding defaults
+    $card_bg = get_option('talktopc_landing_card_bg_color');
+    if (!empty($card_bg) && trim($card_bg) !== '') {
+        $landing['modeCardBackgroundColor'] = trim($card_bg);
+    }
+    // If not set, SDK will use default '#FFFFFF'
+    
+    $card_border = get_option('talktopc_landing_card_border_color');
+    if (!empty($card_border) && trim($card_border) !== '') {
+        $landing['modeCardBorderColor'] = trim($card_border);
+    }
+    // If not set, SDK will use default '#E2E8F0'
+    
+    $card_hover_border = get_option('talktopc_landing_card_hover_border_color');
+    if (!empty($card_hover_border) && trim($card_hover_border) !== '') {
+        $landing['modeCardHoverBorderColor'] = trim($card_hover_border);
+    }
+    // If not set, SDK will use default '#7C3AED'
+    
+    $icon_bg = get_option('talktopc_landing_card_icon_bg_color');
+    if (!empty($icon_bg) && trim($icon_bg) !== '') {
+        $landing['modeCardIconBackgroundColor'] = trim($icon_bg);
+    }
+    // If not set, SDK will use default '#7C3AED' (explicit, not headerColor)
+    
+    $card_title_color = get_option('talktopc_landing_card_title_color');
+    if (!empty($card_title_color) && trim($card_title_color) !== '') {
+        $landing['modeCardTitleColor'] = trim($card_title_color);
+    }
+    // If not set, SDK will use default '#111827'
+    
+    // Optional card content
     if ($v = get_option('talktopc_landing_voice_icon')) $landing['voiceCardIcon'] = $v;
     if ($v = get_option('talktopc_landing_voice_title')) $landing['voiceCardTitle'] = $v;
+    if ($v = get_option('talktopc_landing_voice_desc')) $landing['voiceCardDesc'] = $v;
     if ($v = get_option('talktopc_landing_text_icon')) $landing['textCardIcon'] = $v;
     if ($v = get_option('talktopc_landing_text_title')) $landing['textCardTitle'] = $v;
-    if (!empty($landing)) $config['landing'] = $landing;
+    if ($v = get_option('talktopc_landing_text_desc')) $landing['textCardDesc'] = $v;
+    
+    // Always include landing section when header is configured to ensure color isolation
+    // The landing section will always have at least the color defaults set above
+    $config['landing'] = $landing;
     
     // ==========================================================================
     // VOICE INTERFACE
     // ==========================================================================
+    // Always include voice section - SDK has good defaults, but we ensure explicit values when set
     $voice = [
         // Audio output settings (required for proper playback)
         'outputContainer' => 'raw',
@@ -169,48 +312,67 @@ function talktopc_build_widget_config($agent_id = null) {
         'outputChannels' => 1,
         'outputBitDepth' => 16
     ];
-    // Microphone
+    
+    // Microphone colors - SDK defaults to primaryColor (purple) if not set
     if ($v = get_option('talktopc_voice_mic_color')) $voice['micButtonColor'] = $v;
     if ($v = get_option('talktopc_voice_mic_active_color')) $voice['micButtonActiveColor'] = $v;
-    // Avatar
+    
+    // Avatar colors - SDK defaults to #667eea if not set
     if ($v = get_option('talktopc_voice_avatar_color')) $voice['avatarBackgroundColor'] = $v;
     if ($v = get_option('talktopc_voice_avatar_active_color')) $voice['avatarActiveBackgroundColor'] = $v;
-    // Status
+    
+    // Status colors - SDK has explicit defaults
     if ($v = get_option('talktopc_voice_status_title_color')) $voice['statusTitleColor'] = $v;
     if ($v = get_option('talktopc_voice_status_subtitle_color')) $voice['statusSubtitleColor'] = $v;
-    // Start Call
+    
+    // Start Call text and button
     if ($v = get_option('talktopc_voice_start_title')) $voice['startCallTitle'] = $v;
     if ($v = get_option('talktopc_voice_start_subtitle')) $voice['startCallSubtitle'] = $v;
     if ($v = get_option('talktopc_voice_start_btn_text')) $voice['startCallButtonText'] = $v;
     if ($v = get_option('talktopc_voice_start_btn_color')) $voice['startCallButtonColor'] = $v;
     if ($v = get_option('talktopc_voice_start_btn_text_color')) $voice['startCallButtonTextColor'] = $v;
-    // Transcript
+    
+    // Transcript colors - SDK defaults to white background
     if ($v = get_option('talktopc_voice_transcript_bg_color')) $voice['transcriptBackgroundColor'] = $v;
     if ($v = get_option('talktopc_voice_transcript_text_color')) $voice['transcriptTextColor'] = $v;
     if ($v = get_option('talktopc_voice_transcript_label_color')) $voice['transcriptLabelColor'] = $v;
-    // Controls
+    
+    // Control buttons - SDK has explicit defaults
     if ($v = get_option('talktopc_voice_control_btn_color')) $voice['controlButtonColor'] = $v;
     if ($v = get_option('talktopc_voice_control_btn_secondary_color')) $voice['controlButtonSecondaryColor'] = $v;
     if ($v = get_option('talktopc_voice_end_btn_color')) $voice['endCallButtonColor'] = $v;
+    
+    // Live indicator colors - SDK has explicit defaults
+    if ($v = get_option('talktopc_voice_live_dot_color')) $voice['liveDotColor'] = $v;
+    if ($v = get_option('talktopc_voice_live_text_color')) $voice['liveTextColor'] = $v;
+    
     $config['voice'] = $voice;
     
     // ==========================================================================
     // TEXT INTERFACE
     // ==========================================================================
+    // Always include text section - SDK has good defaults, but we ensure explicit values when set
     $text = [];
-    // Send Button
+    
+    // Send Button colors - SDK defaults to purple (#7C3AED) if not set
     if ($v = get_option('talktopc_text_send_btn_color')) $text['sendButtonColor'] = $v;
     if ($v = get_option('talktopc_text_send_btn_hover_color')) $text['sendButtonHoverColor'] = $v;
     if ($v = get_option('talktopc_text_send_btn_text')) $text['sendButtonText'] = $v;
     if ($v = get_option('talktopc_text_send_btn_text_color')) $text['sendButtonTextColor'] = $v;
+    
     // Input Field
-    if ($v = get_option('talktopc_text_input_placeholder')) $text['inputPlaceholder'] = $v;
+    // Check if option exists (even if empty string) - placeholders can be empty
+    $placeholder = get_option('talktopc_text_input_placeholder');
+    if ($placeholder !== false) $text['inputPlaceholder'] = $placeholder;
+    
+    // Input colors - SDK defaults to white background, dark text
     if ($v = get_option('talktopc_text_input_bg_color')) $text['inputBackgroundColor'] = $v;
     if ($v = get_option('talktopc_text_input_text_color')) $text['inputTextColor'] = $v;
     if ($v = get_option('talktopc_text_input_border_color')) $text['inputBorderColor'] = $v;
     if ($v = get_option('talktopc_text_input_focus_color')) $text['inputFocusColor'] = $v;
     if ($v = get_option('talktopc_text_input_border_radius')) $text['inputBorderRadius'] = intval($v);
-    if (!empty($text)) $config['text'] = $text;
+    
+    $config['text'] = $text;
     
     // ==========================================================================
     // TOOLTIPS

@@ -170,6 +170,8 @@ add_action('admin_init', function() {
     register_setting('talktopc_settings', 'talktopc_voice_control_btn_color', ['sanitize_callback' => 'sanitize_hex_color']);
     register_setting('talktopc_settings', 'talktopc_voice_control_btn_secondary_color', ['sanitize_callback' => 'sanitize_hex_color']);
     register_setting('talktopc_settings', 'talktopc_voice_end_btn_color', ['sanitize_callback' => 'sanitize_hex_color']);
+    register_setting('talktopc_settings', 'talktopc_voice_live_dot_color', ['sanitize_callback' => 'sanitize_hex_color']);
+    register_setting('talktopc_settings', 'talktopc_voice_live_text_color', ['sanitize_callback' => 'sanitize_hex_color']);
     
     // =========================================================================
     // TEXT INTERFACE

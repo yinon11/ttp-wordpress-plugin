@@ -736,6 +736,8 @@ add_action('wp_ajax_talktopc_save_widget_customization', function() {
         'talktopc_button_shape' => 'sanitize_text_field',
         'talktopc_button_bg_color' => 'sanitize_hex_color',
         'talktopc_button_hover_color' => 'sanitize_hex_color',
+        'talktopc_button_shadow' => 'talktopc_sanitize_checkbox',
+        'talktopc_button_shadow_color' => 'sanitize_text_field',
         
         // Icon
         'talktopc_icon_type' => 'sanitize_text_field',
@@ -750,16 +752,26 @@ add_action('wp_ajax_talktopc_save_widget_customization', function() {
         'talktopc_panel_height' => 'absint',
         'talktopc_panel_border_radius' => 'absint',
         'talktopc_panel_bg_color' => 'sanitize_hex_color',
+        'talktopc_panel_border' => 'sanitize_text_field',
+        'talktopc_panel_backdrop_filter' => 'sanitize_text_field',
         
         // Header
         'talktopc_header_title' => 'sanitize_text_field',
         'talktopc_header_bg_color' => 'sanitize_hex_color',
         'talktopc_header_text_color' => 'sanitize_hex_color',
+        'talktopc_header_show_title' => 'talktopc_sanitize_checkbox',
         'talktopc_header_show_close' => 'talktopc_sanitize_checkbox',
+        
+        // Footer
+        'talktopc_footer_bg_color' => 'sanitize_hex_color',
+        'talktopc_footer_text_color' => 'sanitize_hex_color',
+        'talktopc_footer_hover_color' => 'sanitize_hex_color',
         
         // Messages
         'talktopc_msg_user_bg' => 'sanitize_hex_color',
         'talktopc_msg_agent_bg' => 'sanitize_hex_color',
+        'talktopc_msg_system_bg' => 'sanitize_hex_color',
+        'talktopc_msg_error_bg' => 'sanitize_hex_color',
         'talktopc_msg_text_color' => 'sanitize_hex_color',
         'talktopc_msg_font_size' => 'sanitize_text_field',
         'talktopc_msg_border_radius' => 'absint',
@@ -768,30 +780,52 @@ add_action('wp_ajax_talktopc_save_widget_customization', function() {
         'talktopc_text_send_btn_text' => 'sanitize_text_field',
         'talktopc_text_send_btn_color' => 'sanitize_hex_color',
         'talktopc_text_send_btn_hover_color' => 'sanitize_hex_color',
+        'talktopc_text_send_btn_text_color' => 'sanitize_hex_color',
         'talktopc_text_input_placeholder' => 'sanitize_text_field',
+        'talktopc_text_input_bg_color' => 'sanitize_hex_color',
+        'talktopc_text_input_text_color' => 'sanitize_hex_color',
+        'talktopc_text_input_border_color' => 'sanitize_hex_color',
         'talktopc_text_input_focus_color' => 'sanitize_hex_color',
+        'talktopc_text_input_border_radius' => 'absint',
         
         // Landing
+        'talktopc_landing_bg_color' => 'sanitize_hex_color',
         'talktopc_landing_title' => 'sanitize_text_field',
         'talktopc_landing_title_color' => 'sanitize_hex_color',
         'talktopc_landing_subtitle_color' => 'sanitize_hex_color',
         'talktopc_landing_logo' => 'sanitize_text_field',
+        'talktopc_landing_voice_icon' => 'sanitize_text_field',
         'talktopc_landing_voice_title' => 'sanitize_text_field',
         'talktopc_landing_voice_desc' => 'sanitize_text_field',
+        'talktopc_landing_text_icon' => 'sanitize_text_field',
         'talktopc_landing_text_title' => 'sanitize_text_field',
         'talktopc_landing_text_desc' => 'sanitize_text_field',
         'talktopc_landing_card_bg_color' => 'sanitize_hex_color',
+        'talktopc_landing_card_border_color' => 'sanitize_hex_color',
+        'talktopc_landing_card_hover_border_color' => 'sanitize_hex_color',
+        'talktopc_landing_card_icon_bg_color' => 'sanitize_hex_color',
+        'talktopc_landing_card_title_color' => 'sanitize_hex_color',
         
         // Voice
         'talktopc_voice_mic_color' => 'sanitize_hex_color',
         'talktopc_voice_mic_active_color' => 'sanitize_hex_color',
         'talktopc_voice_avatar_color' => 'sanitize_hex_color',
+        'talktopc_voice_avatar_active_color' => 'sanitize_hex_color',
+        'talktopc_voice_status_title_color' => 'sanitize_hex_color',
+        'talktopc_voice_status_subtitle_color' => 'sanitize_hex_color',
+        'talktopc_voice_start_title' => 'sanitize_text_field',
+        'talktopc_voice_start_subtitle' => 'sanitize_text_field',
         'talktopc_voice_start_btn_text' => 'sanitize_text_field',
         'talktopc_voice_start_btn_color' => 'sanitize_hex_color',
         'talktopc_voice_start_btn_text_color' => 'sanitize_hex_color',
-        'talktopc_voice_status_title_color' => 'sanitize_hex_color',
-        'talktopc_voice_end_btn_color' => 'sanitize_hex_color',
+        'talktopc_voice_transcript_bg_color' => 'sanitize_hex_color',
+        'talktopc_voice_transcript_text_color' => 'sanitize_hex_color',
+        'talktopc_voice_transcript_label_color' => 'sanitize_hex_color',
+        'talktopc_voice_control_btn_color' => 'sanitize_hex_color',
         'talktopc_voice_control_btn_secondary_color' => 'sanitize_hex_color',
+        'talktopc_voice_end_btn_color' => 'sanitize_hex_color',
+        'talktopc_voice_live_dot_color' => 'sanitize_hex_color',
+        'talktopc_voice_live_text_color' => 'sanitize_hex_color',
         
         // Position & Direction
         'talktopc_position' => 'sanitize_text_field',
@@ -807,7 +841,12 @@ add_action('wp_ajax_talktopc_save_widget_customization', function() {
                 $value = wp_unslash($_POST[$option_name]);
                 
                 // Handle empty strings for optional fields
-                if ($value === '' && strpos($option_name, '_color') === false) {
+                // BUT: Allow empty placeholders and text fields (they can be intentionally empty)
+                if ($value === '' && strpos($option_name, '_color') === false && 
+                    strpos($option_name, '_placeholder') === false && 
+                    strpos($option_name, '_text') === false && 
+                    strpos($option_name, '_title') === false &&
+                    strpos($option_name, '_desc') === false) {
                     // Skip empty non-color fields (they're optional)
                     continue;
                 }
