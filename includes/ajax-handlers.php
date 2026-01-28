@@ -264,15 +264,56 @@ add_action('wp_ajax_talktopc_update_agent', function() {
         $update_data['maxCallDuration'] = intval($_POST['max_call_duration']);
     }
     
+    // Call Recording - always include, default to false if not set
+    // Note: JavaScript always sends '1' or '0' as string, so we check for both
+    $record_call = false;
+    if (isset($_POST['record_call'])) {
+        $record_call_value = $_POST['record_call'];
+        $record_call = ($record_call_value === '1' || $record_call_value === 1 || $record_call_value === true || $record_call_value === 'true');
+    }
+    // Always include recordCall in the update, even if false
+    $update_data['recordCall'] = $record_call;
+    
+    // Build internalToolIds array
+    $internal_tool_ids = [];
+    
+    // Add leave_message if enabled
+    if (isset($_POST['enable_leave_message']) && ($_POST['enable_leave_message'] === '1' || $_POST['enable_leave_message'] === true || $_POST['enable_leave_message'] === 'true')) {
+        $internal_tool_ids[] = 'leave_message';
+    }
+    
+    // Add visual tools if enabled
+    if (isset($_POST['enable_visual_tools']) && ($_POST['enable_visual_tools'] === '1' || $_POST['enable_visual_tools'] === true || $_POST['enable_visual_tools'] === 'true')) {
+        if (isset($_POST['visual_tools_selection'])) {
+            $selected_tools = json_decode(stripslashes($_POST['visual_tools_selection']), true);
+            if (is_array($selected_tools) && !empty($selected_tools)) {
+                $internal_tool_ids = array_merge($internal_tool_ids, $selected_tools);
+            }
+        }
+    }
+    
+    // Only include internalToolIds if there are tools to include
+    if (!empty($internal_tool_ids)) {
+        $update_data['internalToolIds'] = array_values(array_unique($internal_tool_ids));
+    }
+    
     // If no data to update, just return success
     if (empty($update_data)) {
         wp_send_json_success(['message' => 'No changes to save']);
     }
     
+    // Debug: Log the payload being sent (remove after debugging)
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('TalkToPC: Sending update payload: ' . json_encode($update_data));
+        error_log('TalkToPC: recordCall value: ' . var_export($update_data['recordCall'] ?? 'NOT SET', true));
+    }
+    
+    $json_body = json_encode($update_data);
+    
     $response = wp_remote_request(TALKTOPC_API_URL . '/api/public/wordpress/agents/' . $agent_id, [
         'method' => 'PUT',
         'headers' => ['X-API-Key' => $api_key, 'Content-Type' => 'application/json'],
-        'body' => json_encode($update_data),
+        'body' => $json_body,
         'timeout' => 30
     ]);
     
@@ -409,6 +450,22 @@ add_action('wp_ajax_talktopc_save_agent_settings_local', function() {
     }
     if (isset($_POST['max_call_duration'])) {
         update_option('talktopc_override_max_call_duration', sanitize_text_field(wp_unslash($_POST['max_call_duration'])));
+    }
+    
+    // Call Recording & Tools - always save, default to '0' if not set
+    $record_call_value = isset($_POST['record_call']) ? $_POST['record_call'] : '0';
+    update_option('talktopc_record_call', talktopc_sanitize_checkbox($record_call_value));
+    if (isset($_POST['enable_leave_message'])) {
+        update_option('talktopc_enable_leave_message', talktopc_sanitize_checkbox($_POST['enable_leave_message']));
+    }
+    if (isset($_POST['enable_visual_tools'])) {
+        update_option('talktopc_enable_visual_tools', talktopc_sanitize_checkbox($_POST['enable_visual_tools']));
+    }
+    if (isset($_POST['visual_tools_selection'])) {
+        $selection = json_decode(stripslashes($_POST['visual_tools_selection']), true);
+        if (is_array($selection)) {
+            update_option('talktopc_visual_tools_selection', wp_json_encode($selection));
+        }
     }
     
     wp_send_json_success(['message' => 'Settings cached locally']);

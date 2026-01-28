@@ -120,13 +120,35 @@ function talktopc_render_dashboard_page() {
                             <span class="arrow">▼</span>
                         </div>
                         <div class="header-right">
-                            <button type="button" class="button button-small" id="editAgentSettingsBtn">✏️ Edit</button>
+                            <button type="button" class="button button-primary button-large-edit" id="editAgentSettingsBtn">
+                                <span class="edit-icon">✏️</span>
+                                <span class="edit-text-btn">Edit Settings</span>
+                            </button>
                             <button type="button" class="button button-small" id="cancelEditBtn" style="display: none;">✖️ Cancel</button>
                         </div>
                     </div>
-                    <div class="agent-settings-body">
+                    
+                    <!-- View Mode Notice Banner -->
+                    <div class="view-mode-notice" id="viewModeNotice">
+                        <div class="notice-content">
+                            <span class="notice-icon">🔒</span>
+                            <div class="notice-text">
+                                <strong>View Mode</strong>
+                                <span>Click "Edit Settings" above to modify these settings</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Edit Mode Banner -->
+                    <div class="edit-mode-banner" id="editModeBanner" style="display: none;">
+                        <span class="edit-indicator">✏️</span>
+                        <span class="edit-text">You are editing agent settings</span>
+                        <span class="edit-hint">Make your changes below, then click Save</span>
+                    </div>
+                    
+                    <div class="agent-settings-body" data-tooltip="Click 'Edit Settings' above to modify these settings">
                         <!-- Settings saved via AJAX to both WordPress (cache) and TalkToPC backend (DB) -->
-                        <div id="agentSettingsForm">
+                        <div id="agentSettingsForm" class="agent-settings-form">
                             
                             <!-- FIX #3: Better aligned form layout -->
                             <div class="agent-form-grid">
@@ -192,10 +214,97 @@ function talktopc_render_dashboard_page() {
                                 </div>
                             </div>
                             
-                            <div class="save-area edit-only" style="display: none;">
-                                <button type="button" class="button button-primary" id="saveAgentSettingsBtn">Save Agent Settings</button>
-                                <button type="button" class="button" id="cancelEditBtn2">Cancel</button>
-                                <span class="save-status" id="agentSaveStatus"></span>
+                            <h3 class="section-title">Call Recording & Tools</h3>
+                            
+                            <!-- Call Recording Card -->
+                            <div class="tool-card" style="background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                                <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; margin: 0;">
+                                    <input type="checkbox" id="talktopc_record_call" value="1" <?php checked(get_option('talktopc_record_call', false), true); ?> disabled style="margin-top: 2px;">
+                                    <div style="flex: 1;">
+                                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                            <span style="font-size: 20px;">🎙️</span>
+                                            <strong style="font-size: 14px; color: #1d2327;">Call Recording</strong>
+                                        </div>
+                                        <p style="margin: 0; color: #646970; font-size: 13px; line-height: 1.5;">
+                                            Record conversations for review and training. Recorded calls appear in the Conversations menu.
+                                            <a href="<?php echo esc_url('https://talktopc.com/agents/conversations' . ($user_email ? '?email=' . urlencode($user_email) : '')); ?>" target="_blank" style="margin-left: 4px; text-decoration: none;">View Conversations →</a>
+                                        </p>
+                                    </div>
+                                </label>
+                            </div>
+                            
+                            <!-- Leave Message Tool Card -->
+                            <div class="tool-card" style="background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                                <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; margin: 0;">
+                                    <input type="checkbox" id="talktopc_enable_leave_message" value="1" <?php checked(get_option('talktopc_enable_leave_message', true), true); ?> disabled style="margin-top: 2px;">
+                                    <div style="flex: 1;">
+                                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                            <span style="font-size: 20px;">💬</span>
+                                            <strong style="font-size: 14px; color: #1d2327;">Leave Message</strong>
+                                        </div>
+                                        <p style="margin: 0; color: #646970; font-size: 13px; line-height: 1.5;">
+                                            Allow customers to leave messages instead of using contact forms. Messages will be sent to <strong><?php echo esc_html($user_email ?: 'your email'); ?></strong>.
+                                        </p>
+                                    </div>
+                                </label>
+                            </div>
+                            
+                            <!-- Visual Tools Card -->
+                            <div class="tool-card" style="background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                                <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; margin: 0;">
+                                    <input type="checkbox" id="talktopc_enable_visual_tools" value="1" <?php checked(get_option('talktopc_enable_visual_tools', true), true); ?> disabled style="margin-top: 2px;">
+                                    <div style="flex: 1;">
+                                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                            <span style="font-size: 20px;">👁️</span>
+                                            <strong style="font-size: 14px; color: #1d2327;">Visual Tools</strong>
+                                        </div>
+                                        <p style="margin: 0 0 12px 0; color: #646970; font-size: 13px; line-height: 1.5;">
+                                            Enable visual assistance tools for website navigation and interaction.
+                                        </p>
+                                        
+                                        <!-- Visual Tools Grid -->
+                                        <div id="visualToolsList" class="visual-tools-list" style="margin-top: 12px; padding: 12px; background: #f9f9f9; border-radius: 6px; <?php echo get_option('talktopc_enable_visual_tools', true) ? '' : 'display: none;'; ?>">
+                                            <?php
+                                            $visual_tools = [
+                                                'capture_screen' => ['name' => 'Capture Screen', 'icon' => '📸'],
+                                                'highlight_element' => ['name' => 'Highlight Element', 'icon' => '✨'],
+                                                'click_element' => ['name' => 'Click Element', 'icon' => '👆'],
+                                                'fill_field' => ['name' => 'Fill Field', 'icon' => '✍️'],
+                                                'scroll_to_element' => ['name' => 'Scroll to Element', 'icon' => '📜'],
+                                                'navigate_to' => ['name' => 'Navigate To', 'icon' => '🧭'],
+                                                'read_page' => ['name' => 'Read Page', 'icon' => '📖']
+                                            ];
+                                            $selected_tools = json_decode(get_option('talktopc_visual_tools_selection', '["capture_screen","highlight_element","click_element","fill_field","scroll_to_element","navigate_to","read_page"]'), true);
+                                            if (!is_array($selected_tools)) {
+                                                $selected_tools = array_keys($visual_tools);
+                                            }
+                                            ?>
+                                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                                                <?php foreach ($visual_tools as $tool_id => $tool_data): ?>
+                                                    <label class="visual-tool-item" style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: #fff; border: 1px solid #e0e0e0; border-radius: 4px; cursor: pointer; transition: all 0.2s; font-weight: normal; font-size: 13px;">
+                                                        <input type="checkbox" class="visual-tool-checkbox" data-tool-id="<?php echo esc_attr($tool_id); ?>" value="1" <?php checked(in_array($tool_id, $selected_tools), true); ?> disabled style="margin: 0;">
+                                                        <span style="font-size: 16px;"><?php echo esc_html($tool_data['icon']); ?></span>
+                                                        <span style="flex: 1;"><?php echo esc_html($tool_data['name']); ?></span>
+                                                    </label>
+                                                <?php endforeach; ?>
+                                            </div>
+                                            <p style="margin: 12px 0 0 0; color: #646970; font-size: 12px; text-align: center;">
+                                                <a href="<?php echo esc_url('https://talktopc.com/agents/create' . ($current_agent_id ? '?agentId=' . urlencode($current_agent_id) : '')); ?>" target="_blank" style="text-decoration: none;">View all tools in the TalkToPC app →</a>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                            
+                            <!-- Save Area - Always visible when editing -->
+                            <div class="save-area edit-only" id="agentSaveArea" style="display: none;">
+                                <div class="save-area-content">
+                                    <div class="save-buttons">
+                                        <button type="button" class="button button-primary button-large" id="saveAgentSettingsBtn">💾 Save Agent Settings</button>
+                                        <button type="button" class="button button-large" id="cancelEditBtn2">✖️ Cancel</button>
+                                    </div>
+                                    <span class="save-status" id="agentSaveStatus"></span>
+                                </div>
                             </div>
                         </div>
                     </div>

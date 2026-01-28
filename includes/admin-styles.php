@@ -650,6 +650,42 @@ function talktopc_get_admin_styles_css() {
         
         .agent-settings-body {
             padding: 24px;
+            background: #f8f9fa;
+            transition: background 0.3s ease;
+        }
+        
+        /* Visual state: Edit mode - white background */
+        .agent-settings.is-editing .agent-settings-body {
+            background: #fff;
+            border-left: 3px solid #2271b1;
+        }
+        
+        /* Edit Mode Banner */
+        .edit-mode-banner {
+            background: linear-gradient(135deg, #2271b1 0%, #135e96 100%);
+            color: #fff;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid #e2e4e7;
+        }
+        
+        .edit-mode-banner .edit-indicator {
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        
+        .edit-mode-banner .edit-text {
+            font-weight: 600;
+            font-size: 14px;
+            flex: 1;
+        }
+        
+        .edit-mode-banner .edit-hint {
+            font-size: 12px;
+            opacity: 0.9;
+            font-weight: normal;
         }
         
         .agent-settings.collapsed .agent-settings-body {
@@ -667,6 +703,168 @@ function talktopc_get_admin_styles_css() {
         
         .agent-settings.collapsed .arrow {
             transform: rotate(-90deg);
+        }
+        
+        /* Prominent Edit Button */
+        .button-large-edit {
+            background: #2271b1 !important;
+            color: #fff !important;
+            border-color: #135e96 !important;
+            font-weight: 600 !important;
+            padding: 10px 20px !important;
+            font-size: 14px !important;
+            transition: all 0.2s;
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+            box-shadow: 0 2px 4px rgba(34, 113, 177, 0.2) !important;
+        }
+        
+        .button-large-edit:hover {
+            background: #135e96 !important;
+            border-color: #0a4b78 !important;
+            transform: translateY(-1px);
+            box-shadow: 0 3px 6px rgba(34, 113, 177, 0.4) !important;
+        }
+        
+        .button-large-edit .edit-icon {
+            font-size: 16px;
+        }
+        
+        /* View Mode Notice Banner */
+        .view-mode-notice {
+            background: #fff3cd;
+            border-left: 4px solid #ffb900;
+            padding: 12px 20px;
+            margin: 0;
+            border-bottom: 1px solid #e2e4e7;
+        }
+        
+        .view-mode-notice .notice-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .view-mode-notice .notice-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        
+        .view-mode-notice .notice-text {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex: 1;
+        }
+        
+        .view-mode-notice .notice-text strong {
+            color: #8b6914;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        
+        .view-mode-notice .notice-text span {
+            color: #8b6914;
+            font-size: 12px;
+        }
+        
+        .agent-settings.is-editing .view-mode-notice {
+            display: none !important;
+        }
+        
+        /* Save Area Styling */
+        .save-area {
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 2px solid #e2e4e7;
+        }
+        
+        .save-area-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        
+        .save-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .button-large {
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        #saveAgentSettingsBtn.button-large {
+            background: #2271b1;
+            border-color: #135e96;
+            box-shadow: 0 2px 4px rgba(34, 113, 177, 0.2);
+        }
+        
+        #saveAgentSettingsBtn.button-large:hover {
+            background: #135e96;
+            border-color: #0a4b78;
+            box-shadow: 0 3px 6px rgba(34, 113, 177, 0.3);
+        }
+        
+        /* View Mode - Visual indication that fields are disabled */
+        .agent-settings-body:not(.edit-mode) input:disabled,
+        .agent-settings-body:not(.edit-mode) textarea:disabled,
+        .agent-settings-body:not(.edit-mode) select:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+            position: relative;
+        }
+        
+        .agent-settings-body:not(.edit-mode) input:disabled:hover,
+        .agent-settings-body:not(.edit-mode) textarea:disabled:hover,
+        .agent-settings-body:not(.edit-mode) select:disabled:hover {
+            border-color: #c3c4c7;
+        }
+        
+        /* Panel Tooltip - Shown on click */
+        .panel-tooltip-click {
+            position: fixed;
+            background: #1d2327;
+            color: #fff;
+            padding: 16px 24px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 500;
+            white-space: nowrap;
+            z-index: 10000;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+            pointer-events: none;
+            animation: tooltipFadeIn 0.2s ease;
+            text-align: center;
+            transform: translate(-50%, -50%);
+        }
+        
+        @keyframes tooltipFadeIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+        
+        /* Make disabled elements look clickable in view mode */
+        .agent-settings-body:not(.is-editing) input:disabled,
+        .agent-settings-body:not(.is-editing) textarea:disabled,
+        .agent-settings-body:not(.is-editing) select:disabled {
+            cursor: pointer;
+        }
+        
+        .agent-settings-body:not(.is-editing)[data-tooltip] {
+            cursor: pointer;
         }
         
         /* FIX: Quick links responsive grid */
@@ -1214,6 +1412,118 @@ function talktopc_get_admin_styles_css() {
                 padding-bottom: 5px;
             }
             
+        /* Legal Modal Styles */
+        .talktopc-legal-modal-overlay {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            background: rgba(0, 0, 0, 0.7) !important;
+            z-index: 999999 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 20px !important;
+            margin: 0 !important;
+            overflow-y: auto !important;
+        }
+        
+        .talktopc-legal-modal-content {
+            background: #fff !important;
+            border-radius: 4px !important;
+            max-width: 600px !important;
+            width: 100% !important;
+            max-height: calc(100vh - 40px) !important;
+            overflow-y: auto !important;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3) !important;
+            margin: auto !important;
+            position: relative !important;
+        }
+        
+        .talktopc-legal-modal-header {
+            padding: 20px 20px 15px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .talktopc-legal-modal-header h3 {
+            margin: 0;
+            font-size: 18px;
+            color: #1d2327;
+        }
+        
+        .talktopc-legal-modal-body {
+            padding: 20px;
+            max-height: calc(90vh - 150px);
+            overflow-y: auto;
+        }
+        
+        .talktopc-legal-modal-body ul {
+            margin: 12px 0 12px 20px;
+        }
+        
+        .talktopc-legal-modal-body li {
+            margin-bottom: 8px;
+        }
+        
+        .talktopc-legal-modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #ddd;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        /* Tool Cards Styles */
+        .tool-card {
+            transition: all 0.2s ease;
+        }
+        
+        .tool-card:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-color: #c3c4c7;
+        }
+        
+        .tool-card label {
+            transition: opacity 0.2s;
+        }
+        
+        .tool-card input[type="checkbox"]:disabled + div {
+            opacity: 0.6;
+        }
+        
+        .tool-card input[type="checkbox"]:not(:disabled) + div {
+            opacity: 1;
+        }
+        
+        /* Visual Tools List Styles */
+        .visual-tools-list {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 12px;
+            background: #f9f9f9;
+        }
+        
+        .visual-tools-list label {
+            font-size: 13px;
+            color: #1d2327;
+        }
+        
+        .visual-tools-list .description {
+            margin-top: 12px;
+        }
+        
+        .visual-tools-list .description a {
+            color: #2271b1;
+            text-decoration: none;
+        }
+        
+        .visual-tools-list .description a:hover {
+            text-decoration: underline;
+        }
+        
             .quick-links {
                 grid-template-columns: 1fr;
             }

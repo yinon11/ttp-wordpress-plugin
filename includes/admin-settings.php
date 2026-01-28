@@ -78,6 +78,26 @@ add_action('admin_init', function() {
     register_setting('talktopc_settings', 'talktopc_override_max_call_duration', ['sanitize_callback' => 'absint']);
     
     // =========================================================================
+    // CALL RECORDING & TOOLS
+    // =========================================================================
+    register_setting('talktopc_settings', 'talktopc_record_call', [
+        'sanitize_callback' => 'talktopc_sanitize_checkbox',
+        'default' => false
+    ]);
+    register_setting('talktopc_settings', 'talktopc_enable_leave_message', [
+        'sanitize_callback' => 'talktopc_sanitize_checkbox',
+        'default' => true
+    ]);
+    register_setting('talktopc_settings', 'talktopc_enable_visual_tools', [
+        'sanitize_callback' => 'talktopc_sanitize_checkbox',
+        'default' => true
+    ]);
+    register_setting('talktopc_settings', 'talktopc_visual_tools_selection', [
+        'sanitize_callback' => 'talktopc_sanitize_visual_tools_selection',
+        'default' => '["capture_screen","highlight_element","click_element","fill_field","scroll_to_element","navigate_to","read_page"]'
+    ]);
+    
+    // =========================================================================
     // BEHAVIOR
     // =========================================================================
     register_setting('talktopc_settings', 'talktopc_mode', ['sanitize_callback' => 'sanitize_text_field', 'default' => 'unified']);
@@ -316,6 +336,44 @@ function talktopc_sanitize_checkbox($value) {
     return ($value === '1' || $value === 'on' || $value === true || $value === 'true') ? '1' : '0';
 }
 
+/**
+ * Sanitize visual tools selection JSON array
+ * 
+ * WordPress Plugin Review: Validates and sanitizes JSON array of tool IDs
+ */
+function talktopc_sanitize_visual_tools_selection($value) {
+    if (empty($value)) {
+        return '["capture_screen","highlight_element","click_element","fill_field","scroll_to_element","navigate_to","read_page"]';
+    }
+    
+    if (is_array($value)) {
+        // Already an array, validate and return as JSON
+        $valid_tools = ['capture_screen', 'highlight_element', 'click_element', 'fill_field', 'scroll_to_element', 'navigate_to', 'read_page'];
+        $sanitized = array_filter($value, function($tool) use ($valid_tools) {
+            return in_array($tool, $valid_tools, true);
+        });
+        return wp_json_encode(array_values($sanitized));
+    }
+    
+    // Try to decode JSON string
+    $decoded = json_decode($value, true);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        return '["capture_screen","highlight_element","click_element","fill_field","scroll_to_element","navigate_to","read_page"]';
+    }
+    
+    if (!is_array($decoded)) {
+        return '["capture_screen","highlight_element","click_element","fill_field","scroll_to_element","navigate_to","read_page"]';
+    }
+    
+    // Validate tool IDs
+    $valid_tools = ['capture_screen', 'highlight_element', 'click_element', 'fill_field', 'scroll_to_element', 'navigate_to', 'read_page'];
+    $sanitized = array_filter($decoded, function($tool) use ($valid_tools) {
+        return in_array($tool, $valid_tools, true);
+    });
+    
+    return wp_json_encode(array_values($sanitized));
+}
+
 // =============================================================================
 // BACKEND SYNC HOOKS
 // Sync agent settings to TalkToPC backend when WordPress settings are saved
@@ -328,6 +386,10 @@ add_action('update_option_talktopc_override_language', 'talktopc_sync_agent_to_b
 add_action('update_option_talktopc_override_temperature', 'talktopc_sync_agent_to_backend', 10, 0);
 add_action('update_option_talktopc_override_max_tokens', 'talktopc_sync_agent_to_backend', 10, 0);
 add_action('update_option_talktopc_override_max_call_duration', 'talktopc_sync_agent_to_backend', 10, 0);
+add_action('update_option_talktopc_record_call', 'talktopc_sync_agent_to_backend', 10, 0);
+add_action('update_option_talktopc_enable_leave_message', 'talktopc_sync_agent_to_backend', 10, 0);
+add_action('update_option_talktopc_enable_visual_tools', 'talktopc_sync_agent_to_backend', 10, 0);
+add_action('update_option_talktopc_visual_tools_selection', 'talktopc_sync_agent_to_backend', 10, 0);
 
 function talktopc_sync_agent_to_backend() {
     // Prevent multiple syncs in the same request
@@ -366,6 +428,34 @@ function talktopc_sync_agent_to_backend() {
     }
     if (!empty($max_tokens)) $update_data['maxTokens'] = intval($max_tokens);
     if (!empty($max_call_duration)) $update_data['maxCallDuration'] = intval($max_call_duration);
+    
+    // Call Recording
+    $record_call = get_option('talktopc_record_call', false);
+    $update_data['recordCall'] = ($record_call === '1' || $record_call === true || $record_call === 'true');
+    
+    // Build internalToolIds array
+    $internal_tool_ids = [];
+    
+    // Add leave_message if enabled
+    $enable_leave_message = get_option('talktopc_enable_leave_message', true);
+    if ($enable_leave_message === '1' || $enable_leave_message === true || $enable_leave_message === 'true') {
+        $internal_tool_ids[] = 'leave_message';
+    }
+    
+    // Add visual tools if enabled
+    $enable_visual_tools = get_option('talktopc_enable_visual_tools', true);
+    if ($enable_visual_tools === '1' || $enable_visual_tools === true || $enable_visual_tools === 'true') {
+        $visual_tools_selection = get_option('talktopc_visual_tools_selection', '["capture_screen","highlight_element","click_element","fill_field","scroll_to_element","navigate_to","read_page"]');
+        $selected_tools = json_decode($visual_tools_selection, true);
+        if (is_array($selected_tools) && !empty($selected_tools)) {
+            $internal_tool_ids = array_merge($internal_tool_ids, $selected_tools);
+        }
+    }
+    
+    // Only include internalToolIds if there are tools to include
+    if (!empty($internal_tool_ids)) {
+        $update_data['internalToolIds'] = array_values(array_unique($internal_tool_ids));
+    }
     
     if (empty($update_data)) {
         return;

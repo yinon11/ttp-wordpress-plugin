@@ -3,7 +3,7 @@ Contributors: yinon11
 Tags: talktopc, voice, ai agent, voice assistant, chatbot
 Requires at least: 5.0
 Tested up to: 6.9
-Stable tag: 1.9.108
+Stable tag: 1.9.109
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -87,6 +87,14 @@ The WordPress plugin is free to install. TalkToPC offers a free trial and variou
 Absolutely! The plugin automatically includes your product catalog, prices, and descriptions in the AI's memory.
 
 == Changelog ==
+
+= 1.9.108 =
+* Removed: Old Customization page (widget-customization.php) - replaced with improved Customization2.
+* Improved: Customization2 page now shows only modified properties in config code (starts with agentId/appId only).
+* Fixed: WordPress coding standards compliance - added phpcs ignore comments for debug code and migration utilities.
+* Fixed: Database query warnings in migration.php with proper phpcs annotations.
+* Cleaned: Removed temporary/debug files (deploy scripts, test files) from plugin package.
+* Updated: Menu now shows "Customization" (using Customization2 functionality).
 
 = 1.9.97 =
 * Added: Live widget customization page with real-time preview.

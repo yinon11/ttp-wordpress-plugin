@@ -25,6 +25,7 @@ function talktopc_enqueue_dashboard_scripts($hook) {
     $current_voice = get_option('talktopc_override_voice', '');
     $current_language = get_option('talktopc_override_language', '');
     $needs_agent_setup = get_transient('talktopc_needs_agent_setup');
+    $user_email = get_option('talktopc_user_email', '');
     
     // Register dummy script handle (required for wp_add_inline_script)
     wp_register_script('talktopc-dashboard', false, ['jquery'], TALKTOPC_VERSION, true);
@@ -39,6 +40,7 @@ function talktopc_enqueue_dashboard_scripts($hook) {
         'currentVoice' => $current_voice,
         'currentLanguage' => $current_language,
         'needsAgentSetup' => !empty($needs_agent_setup),
+        'userEmail' => $user_email,
     ]);
     
     // Add inline script using output buffering
@@ -479,6 +481,34 @@ function talktopc_enqueue_dashboard_scripts($hook) {
         $('#talktopc_override_temperature').val(config.temperature || '0.7');
         $('#talktopc_override_max_tokens').val(config.maxTokens || '1000');
         $('#talktopc_override_max_call_duration').val(config.maxCallDuration || '300');
+        
+        // Call Recording & Tools
+        var recordCall = agent.recordCall || config.recordCall || false;
+        $('#talktopc_record_call').prop('checked', recordCall === true || recordCall === 'true' || recordCall === 1 || recordCall === '1');
+        
+        // Internal Tools
+        var internalToolIds = agent.internalToolIds || config.internalToolIds || [];
+        if (!Array.isArray(internalToolIds)) {
+            internalToolIds = [];
+        }
+        
+        // Check leave_message tool
+        var hasLeaveMessage = internalToolIds.indexOf('leave_message') !== -1;
+        $('#talktopc_enable_leave_message').prop('checked', hasLeaveMessage);
+        
+        // Visual Tools - check if any visual tools are enabled
+        var visualTools = ['capture_screen', 'highlight_element', 'click_element', 'fill_field', 'scroll_to_element', 'navigate_to', 'read_page'];
+        var hasVisualTools = visualTools.some(function(tool) {
+            return internalToolIds.indexOf(tool) !== -1;
+        });
+        $('#talktopc_enable_visual_tools').prop('checked', hasVisualTools);
+        $('#visualToolsList').toggle(hasVisualTools);
+        
+        // Populate individual visual tool checkboxes
+        visualTools.forEach(function(toolId) {
+            var checkbox = $('.visual-tool-checkbox[data-tool-id="' + toolId + '"]');
+            checkbox.prop('checked', internalToolIds.indexOf(toolId) !== -1);
+        });
     }
     
     function autoSaveSettings(agentId, agentName) {
@@ -611,19 +641,48 @@ function talktopc_enqueue_dashboard_scripts($hook) {
             language: $('#talktopc_override_language').val(),
             temperature: $('#talktopc_override_temperature').val(),
             maxTokens: $('#talktopc_override_max_tokens').val(),
-            maxCallDuration: $('#talktopc_override_max_call_duration').val()
+            maxCallDuration: $('#talktopc_override_max_call_duration').val(),
+            recordCall: $('#talktopc_record_call').is(':checked'),
+            enableLeaveMessage: $('#talktopc_enable_leave_message').is(':checked'),
+            enableVisualTools: $('#talktopc_enable_visual_tools').is(':checked'),
+            visualToolsSelection: getSelectedVisualTools()
         };
+        
+        // Reset recording legal confirmation when entering edit mode
+        recordingLegalConfirmed = false;
+        modalIsOpen = false;
         
         // Enable all fields
         $('#agentSettingsForm input, #agentSettingsForm textarea, #agentSettingsForm select').prop('disabled', false);
         $('#agentSettingsForm').addClass('edit-mode');
+        $('.agent-settings-body').addClass('is-editing');
+        
+        // Add edit mode class to parent container for visual state change
+        $('#agentSettings').addClass('is-editing');
+        
+        // Hide view mode notice
+        $('#viewModeNotice').slideUp(200);
+        
+        // Show edit mode banner
+        $('#editModeBanner').slideDown(200);
         
         // Show edit-only elements (Generate button, Save area)
         $('.edit-only').show();
+        $('#agentSaveArea').slideDown(200);
         
         // Toggle buttons
         $('#editAgentSettingsBtn').hide();
         $('#cancelEditBtn').show();
+        
+        // Reset save button state
+        $('#saveAgentSettingsBtn').prop('disabled', false).text('💾 Save Agent Settings');
+        
+        // Scroll to top of settings if needed
+        var settingsTop = $('#agentSettings').offset().top;
+        var viewportTop = $(window).scrollTop();
+        if (settingsTop < viewportTop + 100) {
+            $('html, body').animate({ scrollTop: settingsTop - 100 }, 300);
+        }
     }
     
     function exitEditMode(revert) {
@@ -637,14 +696,37 @@ function talktopc_enqueue_dashboard_scripts($hook) {
             $('#talktopc_override_temperature').val(originalValues.temperature);
             $('#talktopc_override_max_tokens').val(originalValues.maxTokens);
             $('#talktopc_override_max_call_duration').val(originalValues.maxCallDuration);
+            $('#talktopc_record_call').prop('checked', originalValues.recordCall);
+            $('#talktopc_enable_leave_message').prop('checked', originalValues.enableLeaveMessage);
+            $('#talktopc_enable_visual_tools').prop('checked', originalValues.enableVisualTools);
+            
+            // Restore visual tools selection
+            $('.visual-tool-checkbox').each(function() {
+                var toolId = $(this).data('tool-id');
+                $(this).prop('checked', originalValues.visualToolsSelection.indexOf(toolId) !== -1);
+            });
+            
+            // Update visual tools list visibility
+            $('#visualToolsList').toggle(originalValues.enableVisualTools);
         }
         
         // Disable all fields
         $('#agentSettingsForm input, #agentSettingsForm textarea, #agentSettingsForm select').prop('disabled', true);
         $('#agentSettingsForm').removeClass('edit-mode');
+        $('.agent-settings-body').removeClass('is-editing');
+        
+        // Remove edit mode class from parent container
+        $('#agentSettings').removeClass('is-editing');
+        
+        // Hide edit mode banner
+        $('#editModeBanner').slideUp(200);
+        
+        // Show view mode notice
+        $('#viewModeNotice').slideDown(200);
         
         // Hide edit-only elements
         $('.edit-only').hide();
+        $('#agentSaveArea').slideUp(200);
         
         // Toggle buttons
         $('#editAgentSettingsBtn').show();
@@ -652,7 +734,51 @@ function talktopc_enqueue_dashboard_scripts($hook) {
         
         // Clear any status messages
         $('#agentSaveStatus').text('').removeClass('saved error');
+        
+        // Reset save button state
+        $('#saveAgentSettingsBtn').prop('disabled', false).text('💾 Save Agent Settings');
     }
+    
+    // Show tooltip when clicking on disabled elements or panel
+    $(document).on('click', '.agent-settings-body:not(.is-editing) input:disabled, .agent-settings-body:not(.is-editing) textarea:disabled, .agent-settings-body:not(.is-editing) select:disabled, .agent-settings-body:not(.is-editing)[data-tooltip]', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        var $body = $('.agent-settings-body[data-tooltip]');
+        if ($body.hasClass('is-editing')) return;
+        
+        // Remove any existing tooltip
+        $('.panel-tooltip-click').remove();
+        
+        var tooltipText = "Click Edit Settings above to modify";
+        var $tooltipEl = $('<div class="panel-tooltip-click">' + tooltipText + '</div>');
+        $('body').append($tooltipEl);
+        
+        // Position tooltip in center of viewport
+        // Use setTimeout to ensure element is rendered before calculating size
+        setTimeout(function() {
+            var windowWidth = $(window).width();
+            var windowHeight = $(window).height();
+            var tooltipWidth = $tooltipEl.outerWidth() || 300;
+            var tooltipHeight = $tooltipEl.outerHeight() || 60;
+            
+            $tooltipEl.css({
+                display: 'block',
+                left: ((windowWidth / 2)) + 'px',
+                top: ((windowHeight / 2)) + 'px'
+            });
+        }, 10);
+        
+        // Auto-hide after 3 seconds or on click
+        var hideTooltip = function() {
+            $tooltipEl.fadeOut(300, function() {
+                $(this).remove();
+            });
+        };
+        
+        setTimeout(hideTooltip, 3000);
+        $(document).one('click', hideTooltip);
+    });
     
     // Edit button click
     $('#editAgentSettingsBtn').on('click', function(e) {
@@ -687,7 +813,11 @@ function talktopc_enqueue_dashboard_scripts($hook) {
             language: $('#talktopc_override_language').val(),
             temperature: $('#talktopc_override_temperature').val(),
             max_tokens: $('#talktopc_override_max_tokens').val(),
-            max_call_duration: $('#talktopc_override_max_call_duration').val()
+            max_call_duration: $('#talktopc_override_max_call_duration').val(),
+            record_call: $('#talktopc_record_call').is(':checked') ? '1' : '0',
+            enable_leave_message: $('#talktopc_enable_leave_message').is(':checked') ? '1' : '0',
+            enable_visual_tools: $('#talktopc_enable_visual_tools').is(':checked') ? '1' : '0',
+            visual_tools_selection: JSON.stringify(getSelectedVisualTools())
         };
         
         $btn.prop('disabled', true).text('Saving...');
@@ -724,6 +854,194 @@ function talktopc_enqueue_dashboard_scripts($hook) {
             $status.text('✗ Failed to save').addClass('error');
             $btn.prop('disabled', false).text('Save Agent Settings');
         });
+    });
+    
+    // === CALL RECORDING LEGAL DISCLAIMER ===
+    var recordingLegalConfirmed = false;
+    var modalIsOpen = false;
+    
+    // Handle checkbox change
+    $('#talktopc_record_call').on('change', function() {
+        // Prevent multiple modals
+        if (modalIsOpen) {
+            console.log('Modal already open, ignoring checkbox change');
+            return;
+        }
+        
+        if ($(this).is(':checked') && !recordingLegalConfirmed) {
+            // Prevent the checkbox from staying checked until confirmed
+            $(this).prop('checked', false);
+            modalIsOpen = true;
+            showRecordingLegalModal();
+        }
+    });
+    
+    // Also check when entering edit mode if checkbox is already checked
+    // This handles the case where user enters edit mode with recording already enabled
+    $(document).on('editModeEntered', function() {
+        if ($('#talktopc_record_call').is(':checked') && !recordingLegalConfirmed) {
+            $('#talktopc_record_call').prop('checked', false);
+            showRecordingLegalModal();
+        }
+    });
+    
+    function showRecordingLegalModal() {
+        // Remove any existing modal first
+        $('.talktopc-legal-modal-overlay').remove();
+        
+        // Prevent body scroll when modal is open
+        $('body').css('overflow', 'hidden');
+        
+        // Create modal overlay with inline styles as fallback
+        var modal = $('<div class="talktopc-legal-modal-overlay" style="position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; width: 100vw !important; height: 100vh !important; background: rgba(0, 0, 0, 0.7) !important; z-index: 999999 !important; display: flex !important; align-items: center !important; justify-content: center !important; padding: 20px !important; margin: 0 !important;"></div>');
+        var modalContent = $('<div class="talktopc-legal-modal-content" style="background: #fff !important; border-radius: 4px !important; max-width: 600px !important; width: 100% !important; max-height: calc(100vh - 40px) !important; overflow-y: auto !important; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3) !important; margin: auto !important; position: relative !important;"></div>');
+        
+        modalContent.html(`
+            <div class="talktopc-legal-modal-header" style="padding: 20px 20px 15px; border-bottom: 1px solid #ddd;">
+                <h3 style="margin: 0; font-size: 18px; color: #1d2327;">⚠️ Legal Compliance Required</h3>
+            </div>
+            <div class="talktopc-legal-modal-body" style="padding: 20px; max-height: calc(90vh - 150px); overflow-y: auto;">
+                <p><strong>By enabling call recording, you confirm that:</strong></p>
+                <ul>
+                    <li>You are authorized to record calls according to legal requirements in your jurisdiction</li>
+                    <li>You understand that legal responsibility for compliance rests with you</li>
+                    <li>You will obtain necessary consent from call participants as required by law</li>
+                </ul>
+                <p style="margin-top: 16px; color: #646970; font-size: 13px;">
+                    Legal requirements vary by jurisdiction. Some regions require:
+                </p>
+                <ul style="color: #646970; font-size: 13px;">
+                    <li>One-party consent (you can record if you're part of the call)</li>
+                    <li>Two-party/all-party consent (all participants must consent)</li>
+                    <li>Explicit notification before recording begins</li>
+                </ul>
+                <p style="margin-top: 16px; color: #d63638; font-weight: 500;">
+                    Please consult with legal counsel to ensure compliance in your jurisdiction.
+                </p>
+                <label style="display: flex; align-items: center; gap: 8px; margin-top: 20px;">
+                    <input type="checkbox" id="legalConfirmationCheckbox" style="margin: 0; vertical-align: middle;">
+                    <span style="line-height: 1.4;">I understand and agree to comply with applicable laws</span>
+                </label>
+            </div>
+            <div class="talktopc-legal-modal-footer" style="padding: 15px 20px; border-top: 1px solid #ddd; display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" class="button" id="cancelRecordingBtn">Cancel</button>
+                <button type="button" class="button button-primary" id="confirmRecordingBtn" disabled>Enable Recording</button>
+            </div>
+        `);
+        
+        modal.append(modalContent);
+        $('body').append(modal);
+        
+        // Force visibility
+        modal.show();
+        modalContent.show();
+        
+        // Debug: log to console
+        console.log('Modal created and appended to body');
+        
+        // Enable confirm button when checkbox is checked
+        $('#legalConfirmationCheckbox').on('change', function() {
+            $('#confirmRecordingBtn').prop('disabled', !$(this).is(':checked'));
+        });
+        
+        // Close handler - restore body scroll
+        function closeModal() {
+            modalIsOpen = false;
+            $('body').css('overflow', '');
+            modal.remove();
+            window.talktopcRecordingModal = null;
+            console.log('Modal closed');
+        }
+        
+        // Store modal reference globally for emergency cleanup
+        window.talktopcRecordingModal = modal;
+        
+        // Close on overlay click (outside modal)
+        modal.on('click', function(e) {
+            if ($(e.target).hasClass('talktopc-legal-modal-overlay')) {
+                $('#talktopc_record_call').prop('checked', false);
+                closeModal();
+            }
+        });
+        
+        // Cancel button
+        $('#cancelRecordingBtn').on('click', function() {
+            $('#talktopc_record_call').prop('checked', false);
+            closeModal();
+        });
+        
+        // Confirm button
+        $('#confirmRecordingBtn').on('click', function() {
+            if ($('#legalConfirmationCheckbox').is(':checked')) {
+                recordingLegalConfirmed = true;
+                // Now actually check the recording checkbox
+                $('#talktopc_record_call').prop('checked', true);
+                closeModal();
+            }
+        });
+        
+        // Close on Escape key
+        $(document).on('keydown.modal', function(e) {
+            if (e.key === 'Escape' || e.keyCode === 27) {
+                $('#talktopc_record_call').prop('checked', false);
+                closeModal();
+                $(document).off('keydown.modal');
+            }
+        });
+        
+        // Emergency cleanup function (can be called from console)
+        window.closeTalktopcModal = function() {
+            if (window.talktopcRecordingModal) {
+                $('body').css('overflow', '');
+                window.talktopcRecordingModal.remove();
+                window.talktopcRecordingModal = null;
+                $('#talktopc_record_call').prop('checked', false);
+                console.log('Emergency modal cleanup executed');
+            }
+        };
+    }
+    
+    // === VISUAL TOOLS MASTER SWITCH ===
+    $('#talktopc_enable_visual_tools').on('change', function() {
+        var isEnabled = $(this).is(':checked');
+        $('#visualToolsList').toggle(isEnabled);
+        $('.visual-tool-checkbox').prop('disabled', !isEnabled || !$('#agentSettingsForm').hasClass('edit-mode'));
+        
+        // If disabling, uncheck all visual tools
+        if (!isEnabled) {
+            $('.visual-tool-checkbox').prop('checked', false);
+        } else {
+            // If enabling and no tools selected, select all by default
+            var hasSelected = $('.visual-tool-checkbox:checked').length > 0;
+            if (!hasSelected) {
+                $('.visual-tool-checkbox').prop('checked', true);
+            }
+        }
+    });
+    
+    // === GET SELECTED VISUAL TOOLS ===
+    function getSelectedVisualTools() {
+        var selected = [];
+        $('.visual-tool-checkbox:checked').each(function() {
+            selected.push($(this).data('tool-id'));
+        });
+        return selected;
+    }
+    
+    // === ENABLE/DISABLE FIELDS IN EDIT MODE ===
+    // Update the existing edit mode toggle to include new fields
+    var originalEnterEditMode = window.enterEditMode;
+    if (typeof originalEnterEditMode === 'function') {
+        // If edit mode function exists, we'll update it via the existing mechanism
+    }
+    
+    // Ensure new fields are enabled/disabled based on edit mode
+    $(document).on('click', '#editAgentSettingsBtn, #cancelEditBtn, #cancelEditBtn2', function() {
+        setTimeout(function() {
+            var isEditMode = $('#agentSettingsForm').hasClass('edit-mode');
+            $('#talktopc_record_call, #talktopc_enable_leave_message, #talktopc_enable_visual_tools, .visual-tool-checkbox')
+                .prop('disabled', !isEditMode);
+        }, 100);
     });
 });
 
