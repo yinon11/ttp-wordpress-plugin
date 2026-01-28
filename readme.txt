@@ -88,6 +88,14 @@ Absolutely! The plugin automatically includes your product catalog, prices, and 
 
 == Changelog ==
 
+= 1.9.111 =
+* Fixed: Customization page - removed toggle button, improved floating button spacing and z-index layering.
+* Improved: Added instruction message "Single click to customize • Double click to interact" next to Preview title.
+* Fixed: Security improvements - added proper sanitization for visual_tools_selection input using sanitize_textarea_field().
+* Fixed: Plugin check compliance - added .distignore file to exclude development files from distribution package.
+* Fixed: All $_POST inputs now properly unslashed and sanitized before processing.
+* Improved: Debug code now properly guarded with WP_DEBUG and WP_DEBUG_LOG checks.
+
 = 1.9.108 =
 * Removed: Old Customization page (widget-customization.php) - replaced with improved Customization2.
 * Improved: Customization2 page now shows only modified properties in config code (starts with agentId/appId only).
