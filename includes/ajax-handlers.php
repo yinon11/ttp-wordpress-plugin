@@ -290,8 +290,8 @@ add_action('wp_ajax_talktopc_update_agent', function() {
         $enable_visual_tools = sanitize_text_field(wp_unslash($_POST['enable_visual_tools']));
         if ($enable_visual_tools === '1' || $enable_visual_tools === 1 || $enable_visual_tools === true || $enable_visual_tools === 'true') {
             if (isset($_POST['visual_tools_selection'])) {
-                $visual_tools_selection = wp_unslash($_POST['visual_tools_selection']);
-                $selected_tools = json_decode($visual_tools_selection, true);
+                $visual_tools_selection_raw = sanitize_textarea_field(wp_unslash($_POST['visual_tools_selection']));
+                $selected_tools = json_decode($visual_tools_selection_raw, true);
                 if (is_array($selected_tools) && !empty($selected_tools)) {
                     // Sanitize each tool ID
                     $selected_tools = array_map('sanitize_text_field', $selected_tools);
@@ -473,8 +473,8 @@ add_action('wp_ajax_talktopc_save_agent_settings_local', function() {
         update_option('talktopc_enable_visual_tools', talktopc_sanitize_checkbox($enable_visual_tools));
     }
     if (isset($_POST['visual_tools_selection'])) {
-        $visual_tools_selection = wp_unslash($_POST['visual_tools_selection']);
-        $selection = json_decode($visual_tools_selection, true);
+        $visual_tools_selection_raw = sanitize_textarea_field(wp_unslash($_POST['visual_tools_selection']));
+        $selection = json_decode($visual_tools_selection_raw, true);
         if (is_array($selection)) {
             // Sanitize each tool ID in the selection
             $selection = array_map('sanitize_text_field', $selection);

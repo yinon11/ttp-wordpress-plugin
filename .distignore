@@ -16,3 +16,4 @@ production_deploy_readme.sh
 deploy_to_svn.sh
 upload_all.sh
 clear_cache.sh
+.attach_pid*
