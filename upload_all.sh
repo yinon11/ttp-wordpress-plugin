@@ -98,6 +98,8 @@ ssh -i $SSH_KEY -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} <<'DOC
 cd /home/ubuntu/loopitis/plugins/talktopc
 docker cp . loopitis-wordpress-1:/var/www/html/wp-content/plugins/talktopc/
 docker exec loopitis-wordpress-1 chown -R www-data:www-data /var/www/html/wp-content/plugins/talktopc
+# Remove development files that shouldn't be in production
+docker exec loopitis-wordpress-1 sh -c 'cd /var/www/html/wp-content/plugins/talktopc && rm -f *.sh .attach_pid* 2>/dev/null || true'
 DOCKER_EOF
 
 echo ""
