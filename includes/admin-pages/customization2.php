@@ -137,14 +137,17 @@ function talktopc_render_customization2_page() {
 
         <div class="container" style="max-width: 1800px; margin: 0 auto; padding: 40px 20px; display: grid; grid-template-columns: minmax(600px, 1fr) 420px; gap: 24px; align-items: start;">
             <div class="preview-section" style="background: white; border-radius: 16px; padding: 24px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); min-height: 600px; height: 100%; position: relative; overflow: visible; display: flex; flex-direction: column;">
-                <h2 style="font-size: 24px; font-weight: 700; color: #111827; margin-bottom: 20px; flex-shrink: 0;">Preview</h2>
+                <div style="display: flex; align-items: center; margin-bottom: 20px; flex-shrink: 0; position: relative;">
+                    <h2 style="font-size: 24px; font-weight: 700; color: #111827; margin: 0;">Preview</h2>
+                    <span style="font-size: 14px; color: #6b7280; font-weight: 500; position: absolute; left: 50%; transform: translateX(-50%);">✏️ Single click to customize • Double click to interact</span>
+                </div>
                 <div class="preview-area" id="previewArea" style="background: #f3f4f6; border-radius: 12px; height: 600px; position: relative; overflow: scroll !important; border: 2px dashed #d1d5db; padding: 60px; box-sizing: border-box; min-width: 500px; flex: 1; scrollbar-width: auto; -webkit-overflow-scrolling: touch;">
                     <div style="position: relative; min-height: 800px; width: 100%; padding-bottom: 200px;">
                         <div class="mock-widget" id="mockWidget" data-element-type="position" style="position: absolute; bottom: 60px; right: 60px; z-index: 1000; min-width: 360px; transform: translateZ(0); cursor: pointer; padding: 4px; border-radius: 8px; transition: background 0.2s;">
-                            <div class="mock-widget-panel open" id="mockPanel" style="position: absolute; bottom: 20px; right: 0; width: 360px; height: 550px; background: white; border-radius: 24px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); display: flex; overflow: hidden; flex-direction: column;">
+                            <div class="mock-widget-panel open" id="mockPanel" style="position: absolute; bottom: 90px; right: 0; width: 360px; height: 550px; background: white; border-radius: 24px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); display: flex; overflow: hidden; flex-direction: column; z-index: 1;">
                                 <!-- Panel content will be dynamically generated -->
                             </div>
-                            <button class="mock-widget-button" id="mockButton" style="width: 60px; height: 60px; border-radius: 50%; background: #FFFFFF; border: none; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 24px; transition: all 0.3s;">🎤</button>
+                            <button class="mock-widget-button" id="mockButton" style="position: relative; width: 60px; height: 60px; border-radius: 50%; background: #FFFFFF; border: none; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 24px; transition: all 0.3s; z-index: 2;">🎤</button>
                         </div>
                     </div>
                 </div>
@@ -183,7 +186,6 @@ function talktopc_render_customization2_page() {
                     <div class="button-group" style="display: flex; gap: 12px; margin-top: 24px; flex-shrink: 0;">
                         <button type="button" class="btn btn-primary" id="saveCustomizationBtn" style="flex: 1; padding: 12px 24px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; background: #667eea; color: white;">Save Changes</button>
                         <button type="button" class="btn btn-secondary" id="resetBtn" style="flex: 1; padding: 12px 24px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; background: #e5e7eb; color: #374151;">Reset to Defaults</button>
-                        <button type="button" class="btn btn-secondary" id="togglePanelBtn" style="flex: 1; padding: 12px 24px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; background: #e5e7eb; color: #374151;">Toggle Panel</button>
                     </div>
 
                     <div id="saveStatus" style="display: none; padding: 10px; border-radius: 4px; font-size: 13px;"></div>
@@ -461,6 +463,7 @@ function talktopc_render_customization2_page() {
         }
 
         .mock-widget-button {
+            position: relative;
             width: 60px;
             height: 60px;
             border-radius: 50%;
@@ -473,6 +476,7 @@ function talktopc_render_customization2_page() {
             justify-content: center;
             font-size: 24px;
             transition: all 0.3s;
+            z-index: 2;
         }
 
         .mock-widget-button:hover {
@@ -482,7 +486,7 @@ function talktopc_render_customization2_page() {
 
         .mock-widget-panel {
             position: absolute;
-            bottom: 20px;
+            bottom: 90px;
             right: 0;
             width: 360px;
             height: 550px;
@@ -491,6 +495,7 @@ function talktopc_render_customization2_page() {
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             overflow: hidden;
             flex-direction: column;
+            z-index: 1;
         }
 
         .mock-widget-panel.open {

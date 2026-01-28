@@ -2143,13 +2143,6 @@
     // Initialize event listeners (moved to document ready)
     $(document).ready(function() {
         $('#resetBtn').on('click', resetToDefaults);
-        $('#togglePanelBtn').on('click', function() {
-            panelOpen = !panelOpen;
-            $('#mockPanel').toggleClass('open');
-            if (panelOpen) {
-                renderPanelContent();
-            }
-        });
     });
 
     // Add a way to select panel via a small indicator
