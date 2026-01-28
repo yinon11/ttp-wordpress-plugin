@@ -268,7 +268,7 @@ add_action('wp_ajax_talktopc_update_agent', function() {
     // Note: JavaScript always sends '1' or '0' as string, so we check for both
     $record_call = false;
     if (isset($_POST['record_call'])) {
-        $record_call_value = $_POST['record_call'];
+        $record_call_value = sanitize_text_field(wp_unslash($_POST['record_call']));
         $record_call = ($record_call_value === '1' || $record_call_value === 1 || $record_call_value === true || $record_call_value === 'true');
     }
     // Always include recordCall in the update, even if false
@@ -278,16 +278,25 @@ add_action('wp_ajax_talktopc_update_agent', function() {
     $internal_tool_ids = [];
     
     // Add leave_message if enabled
-    if (isset($_POST['enable_leave_message']) && ($_POST['enable_leave_message'] === '1' || $_POST['enable_leave_message'] === true || $_POST['enable_leave_message'] === 'true')) {
-        $internal_tool_ids[] = 'leave_message';
+    if (isset($_POST['enable_leave_message'])) {
+        $enable_leave_message = sanitize_text_field(wp_unslash($_POST['enable_leave_message']));
+        if ($enable_leave_message === '1' || $enable_leave_message === 1 || $enable_leave_message === true || $enable_leave_message === 'true') {
+            $internal_tool_ids[] = 'leave_message';
+        }
     }
     
     // Add visual tools if enabled
-    if (isset($_POST['enable_visual_tools']) && ($_POST['enable_visual_tools'] === '1' || $_POST['enable_visual_tools'] === true || $_POST['enable_visual_tools'] === 'true')) {
-        if (isset($_POST['visual_tools_selection'])) {
-            $selected_tools = json_decode(stripslashes($_POST['visual_tools_selection']), true);
-            if (is_array($selected_tools) && !empty($selected_tools)) {
-                $internal_tool_ids = array_merge($internal_tool_ids, $selected_tools);
+    if (isset($_POST['enable_visual_tools'])) {
+        $enable_visual_tools = sanitize_text_field(wp_unslash($_POST['enable_visual_tools']));
+        if ($enable_visual_tools === '1' || $enable_visual_tools === 1 || $enable_visual_tools === true || $enable_visual_tools === 'true') {
+            if (isset($_POST['visual_tools_selection'])) {
+                $visual_tools_selection = wp_unslash($_POST['visual_tools_selection']);
+                $selected_tools = json_decode($visual_tools_selection, true);
+                if (is_array($selected_tools) && !empty($selected_tools)) {
+                    // Sanitize each tool ID
+                    $selected_tools = array_map('sanitize_text_field', $selected_tools);
+                    $internal_tool_ids = array_merge($internal_tool_ids, $selected_tools);
+                }
             }
         }
     }
@@ -302,10 +311,10 @@ add_action('wp_ajax_talktopc_update_agent', function() {
         wp_send_json_success(['message' => 'No changes to save']);
     }
     
-    // Debug: Log the payload being sent (remove after debugging)
-    if (defined('WP_DEBUG') && WP_DEBUG) {
+    // Debug: Log the payload being sent (only in debug mode)
+    if (defined('WP_DEBUG') && WP_DEBUG && defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
+        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
         error_log('TalkToPC: Sending update payload: ' . json_encode($update_data));
-        error_log('TalkToPC: recordCall value: ' . var_export($update_data['recordCall'] ?? 'NOT SET', true));
     }
     
     $json_body = json_encode($update_data);
@@ -453,17 +462,22 @@ add_action('wp_ajax_talktopc_save_agent_settings_local', function() {
     }
     
     // Call Recording & Tools - always save, default to '0' if not set
-    $record_call_value = isset($_POST['record_call']) ? $_POST['record_call'] : '0';
+    $record_call_value = isset($_POST['record_call']) ? sanitize_text_field(wp_unslash($_POST['record_call'])) : '0';
     update_option('talktopc_record_call', talktopc_sanitize_checkbox($record_call_value));
     if (isset($_POST['enable_leave_message'])) {
-        update_option('talktopc_enable_leave_message', talktopc_sanitize_checkbox($_POST['enable_leave_message']));
+        $enable_leave_message = sanitize_text_field(wp_unslash($_POST['enable_leave_message']));
+        update_option('talktopc_enable_leave_message', talktopc_sanitize_checkbox($enable_leave_message));
     }
     if (isset($_POST['enable_visual_tools'])) {
-        update_option('talktopc_enable_visual_tools', talktopc_sanitize_checkbox($_POST['enable_visual_tools']));
+        $enable_visual_tools = sanitize_text_field(wp_unslash($_POST['enable_visual_tools']));
+        update_option('talktopc_enable_visual_tools', talktopc_sanitize_checkbox($enable_visual_tools));
     }
     if (isset($_POST['visual_tools_selection'])) {
-        $selection = json_decode(stripslashes($_POST['visual_tools_selection']), true);
+        $visual_tools_selection = wp_unslash($_POST['visual_tools_selection']);
+        $selection = json_decode($visual_tools_selection, true);
         if (is_array($selection)) {
+            // Sanitize each tool ID in the selection
+            $selection = array_map('sanitize_text_field', $selection);
             update_option('talktopc_visual_tools_selection', wp_json_encode($selection));
         }
     }

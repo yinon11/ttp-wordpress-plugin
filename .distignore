@@ -1,0 +1,18 @@
+# Exclude development and deployment files from plugin package
+*.sh
+.git/
+.vscode/
+node_modules/
+*.md
+*.log
+*.swp
+*.swo
+*~
+.gitignore
+.gitattributes
+.wordpress-org/
+production_deploy.sh
+production_deploy_readme.sh
+deploy_to_svn.sh
+upload_all.sh
+clear_cache.sh
