@@ -54,11 +54,14 @@ RSYNC_CMD="$RSYNC_CMD \
   --exclude='production_deploy.sh' \
   --exclude='production_deploy_readme.sh' \
   --exclude='deploy_to_svn.sh' \
+  --exclude='clear_cache.sh' \
+  --exclude='upload_all.sh' \
   --exclude='.wordpress-org' \
+  --exclude='.distignore' \
+  --exclude='.attach_pid*' \
   --exclude='*.swp' \
   --exclude='*.swo' \
   --exclude='*~' \
-  --exclude='upload_all.sh' \
   ./ ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_PATH}/"
 
 # Execute rsync (ignore exit code 23 which indicates some attributes couldn't be set, but files were transferred)
