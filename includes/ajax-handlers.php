@@ -311,12 +311,6 @@ add_action('wp_ajax_talktopc_update_agent', function() {
         wp_send_json_success(['message' => 'No changes to save']);
     }
     
-    // Debug: Log the payload being sent (only in debug mode)
-    if (defined('WP_DEBUG') && WP_DEBUG && defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
-        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-        error_log('TalkToPC: Sending update payload: ' . json_encode($update_data));
-    }
-    
     $json_body = json_encode($update_data);
     
     $response = wp_remote_request(TALKTOPC_API_URL . '/api/public/wordpress/agents/' . $agent_id, [
@@ -755,49 +749,23 @@ add_action('wp_ajax_talktopc_save_widget_customization', function() {
     // Prevent any output before JSON
     @ob_clean();
     
-    // Log immediately to verify handler is called (only in debug mode)
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log,WordPress.Security.NonceVerification.Missing -- Only runs when WP_DEBUG is enabled, logging only
-        error_log('TalkToPC Save Handler: START - version 1.9.96-fixed-docker-v2');
-        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log,WordPress.Security.NonceVerification.Missing -- Only runs when WP_DEBUG is enabled, logging only
-        error_log('TalkToPC Save Handler: POST count: ' . count($_POST));
-        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log,WordPress.Security.NonceVerification.Missing -- Only runs when WP_DEBUG is enabled, logging only
-        error_log('TalkToPC Save Handler: POST keys: ' . implode(', ', array_keys($_POST)));
-    }
     
     try {
         // Check nonce
         if (!isset($_POST['nonce'])) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Only runs when WP_DEBUG is enabled
-                error_log('TalkToPC Save Handler: Missing nonce');
-            }
             wp_send_json_error(['message' => 'Missing security token. Please refresh the page.', 'version' => '1.9.96-fixed-docker-v2']);
             return;
         }
         
         // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce verification handles sanitization
         if (!wp_verify_nonce(wp_unslash($_POST['nonce']), 'talktopc_customization_nonce')) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Only runs when WP_DEBUG is enabled
-                error_log('TalkToPC Save Handler: Nonce verification failed');
-            }
             wp_send_json_error(['message' => 'Security check failed. Please refresh the page and try again.', 'version' => '1.9.96-fixed-docker-v2']);
             return;
         }
         
         if (!current_user_can('manage_options')) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Only runs when WP_DEBUG is enabled
-                error_log('TalkToPC Save Handler: User lacks manage_options capability');
-            }
             wp_send_json_error(['message' => 'Unauthorized. You do not have permission to save settings.', 'version' => '1.9.96-fixed-docker-v2']);
             return;
-        }
-        
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Only runs when WP_DEBUG is enabled
-            error_log('TalkToPC Save Handler: Security checks passed');
         }
         
         // Save all widget settings from the form
@@ -963,30 +931,13 @@ add_action('wp_ajax_talktopc_save_widget_customization', function() {
                     }
                 } catch (Exception $e) {
                     $errors[] = $option_name . ': ' . $e->getMessage();
-                    if (defined('WP_DEBUG') && WP_DEBUG) {
-                        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Only runs when WP_DEBUG is enabled
-                        error_log('TalkToPC Save Error for ' . $option_name . ': ' . $e->getMessage());
-                    }
                 } catch (Error $e) {
                     $errors[] = $option_name . ': ' . $e->getMessage();
-                    if (defined('WP_DEBUG') && WP_DEBUG) {
-                        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Only runs when WP_DEBUG is enabled
-                        error_log('TalkToPC Save Fatal Error for ' . $option_name . ': ' . $e->getMessage());
-                    }
                 }
             }
         }
         
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Only runs when WP_DEBUG is enabled
-            error_log('TalkToPC Save Handler: Processed settings, saved: ' . $saved . ', errors: ' . count($errors));
-        }
-        
         if (!empty($errors)) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Only runs when WP_DEBUG is enabled
-                error_log('TalkToPC Save Handler: Errors: ' . implode(', ', $errors));
-            }
             wp_send_json_error([
                 'message' => "Saved {$saved} settings, but encountered errors: " . implode(', ', $errors),
                 'version' => '1.9.96-fixed-docker-v2'
@@ -995,10 +946,6 @@ add_action('wp_ajax_talktopc_save_widget_customization', function() {
         }
         
         $file_mtime = filemtime(__FILE__);
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Only runs when WP_DEBUG is enabled
-            error_log('TalkToPC Save Handler: SUCCESS - saved ' . $saved . ' settings');
-        }
         wp_send_json_success([
             'message' => "Saved {$saved} settings successfully",
             'version' => '1.9.96-fixed-docker-v2', // This confirms the updated file is deployed
@@ -1007,12 +954,6 @@ add_action('wp_ajax_talktopc_save_widget_customization', function() {
             'file_mtime_formatted' => $file_mtime > 0 ? gmdate('Y-m-d H:i:s', $file_mtime) : 'Unknown'
         ]);
     } catch (Throwable $e) {
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Only runs when WP_DEBUG is enabled
-            error_log('TalkToPC Save Widget Customization Error: ' . $e->getMessage());
-            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Only runs when WP_DEBUG is enabled
-            error_log('Stack trace: ' . $e->getTraceAsString());
-        }
         $file_mtime = file_exists(__FILE__) ? filemtime(__FILE__) : 0;
         
         // Try to send error response
