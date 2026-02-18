@@ -174,6 +174,12 @@ function talktopc_build_widget_config($agent_id = null) {
     
     // Optional values (only set if configured)
     if ($v = get_option('talktopc_landing_logo')) $landing['logo'] = $v;
+    // For icon type logos, SDK uses avatarBackground. For image type, it uses logoBackgroundColor.
+    // We'll set both to ensure compatibility
+    if ($v = get_option('talktopc_landing_logo_bg_color')) {
+        $landing['logoBackgroundColor'] = $v;
+        $landing['avatarBackground'] = $v; // For icon type logos
+    }
     if ($v = get_option('talktopc_landing_title')) $landing['title'] = $v;
     
     // Always explicitly set title and subtitle colors to prevent SDK fallback to header colors

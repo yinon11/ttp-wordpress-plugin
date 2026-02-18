@@ -170,6 +170,7 @@ add_action('admin_init', function() {
     // =========================================================================
     register_setting('talktopc_settings', 'talktopc_landing_bg_color', ['sanitize_callback' => 'sanitize_text_field']); // Can be gradient
     register_setting('talktopc_settings', 'talktopc_landing_logo', ['sanitize_callback' => 'sanitize_text_field']);
+    register_setting('talktopc_settings', 'talktopc_landing_logo_bg_color', ['sanitize_callback' => 'sanitize_hex_color']);
     register_setting('talktopc_settings', 'talktopc_landing_title', ['sanitize_callback' => 'sanitize_text_field']);
     register_setting('talktopc_settings', 'talktopc_landing_title_color', ['sanitize_callback' => 'sanitize_hex_color']);
     register_setting('talktopc_settings', 'talktopc_landing_card_bg_color', ['sanitize_callback' => 'sanitize_hex_color']);

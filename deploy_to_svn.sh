@@ -51,20 +51,29 @@ fi
 echo "📦 Step 1: Copying files to trunk..."
 cd "$PLUGIN_DIR"
 
-# Copy all files except excluded ones
+# Copy all files except excluded ones (matching .distignore)
 rsync -av --delete \
     --exclude='.git' \
     --exclude='*.zip' \
     --exclude='production_deploy.sh' \
     --exclude='production_deploy_readme.sh' \
     --exclude='deploy_to_svn.sh' \
+    --exclude='upload_all.sh' \
+    --exclude='clear_cache.sh' \
     --exclude='.gitignore' \
     --exclude='.gitattributes' \
+    --exclude='.distignore' \
     --exclude='.wordpress-org' \
     --exclude='*.md' \
     --exclude='.vscode' \
     --exclude='.DS_Store' \
     --exclude='node_modules' \
+    --exclude='*.sh' \
+    --exclude='.attach_pid*' \
+    --exclude='*.log' \
+    --exclude='*.swp' \
+    --exclude='*.swo' \
+    --exclude='*~' \
     . "$SVN_TRUNK_DIR/"
 
 echo "✅ Files copied to trunk"
@@ -82,9 +91,9 @@ if [ "$TRUNK_ONLY" = false ]; then
         svn remove "$TAG_DIR" --force 2>/dev/null || rm -rf "$TAG_DIR"
     fi
     
-    # Copy trunk to tag
+    # Copy trunk to tag (without -m flag, commit separately)
     echo "   Copying trunk to tags/$VERSION..."
-    svn copy "$SVN_TRUNK_DIR" "$TAG_DIR"
+    svn copy "$SVN_TRUNK_DIR" "$TAG_DIR" 2>&1
     
     echo "✅ Tag $VERSION created"
     echo ""
@@ -98,7 +107,7 @@ cd "$SVN_TRUNK_DIR"
 if svn status | grep -q "^[AMD]"; then
     echo "   Committing trunk changes..."
     svn add --force . 2>/dev/null || true
-    svn ci -m "Update to version $VERSION: Remove old Customization page, keep only Customization2, fix coding standards"
+    svn ci -m "Update to version $VERSION: Remove debug logging, fix security sanitization, improve customization page"
     echo "✅ Trunk committed"
 else
     echo "   No changes in trunk to commit"

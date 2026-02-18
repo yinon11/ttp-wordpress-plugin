@@ -4,7 +4,7 @@
  * Plugin URI: https://wordpress.org/plugins/talktopc/
  * Description: Add AI voice conversations to your WordPress site.
  * Version: 1.9.111
- * Author: TalkToPC
+ * Author: TTP GO LTD
  * Author URI: https://talktopc.com
  * License: GPL-2.0-or-later
  * Text Domain: talktopc
@@ -203,7 +203,7 @@ function talktopc_get_all_option_names() {
         // =========================
         // LANDING SCREEN
         // =========================
-        'talktopc_landing_bg_color', 'talktopc_landing_logo', 'talktopc_landing_title',
+        'talktopc_landing_bg_color', 'talktopc_landing_logo', 'talktopc_landing_logo_bg_color', 'talktopc_landing_title',
         'talktopc_landing_title_color', 'talktopc_landing_subtitle_color',
         'talktopc_landing_card_bg_color', 'talktopc_landing_card_border_color',
         'talktopc_landing_card_hover_border_color', 'talktopc_landing_card_icon_bg_color',

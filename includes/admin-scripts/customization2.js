@@ -77,6 +77,7 @@
         logoType: 'icon', // 'icon' or 'image'
         logoIcon: '🤖',
         logoImageUrl: '',
+        logoBackgroundColor: '#7C3AED',
         title: 'Welcome to AI Assistant',
         subtitle: 'Choose how you\'d like to interact',
         voiceCardTitle: 'Voice Call',
@@ -372,12 +373,14 @@
         </div>
         <div class="mock-panel-content">
           <div class="mock-landing-screen">
-            <div class="mock-landing-logo" data-element-type="landingLogo">
-              ${config.logoType === 'image' && config.logoImageUrl ? `
-                <img src="${config.logoImageUrl}" alt="Logo" style="max-width: 64px; max-height: 64px; object-fit: contain;">
-              ` : `
-                <span>${config.logoIcon || config.logo || '🤖'}</span>
-              `}
+            <div class="mock-landing-logo-wrapper" style="background-color: ${config.logoBackgroundColor || '#7C3AED'};" data-element-type="landingLogoBg">
+              <div class="mock-landing-logo" data-element-type="landingLogo">
+                ${config.logoType === 'image' && config.logoImageUrl ? `
+                  <img src="${config.logoImageUrl}" alt="Logo" style="max-width: 64px; max-height: 64px; object-fit: contain;">
+                ` : `
+                  <span>${config.logoIcon || config.logo || '🤖'}</span>
+                `}
+              </div>
             </div>
             <div class="mock-landing-title" style="color: ${config.titleColor};" data-element-type="landingTitle">${config.title || 'Welcome to AI Assistant'}</div>
             <div class="mock-landing-subtitle" style="color: ${config.subtitleColor};" data-element-type="landingSubtitle">${config.subtitle || 'Choose how you\'d like to interact'}</div>
@@ -1370,6 +1373,17 @@
             </div>
           `;
           break;
+        case 'landingLogoBg':
+          controlsHTML = `
+            <div class="customization-group">
+              <h3>Landing Screen - Logo Background</h3>
+              <div class="control-item">
+                <label>Background Color</label>
+                <input type="text" id="landingLogoBgColor" class="wp-color-picker" value="${widgetConfig.landing.logoBackgroundColor || '#7C3AED'}" data-default-color="#7C3AED">
+              </div>
+            </div>
+          `;
+          break;
         case 'landingLogo':
           controlsHTML = `
             <div class="customization-group">
@@ -1940,6 +1954,20 @@
       }
 
       // Landing screen controls
+      if (elementType === 'landingLogoBg') {
+        // Initialize color picker
+        const bgColorPicker = $('#landingLogoBgColor');
+        if (bgColorPicker.length) {
+          bgColorPicker.wpColorPicker({
+            change: function(event, ui) {
+              widgetConfig.landing.logoBackgroundColor = ui.color.toString();
+              markPropertyModified('landing', 'logoBackgroundColor');
+              renderPanelContent();
+              updateConfigCode();
+            }
+          });
+        }
+      }
       if (elementType === 'landingLogo') {
         document.getElementById('logoType')?.addEventListener('change', (e) => {
           widgetConfig.landing.logoType = e.target.value;
@@ -2109,19 +2137,20 @@
           waveformIcon: '🎤',
           waveformImageUrl: ''
         },
-        landing: {
-          logo: '🤖',
-          logoType: 'icon',
-          logoIcon: '🤖',
-          logoImageUrl: '',
-          title: 'Welcome to AI Assistant',
-          subtitle: 'Choose how you\'d like to interact',
+      landing: {
+        logo: '🤖',
+        logoType: 'icon',
+        logoIcon: '🤖',
+        logoImageUrl: '',
+        logoBackgroundColor: '#7C3AED',
+        title: 'Welcome to AI Assistant',
+        subtitle: 'Choose how you\'d like to interact',
         voiceCardTitle: 'Voice Call',
         textCardTitle: 'Text Chat',
-          titleColor: '#1e293b',
-          subtitleColor: '#64748b',
-          modeCardBackgroundColor: '#FFFFFF'
-        },
+        titleColor: '#1e293b',
+        subtitleColor: '#64748b',
+        modeCardBackgroundColor: '#FFFFFF'
+      },
         position: {
           vertical: 'bottom',
           horizontal: 'right',
@@ -2285,6 +2314,7 @@
         
         // Landing settings
         settings.talktopc_landing_logo = widgetConfig.landing.logo;
+        settings.talktopc_landing_logo_bg_color = widgetConfig.landing.logoBackgroundColor || '#7C3AED';
         settings.talktopc_landing_title = widgetConfig.landing.title;
         settings.talktopc_landing_title_color = widgetConfig.landing.titleColor;
         settings.talktopc_landing_subtitle_color = widgetConfig.landing.subtitleColor;

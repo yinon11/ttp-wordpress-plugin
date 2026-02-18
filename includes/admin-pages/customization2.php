@@ -90,6 +90,7 @@ function talktopc_get_all_widget_settings() {
             'logoType' => 'icon',
             'logoIcon' => get_option('talktopc_landing_logo', '🤖'),
             'logoImageUrl' => '',
+            'logoBackgroundColor' => get_option('talktopc_landing_logo_bg_color', '#7C3AED'),
             'title' => get_option('talktopc_landing_title', 'Welcome to AI Assistant'),
             'titleColor' => get_option('talktopc_landing_title_color', '#1e293b'),
             'subtitle' => 'Choose how you\'d like to interact',
@@ -542,19 +543,31 @@ function talktopc_render_customization2_page() {
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             height: 100%;
-            padding: 40px 20px;
+            padding: 20px 20px 40px 20px;
             text-align: center;
         }
 
         .mock-landing-logo {
             font-size: 64px;
-            margin-bottom: 16px;
+            margin-bottom: 24px;
+            margin-top: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
             line-height: 1;
+        }
+        
+        .mock-landing-logo-wrapper {
+            width: 120px;
+            height: 120px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            margin-top: 20px;
         }
         
         .mock-landing-logo img {
