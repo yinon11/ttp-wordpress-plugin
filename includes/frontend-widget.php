@@ -71,16 +71,11 @@ add_action('wp_enqueue_scripts', function() {
         $debug_script = 'console.log("[TTP WP Plugin] Header backgroundColor being sent:", ' . wp_json_encode($config['header']['backgroundColor'] ?? 'NOT SET') . ');';
     }
     
-    // Create nonce for signed URL requests
-    $nonce = wp_create_nonce('talktopc_widget_nonce');
-    
-    // Build initialization script
+    // Build initialization script - direct init with appId + agentId (domain whitelisting for security)
     $script = sprintf(
-        '(function(){%s var c=%s,u=%s,n=%s;function f(){var x=new XMLHttpRequest();x.open("POST",u,true);x.setRequestHeader("Content-Type","application/x-www-form-urlencoded");x.onreadystatechange=function(){if(x.readyState===4&&x.status===200){try{var r=JSON.parse(x.responseText);if(r.success&&r.data.signedUrl){c.signedUrl=r.data.signedUrl;i();}}catch(e){console.error("TTP Widget error",e);}}};x.send("action=talktopc_get_signed_url&nonce="+n);}function i(){if(typeof TTPAgentSDK!=="undefined"&&TTPAgentSDK.TTPChatWidget){new TTPAgentSDK.TTPChatWidget(c);}else{setTimeout(i,100);}}if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",f);}else{f();}})();',
+        '(function(){%s var c=%s;function i(){if(typeof TTPAgentSDK!=="undefined"&&TTPAgentSDK.TTPChatWidget){new TTPAgentSDK.TTPChatWidget(c);}else{setTimeout(i,100);}}if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",i);}else{i();}})();',
         $debug_script,
-        wp_json_encode($config),
-        wp_json_encode(admin_url('admin-ajax.php')),
-        wp_json_encode($nonce)
+        wp_json_encode($config)
     );
     
     wp_add_inline_script('talktopc-agent-widget', $script);

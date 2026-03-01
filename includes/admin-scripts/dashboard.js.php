@@ -81,12 +81,16 @@ function talktopc_enqueue_dashboard_scripts($hook) {
             },
             success: function(response) {
                 if (response.success) {
+                    // Update currentAgentId from auto-setup response
+                    if (response.data && response.data.agent_id) {
+                        currentAgentId = response.data.agent_id;
+                    }
+                    
                     // Check if agent was actually created or if agents already existed
                     if (response.data && response.data.created === true) {
                         // Agent is being created - popup already showing, start polling
                         checkSetupStatus();
                     } else {
-                        // Agents already exist - hide popup and reload to show agents
                         hideSetupInProgress();
                         fetchVoices(function() { fetchAgents(); });
                     }

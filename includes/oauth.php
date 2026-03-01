@@ -129,7 +129,8 @@ function talktopc_handle_oauth_callback() {
 }
 
 // =============================================================================
-// AUTO-SETUP AGENT - Fetch agents, create if none exist
+// AUTO-SETUP AGENT - Fetch agents, use matching one or create if none exists
+// Searches for agent with name "{site_name} Assistant", creates if not found
 // =============================================================================
 function talktopc_auto_setup_agent($api_key) {
     $result = [
@@ -150,11 +151,25 @@ function talktopc_auto_setup_agent($api_key) {
     
     $result['agents_fetched'] = true;
     
-    // Step 2: If agents exist, use the first one
+    // Step 2: Calculate target agent name and search for matching agent
+    $target_agent_name = get_bloginfo('name') . ' Assistant';
+    $matching_agent = null;
+    
+    // Search through agents for one with matching name
     if (!empty($agents)) {
-        $first_agent = $agents[0];
-        $agent_id = $first_agent['agentId'] ?? $first_agent['id'] ?? null;
-        $agent_name = $first_agent['name'] ?? 'Agent';
+        foreach ($agents as $agent) {
+            $agent_name = $agent['name'] ?? '';
+            if ($agent_name === $target_agent_name) {
+                $matching_agent = $agent;
+                break;
+            }
+        }
+    }
+    
+    // If matching agent found, use it
+    if ($matching_agent) {
+        $agent_id = $matching_agent['agentId'] ?? $matching_agent['id'] ?? null;
+        $agent_name = $matching_agent['name'] ?? $target_agent_name;
         
         if ($agent_id) {
             update_option('talktopc_agent_id', $agent_id);
@@ -167,10 +182,10 @@ function talktopc_auto_setup_agent($api_key) {
         return $result;
     }
     
-    // Step 3: No agents exist - set flag and create one with AI-generated prompt
+    // Step 3: No agent with matching name exists - create one with AI-generated prompt
     set_transient('talktopc_agent_creating', true, 180); // 3 minute timeout
     
-    $agent_name = get_bloginfo('name') . ' Assistant';
+    $agent_name = $target_agent_name;
     $created_agent = talktopc_create_agent_sync($api_key, $agent_name, true);
     
     // Clear flag when done
