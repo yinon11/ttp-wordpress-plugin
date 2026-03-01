@@ -73,7 +73,7 @@ add_action('wp_enqueue_scripts', function() {
     
     // Build initialization script - direct init with appId + agentId (domain whitelisting for security)
     $script = sprintf(
-        '(function(){%s var c=%s;function i(){if(typeof TTPAgentSDK!=="undefined"&&TTPAgentSDK.TTPChatWidget){new TTPAgentSDK.TTPChatWidget(c);}else{setTimeout(i,100);}}if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",i);}else{i();}})();',
+        '(function(){%s var c=%s;function i(){if(typeof TTPAgentSDK!=="undefined"&&TTPAgentSDK.TTPEcommerceWidget){new TTPAgentSDK.TTPEcommerceWidget(c);}else{setTimeout(i,100);}}if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",i);}else{i();}})();',
         $debug_script,
         wp_json_encode($config)
     );
