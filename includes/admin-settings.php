@@ -98,6 +98,17 @@ add_action('admin_init', function() {
     ]);
     
     // =========================================================================
+    // ECOMMERCE
+    // =========================================================================
+    register_setting('talktopc_settings', 'talktopc_ecommerce_enabled', [
+        'sanitize_callback' => 'talktopc_sanitize_checkbox',
+        'default' => '0'
+    ]);
+    register_setting('talktopc_settings', 'talktopc_shopify_domain', [
+        'sanitize_callback' => 'sanitize_text_field'
+    ]);
+    
+    // =========================================================================
     // BEHAVIOR
     // =========================================================================
     register_setting('talktopc_settings', 'talktopc_mode', ['sanitize_callback' => 'sanitize_text_field', 'default' => 'unified']);

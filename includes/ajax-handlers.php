@@ -1506,3 +1506,21 @@ function talktopc_generate_local_prompt($site_content) {
     
     return $prompt;
 }
+
+// =============================================================================
+// SAVE ECOMMERCE SETTINGS
+// =============================================================================
+add_action('wp_ajax_talktopc_save_ecommerce', function() {
+    check_ajax_referer('talktopc_save_ecommerce', '_wpnonce');
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Unauthorized');
+    }
+
+    $enabled = isset($_POST['ecommerce_enabled']) && $_POST['ecommerce_enabled'] === '1' ? '1' : '0';
+    $domain  = isset($_POST['shopify_domain']) ? sanitize_text_field(wp_unslash($_POST['shopify_domain'])) : '';
+
+    update_option('talktopc_ecommerce_enabled', $enabled);
+    update_option('talktopc_shopify_domain', $domain);
+
+    wp_send_json_success(['ecommerce_enabled' => $enabled, 'shopify_domain' => $domain]);
+});

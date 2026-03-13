@@ -322,6 +322,84 @@ function talktopc_render_dashboard_page() {
                 </div>
             </div>
             
+            <!-- E-commerce Settings -->
+            <div class="card">
+                <h2><span class="icon">🛒</span> E-commerce</h2>
+                <p style="color: #646970; margin-bottom: 15px; font-size: 13px;">Connect your Shopify store to enable product-aware conversations.</p>
+                
+                <table class="form-table" style="margin-top: 0;">
+                    <tr>
+                        <th scope="row">Enable E-commerce</th>
+                        <td>
+                            <label>
+                                <input type="checkbox" id="talktopc_ecommerce_enabled" name="talktopc_ecommerce_enabled" value="1" <?php checked(get_option('talktopc_ecommerce_enabled', '0'), '1'); ?>>
+                                Activate ecommerce flavor for the widget
+                            </label>
+                            <p class="description">When enabled, the widget will be initialized with product and store awareness.</p>
+                        </td>
+                    </tr>
+                    <tr id="talktopc_shopify_domain_row" style="<?php echo get_option('talktopc_ecommerce_enabled', '0') === '1' ? '' : 'display: none;'; ?>">
+                        <th scope="row"><label for="talktopc_shopify_domain">Shopify Domain</label></th>
+                        <td>
+                            <input type="text" id="talktopc_shopify_domain" name="talktopc_shopify_domain" value="<?php echo esc_attr(get_option('talktopc_shopify_domain', '')); ?>" class="regular-text" placeholder="mystore.myshopify.com">
+                            <p class="description">Your Shopify store's <code>.myshopify.com</code> domain. Found in Shopify Admin &gt; Settings &gt; Domains.</p>
+                        </td>
+                    </tr>
+                </table>
+                
+                <div id="talktopc_ecommerce_save_area" style="margin-top: 10px;">
+                    <button type="button" class="button button-primary" id="talktopc_save_ecommerce">Save E-commerce Settings</button>
+                    <span id="talktopc_ecommerce_save_status" style="margin-left: 10px;"></span>
+                </div>
+            </div>
+
+            <script>
+            (function() {
+                var toggle = document.getElementById('talktopc_ecommerce_enabled');
+                var domainRow = document.getElementById('talktopc_shopify_domain_row');
+                if (toggle && domainRow) {
+                    toggle.addEventListener('change', function() {
+                        domainRow.style.display = this.checked ? '' : 'none';
+                    });
+                }
+
+                var saveBtn = document.getElementById('talktopc_save_ecommerce');
+                if (saveBtn) {
+                    saveBtn.addEventListener('click', function() {
+                        var status = document.getElementById('talktopc_ecommerce_save_status');
+                        var enabled = document.getElementById('talktopc_ecommerce_enabled').checked ? '1' : '0';
+                        var domain = document.getElementById('talktopc_shopify_domain').value.trim();
+
+                        status.textContent = 'Saving...';
+                        status.style.color = '#646970';
+
+                        var formData = new FormData();
+                        formData.append('action', 'talktopc_save_ecommerce');
+                        formData.append('ecommerce_enabled', enabled);
+                        formData.append('shopify_domain', domain);
+                        formData.append('_wpnonce', '<?php echo esc_js(wp_create_nonce('talktopc_save_ecommerce')); ?>');
+
+                        fetch(ajaxurl, { method: 'POST', body: formData })
+                            .then(function(r) { return r.json(); })
+                            .then(function(data) {
+                                if (data.success) {
+                                    status.textContent = 'Saved!';
+                                    status.style.color = '#00a32a';
+                                } else {
+                                    status.textContent = 'Error: ' + (data.data || 'Unknown error');
+                                    status.style.color = '#d63638';
+                                }
+                                setTimeout(function() { status.textContent = ''; }, 3000);
+                            })
+                            .catch(function() {
+                                status.textContent = 'Network error';
+                                status.style.color = '#d63638';
+                            });
+                    });
+                }
+            })();
+            </script>
+            
             <!-- Quick Links -->
             <div class="card">
                 <h2><span class="icon">🚀</span> TalkToPC App</h2>
