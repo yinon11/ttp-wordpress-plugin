@@ -5,6 +5,10 @@
 
 (function($) {
     'use strict';
+
+    const defaultIconUrl = (typeof talktopcWidgetSettings2 !== 'undefined' && talktopcWidgetSettings2.defaultIconUrl)
+      ? talktopcWidgetSettings2.defaultIconUrl
+      : '';
     
     // Initialize widgetConfig from WordPress settings or use defaults
     // Deep merge WordPress settings with defaults to ensure all properties exist
@@ -20,7 +24,7 @@
       },
       icon: {
         type: 'custom',
-        customImage: 'https://talktopc.com/logo192.png',
+        customImage: defaultIconUrl,
         size: 'medium',
         backgroundColor: '#FFFFFF'
       },
@@ -471,7 +475,7 @@
       } else {
         // Fallback to custom image if type is custom but no image specified
         const img = document.createElement('img');
-        img.src = 'https://talktopc.com/logo192.png';
+        img.src = defaultIconUrl || '';
         img.alt = 'Chat Assistant';
         const iconSize = Math.floor(getSizeValue(config.size) * 0.6);
         img.style.width = iconSize + 'px';
@@ -999,7 +1003,7 @@
               </div>
               <div class="control-item" id="iconCustomImageControl" style="display: ${widgetConfig.icon.type === 'custom' ? 'block' : 'none'};">
                 <label>Image URL</label>
-                <input type="text" id="iconCustomImage" value="${widgetConfig.icon.customImage || 'https://talktopc.com/logo192.png'}" placeholder="https://talktopc.com/logo192.png">
+                <input type="text" id="iconCustomImage" value="${widgetConfig.icon.customImage || defaultIconUrl}" placeholder="${defaultIconUrl}">
               </div>
               <div class="control-item" id="iconEmojiControl" style="display: ${widgetConfig.icon.type === 'emoji' ? 'block' : 'none'};">
                 <label>Emoji</label>

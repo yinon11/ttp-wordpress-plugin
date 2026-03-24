@@ -3,7 +3,7 @@ Contributors: yinon11
 Tags: talktopc, voice, ai agent, voice assistant, chatbot
 Requires at least: 5.0
 Tested up to: 6.9
-Stable tag: 1.9.112
+Stable tag: 1.9.113
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -87,6 +87,12 @@ The WordPress plugin is free to install. TalkToPC offers a free trial and variou
 Absolutely! The plugin automatically includes your product catalog, prices, and descriptions in the AI's memory.
 
 == Changelog ==
+
+= 1.9.113 =
+* Fixed: Customization preview — browser chrome and page layout (flex); clearer mock site frame.
+* Fixed: Plugin Check — default pill/widget icon is a bundled SVG (no remote image offloading in admin).
+* Added: assets/images/default-widget-icon.svg and talktopc_plugin_default_icon_url() for defaults.
+* Improved: upload_all.sh uses rsync ignore-times so local edits sync reliably with no-times.
 
 = 1.9.112 =
 * Improved: Agent auto-setup now searches by name ("{site_name} Assistant") instead of picking the first agent.

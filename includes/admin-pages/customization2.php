@@ -27,7 +27,7 @@ function talktopc_get_all_widget_settings() {
         ],
         'icon' => [
             'type' => get_option('talktopc_icon_type', 'custom'),
-            'customImage' => get_option('talktopc_icon_custom_image', 'https://talktopc.com/logo192.png'),
+            'customImage' => get_option('talktopc_icon_custom_image', talktopc_plugin_default_icon_url()),
             'emoji' => get_option('talktopc_icon_emoji', ''),
             'text' => get_option('talktopc_icon_text', ''),
             'size' => get_option('talktopc_icon_size', 'medium'),
@@ -147,6 +147,7 @@ function talktopc_render_customization2_page() {
     // Pass settings to JavaScript
     wp_localize_script('talktopc-customization2', 'talktopcWidgetSettings2', [
         'settings' => $current_settings,
+        'defaultIconUrl' => talktopc_plugin_default_icon_url(),
         'agentId' => get_option('talktopc_agent_id', 'your_agent_id'),
         'appId' => get_option('talktopc_app_id', 'your_app_id'),
         'ajaxUrl' => admin_url('admin-ajax.php'),
@@ -200,7 +201,7 @@ function talktopc_render_customization2_page() {
                             </div>
                             <div id="mockPillLauncher" style="display: flex; align-items: center; gap: 10px; padding: 7px 16px 7px 7px; background: linear-gradient(135deg, #581c87, #312e81, #1e1b4b); border-radius: 999px; box-shadow: 0 8px 32px rgba(0,0,0,0.25); cursor: pointer; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
                                 <div id="pillIconCircle" style="width: 36px; height: 36px; border-radius: 50%; background: #ffffff; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                    <img src="https://talktopc.com/logo192.png" alt="" style="width: 22px; height: 22px; border-radius: 50%; object-fit: cover;" id="pillIconImg">
+                                    <img src="<?php echo esc_url( $current_settings['icon']['customImage'] ); ?>" alt="" style="width: 22px; height: 22px; border-radius: 50%; object-fit: cover;" id="pillIconImg">
                                 </div>
                                 <div style="display: flex; flex-direction: column; gap: 1px;">
                                     <div id="pillTitle" style="font-size: 13px; font-weight: 600; color: #ffffff; line-height: 1.2; white-space: nowrap;">Chat Assistant</div>

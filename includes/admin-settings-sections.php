@@ -158,7 +158,7 @@ function talktopc_render_icon_settings() {
                         <option value="text" <?php selected(get_option('talktopc_icon_type'), 'text'); ?>>Text</option>
                     </select></td></tr>
                 <tr class="talktopc-icon-custom-row"><th><label for="talktopc_icon_custom_image">Image URL</label></th>
-                    <td><input type="url" id="talktopc_icon_custom_image" name="talktopc_icon_custom_image" value="<?php echo esc_attr(get_option('talktopc_icon_custom_image')); ?>" class="large-text" placeholder="https://talktopc.com/logo192.png"></td></tr>
+                    <td><input type="url" id="talktopc_icon_custom_image" name="talktopc_icon_custom_image" value="<?php echo esc_attr(get_option('talktopc_icon_custom_image')); ?>" class="large-text" placeholder="<?php echo esc_attr( talktopc_plugin_default_icon_url() ); ?>"></td></tr>
                 <tr class="talktopc-icon-emoji-row" style="display:none;"><th><label for="talktopc_icon_emoji">Emoji</label></th>
                     <td><input type="text" id="talktopc_icon_emoji" name="talktopc_icon_emoji" value="<?php echo esc_attr(get_option('talktopc_icon_emoji', '🎤')); ?>" class="small-text"></td></tr>
                 <tr class="talktopc-icon-text-row" style="display:none;"><th><label for="talktopc_icon_text">Text</label></th>
