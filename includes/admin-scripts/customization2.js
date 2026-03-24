@@ -9,11 +9,12 @@
     // Initialize widgetConfig from WordPress settings or use defaults
     // Deep merge WordPress settings with defaults to ensure all properties exist
     const defaultConfig = {
+      agentName: 'Sasha',
       button: {
         size: 'medium',
         shape: 'circle',
         backgroundColor: '#FFFFFF',
-        hoverColor: '#D3D3D3', // SDK default: light gray
+        hoverColor: '#D3D3D3',
         shadow: true,
         shadowColor: 'rgba(0,0,0,0.15)'
       },
@@ -25,22 +26,23 @@
       },
       panel: {
         width: 360,
-        height: 550, // Updated from SDK default 500
-        borderRadius: 24,
-        backgroundColor: '#FFFFFF',
-        border: '1px solid #E5E7EB'
+        height: 550,
+        borderRadius: 20,
+        backgroundColor: '#16161e',
+        border: '1px solid rgba(255,255,255,0.08)'
       },
-      direction: 'ltr', // 'ltr' or 'rtl'
+      direction: 'ltr',
       position: {
-        vertical: 'bottom', // 'top' or 'bottom'
-        horizontal: 'right', // 'left' or 'right'
+        vertical: 'bottom',
+        horizontal: 'right',
         offset: { x: 20, y: 20 }
       },
       header: {
         title: 'Chat Assistant',
         backgroundColor: '#7C3AED',
         textColor: '#FFFFFF',
-        showCloseButton: true
+        showCloseButton: true,
+        onlineIndicatorText: 'Online'
       },
       messages: {
         userBackgroundColor: '#E5E7EB',
@@ -60,21 +62,49 @@
         micButtonColor: '#7C3AED',
         micButtonActiveColor: '#EF4444',
         avatarBackgroundColor: '#667eea',
-        avatarType: 'icon', // 'icon' or 'image'
+        avatarType: 'icon',
         avatarIcon: '🤖',
         avatarImageUrl: '',
-        startCallButtonText: 'Start Call',
+        startCallButtonText: 'Start Voice Call',
         startCallButtonColor: '#667eea',
         startCallButtonTextColor: '#FFFFFF',
         statusTitleColor: '#1e293b',
         statusSubtitleColor: '#64748b',
-        waveformType: 'waveform', // 'waveform', 'icon', or 'image'
+        waveformType: 'waveform',
         waveformIcon: '🎤',
-        waveformImageUrl: ''
+        waveformImageUrl: '',
+        pillGradient: '',
+        pillTextColor: '#ffffff',
+        pillDotColor: '#4ade80',
+        avatarGradient1: '#6d56f5',
+        avatarGradient2: '#a78bfa',
+        onlineDotColor: '#22c55e',
+        heroGradient1: '#2a2550',
+        heroGradient2: '#1a1a2e',
+        agentNameColor: '#f0eff8',
+        agentRoleColor: 'rgba(255,255,255,0.35)',
+        headlineColor: '#ffffff',
+        sublineColor: 'rgba(255,255,255,0.45)',
+        primaryBtnGradient1: '#6d56f5',
+        primaryBtnGradient2: '#9d8df8',
+        sendMessageText: 'Send a Message',
+        secondaryBtnBg: 'rgba(255,255,255,0.05)',
+        secondaryBtnBorder: 'rgba(255,255,255,0.09)',
+        secondaryBtnTextColor: 'rgba(255,255,255,0.6)',
+        agentRole: 'AI Voice Assistant',
+        headline: 'Hi there 👋',
+        subline: 'Ask me anything — I respond instantly<br>in voice or text.',
+        waveformBarColor: '#7C3AED',
+        speakerButtonColor: '#FFFFFF',
+        endCallButtonColor: '#ef4444',
+        liveIndicatorTextColor: '#10b981',
+        liveIndicatorDotColor: '#10b981',
+        liveTranscriptTextColor: '#64748b',
+        liveTranscriptFontSize: '14px',
       },
       landing: {
         logo: '🤖',
-        logoType: 'icon', // 'icon' or 'image'
+        logoType: 'icon',
         logoIcon: '🤖',
         logoImageUrl: '',
         logoBackgroundColor: '#7C3AED',
@@ -84,7 +114,11 @@
         textCardTitle: 'Text Chat',
         titleColor: '#1e293b',
         subtitleColor: '#64748b',
-        modeCardBackgroundColor: '#FFFFFF'
+        modeCardBackgroundColor: '#FFFFFF',
+        backgroundColor: 'linear-gradient(180deg, #ffffff 0%, rgba(168,85,247,0.03) 100%)',
+        modeCardBorderColor: 'rgba(0,0,0,0.06)',
+        modeCardTitleColor: '#1e1b4b',
+        modeCardIconBackgroundColor: '#7C3AED'
       },
       position: {
         vertical: 'bottom',
@@ -115,11 +149,123 @@
         widgetConfig = deepMerge(widgetConfig, wpSettings);
     }
 
+    function isLightBg(hex) {
+        if (!hex || hex.charAt(0) !== '#') return false;
+        const r = parseInt(hex.substr(1, 2), 16);
+        const g = parseInt(hex.substr(3, 2), 16);
+        const b = parseInt(hex.substr(5, 2), 16);
+        return (r * 299 + g * 587 + b * 114) / 1000 > 160;
+    }
+
+    const themePresets = {
+        default: {
+            direction: 'ltr', agentName: 'Sasha',
+            header: { title: 'Chat Assistant', onlineIndicatorText: 'Online' },
+            panel: { backgroundColor: '#16161e', border: '1px solid rgba(255,255,255,0.08)' },
+            voice: {
+                pillGradient: '', pillTextColor: '#ffffff', pillDotColor: '#4ade80',
+                avatarGradient1: '#6d56f5', avatarGradient2: '#a78bfa', onlineDotColor: '#22c55e',
+                heroGradient1: '#2a2550', heroGradient2: '#1a1a2e',
+                agentNameColor: '#f0eff8', agentRoleColor: 'rgba(255,255,255,0.35)',
+                headlineColor: '#ffffff', sublineColor: 'rgba(255,255,255,0.45)',
+                primaryBtnGradient1: '#6d56f5', primaryBtnGradient2: '#9d8df8',
+                startCallButtonTextColor: '#FFFFFF', startCallButtonText: 'Start Voice Call', sendMessageText: 'Send a Message',
+                secondaryBtnBg: 'rgba(255,255,255,0.05)', secondaryBtnBorder: 'rgba(255,255,255,0.09)', secondaryBtnTextColor: 'rgba(255,255,255,0.6)',
+                agentRole: 'AI Voice Assistant', headline: 'Hi there 👋', subline: 'Ask me anything — I respond instantly<br>in voice or text.',
+                waveformBarColor: '#7C3AED', micButtonColor: '#7C3AED', speakerButtonColor: '#FFFFFF', endCallButtonColor: '#ef4444',
+            },
+        },
+        light: {
+            direction: 'ltr', agentName: 'Sasha',
+            header: { title: 'Chat Assistant', onlineIndicatorText: 'Online' },
+            panel: { backgroundColor: '#ffffff', border: '1px solid rgba(0,0,0,0.06)' },
+            voice: {
+                pillGradient: 'linear-gradient(135deg, #7c3aed, #6d28d9)', pillTextColor: '#ffffff', pillDotColor: '#4ade80',
+                avatarGradient1: '#7c3aed', avatarGradient2: '#a78bfa', onlineDotColor: '#22c55e',
+                heroGradient1: '#ede9fe', heroGradient2: '#f5f3ff',
+                agentNameColor: '#1e1b4b', agentRoleColor: '#7c7c8a',
+                headlineColor: '#1e1b4b', sublineColor: '#6b7280',
+                primaryBtnGradient1: '#7c3aed', primaryBtnGradient2: '#a78bfa',
+                startCallButtonTextColor: '#ffffff', startCallButtonText: 'Start Voice Call', sendMessageText: 'Send a Message',
+                secondaryBtnBg: '#f5f3ff', secondaryBtnBorder: 'rgba(124,58,237,0.15)', secondaryBtnTextColor: '#6d28d9',
+                agentRole: 'AI Voice Assistant', headline: 'Hi there 👋', subline: 'Ask me anything — I respond instantly<br>in voice or text.',
+                waveformBarColor: '#8b5cf6', micButtonColor: '#f5f3ff', speakerButtonColor: '#f5f3ff', endCallButtonColor: '#ef4444',
+            },
+        },
+        sunset: {
+            direction: 'ltr', agentName: 'Sasha',
+            header: { title: 'Chat Assistant', onlineIndicatorText: 'Online' },
+            panel: { backgroundColor: '#140a1e', border: '1px solid rgba(249,115,22,0.12)' },
+            voice: {
+                pillGradient: 'linear-gradient(135deg, #9f1239, #7c2d12, #581c87)', pillTextColor: '#ffffff', pillDotColor: '#fb923c',
+                avatarGradient1: '#f97316', avatarGradient2: '#ec4899', onlineDotColor: '#f59e0b',
+                heroGradient1: '#4a1942', heroGradient2: '#1a0a2e',
+                agentNameColor: '#fde8d0', agentRoleColor: 'rgba(255,200,160,0.45)',
+                headlineColor: '#fff1e6', sublineColor: 'rgba(255,200,160,0.55)',
+                primaryBtnGradient1: '#f97316', primaryBtnGradient2: '#ec4899',
+                startCallButtonTextColor: '#ffffff', startCallButtonText: 'Start Voice Call', sendMessageText: 'Send a Message',
+                secondaryBtnBg: 'rgba(249,115,22,0.08)', secondaryBtnBorder: 'rgba(249,115,22,0.18)', secondaryBtnTextColor: 'rgba(255,180,130,0.7)',
+                agentRole: 'AI Voice Assistant', headline: 'Hi there 👋', subline: 'Ask me anything — I respond instantly<br>in voice or text.',
+                waveformBarColor: '#f97316', micButtonColor: 'rgba(255,255,255,0.9)', speakerButtonColor: 'rgba(255,255,255,0.9)', endCallButtonColor: '#e11d48',
+            },
+        },
+        hebrew: {
+            direction: 'rtl', agentName: 'שרה',
+            header: { title: 'עוזרת חכמה', onlineIndicatorText: 'מחוברת' },
+            panel: { backgroundColor: '#0f172a', border: '1px solid rgba(59,130,246,0.12)' },
+            voice: {
+                pillGradient: 'linear-gradient(135deg, #1e3a5f, #1e40af, #0f172a)', pillTextColor: '#ffffff', pillDotColor: '#34d399',
+                avatarGradient1: '#3b82f6', avatarGradient2: '#1d4ed8', onlineDotColor: '#34d399',
+                heroGradient1: '#1a2744', heroGradient2: '#0f172a',
+                agentNameColor: '#e0e7ff', agentRoleColor: 'rgba(191,219,254,0.4)',
+                headlineColor: '#f0f4ff', sublineColor: 'rgba(191,219,254,0.5)',
+                primaryBtnGradient1: '#3b82f6', primaryBtnGradient2: '#1d4ed8',
+                startCallButtonTextColor: '#ffffff', startCallButtonText: 'התחל שיחה קולית', sendMessageText: 'שלח הודעה',
+                secondaryBtnBg: 'rgba(59,130,246,0.08)', secondaryBtnBorder: 'rgba(59,130,246,0.18)', secondaryBtnTextColor: 'rgba(147,197,253,0.7)',
+                agentRole: 'עוזרת קולית חכמה', headline: 'היי, מה שלומך? 👋', subline: 'שאל/י אותי הכל — אני עונה<br>מיידית בקול או בטקסט.',
+                waveformBarColor: '#3b82f6', micButtonColor: 'rgba(255,255,255,0.9)', speakerButtonColor: 'rgba(255,255,255,0.9)', endCallButtonColor: '#ef4444',
+            },
+        },
+        sasha: {
+            direction: 'rtl', agentName: 'סשה',
+            header: { title: 'S-Law | ייעוץ משפטי', onlineIndicatorText: 'מקוונת' },
+            panel: { backgroundColor: '#f8f5ef', border: '1px solid rgba(196,162,101,0.18)' },
+            voice: {
+                pillGradient: 'linear-gradient(135deg, #c4a265, #9e7e4f)', pillTextColor: '#ffffff', pillDotColor: '#22c55e',
+                avatarGradient1: '#c4a265', avatarGradient2: '#9e7e4f', onlineDotColor: '#22c55e',
+                heroGradient1: '#f8f5ef', heroGradient2: '#ebe6de',
+                agentNameColor: '#1e293b', agentRoleColor: '#78716c',
+                headlineColor: '#1e293b', sublineColor: '#6b7280',
+                primaryBtnGradient1: '#c4a265', primaryBtnGradient2: '#9e7e4f',
+                startCallButtonTextColor: '#ffffff', startCallButtonText: 'התחל שיחה קולית', sendMessageText: 'שלח הודעה',
+                secondaryBtnBg: 'rgba(196,162,101,0.08)', secondaryBtnBorder: 'rgba(196,162,101,0.2)', secondaryBtnTextColor: '#9e7e4f',
+                agentRole: 'עורכת דין | S-Law', headline: 'שלום, אני סשה 👋', subline: 'אני כאן לעזור בכל שאלה משפטית —<br>דיני עבודה ומשפט מסחרי.',
+                waveformBarColor: '#c4a265', micButtonColor: '#1e293b', speakerButtonColor: '#1e293b', endCallButtonColor: '#ef4444',
+            },
+        },
+    };
+
+    function applyTheme(themeName) {
+        const theme = themePresets[themeName];
+        if (!theme) return;
+        if (theme.direction !== undefined) widgetConfig.direction = theme.direction;
+        if (theme.agentName !== undefined) widgetConfig.agentName = theme.agentName;
+        if (theme.header) Object.assign(widgetConfig.header, theme.header);
+        if (theme.panel) Object.assign(widgetConfig.panel, theme.panel);
+        if (theme.voice) Object.assign(widgetConfig.voice, theme.voice);
+        $('.theme-btn').css('border-color', 'transparent');
+        $(`.theme-btn[data-theme="${themeName}"]`).css('border-color', '#667eea');
+        renderPanelContent();
+        applyPillStyles();
+        updateConfigCode();
+    }
+
     let selectedElement = null;
-    let currentView = 'landing'; // 'landing', 'text', 'voice'
-    let panelOpen = true; // Start with panel open to show defaults
-    let clickTimeout = null; // Track single vs double click
-    let historyExpanded = false; // Track conversation history state
+    let currentView = 'voiceIdle'; // 'voiceIdle', 'voice', 'landing', 'text'
+    let panelOpen = true;
+    let clickTimeout = null;
+    let lastClickTarget = null;
+    let historyExpanded = false;
     
     // Track which properties have been modified by the user
     // Only modified properties will be included in the config code output
@@ -239,36 +385,50 @@
         return config;
     }
 
-    // Initialize mock widget
     function initMockWidget() {
-      const mockButton = document.getElementById('mockButton');
       const mockPanel = document.getElementById('mockPanel');
       
-      if (!mockButton || !mockPanel) {
-        console.error('TalkToPC Widget Customization: Required elements not found. mockButton:', !!mockButton, 'mockPanel:', !!mockPanel);
+      if (!mockPanel) {
+        console.error('TalkToPC Widget Customization: mockPanel not found');
         return;
       }
       
-      // Apply button styles
-      applyButtonStyles(mockButton);
-      
-      // Open panel by default to show defaults
-      mockPanel.classList.add('open');
-      
-      // Setup button click handler
-      mockButton.addEventListener('click', () => {
-        panelOpen = !panelOpen;
-        mockPanel.classList.toggle('open');
-        if (panelOpen) {
-          renderPanelContent();
-        }
-      });
-
-      // Render initial panel content with defaults
       renderPanelContent();
-      
-      // Show default customization controls
+      applyPillStyles();
       showCustomizationControls('default');
+    }
+
+    function applyPillStyles() {
+        const v = widgetConfig.voice;
+        const dir = widgetConfig.direction || 'ltr';
+        const pillGradient = v.pillGradient || 'linear-gradient(135deg, #581c87, #312e81, #1e1b4b)';
+        const pillTextColor = v.pillTextColor || '#ffffff';
+        const pillDotColor = v.pillDotColor || '#4ade80';
+        
+        $('#mockPillLauncher').css({
+            'background': pillGradient,
+            'color': pillTextColor,
+            'direction': dir
+        });
+        $('#pillTitle').css('color', pillTextColor).text(widgetConfig.header.title || 'Chat Assistant');
+        $('#pillDot').css('background', pillDotColor);
+        $('#pillStatus').text(widgetConfig.header.onlineIndicatorText || 'Online');
+        $('#pillIconCircle').css('background', widgetConfig.icon.backgroundColor || '#ffffff');
+    }
+
+    function togglePanel() {
+        const panel = $('#mockPanel');
+        if (panelOpen) {
+            panel.show();
+            renderPanelContent();
+        } else {
+            panel.hide();
+        }
+    }
+
+    function updateViewButtons() {
+        $('.view-btn').css({ 'background': '#e5e7eb', 'color': '#6b7280' });
+        $(`.view-btn[data-view="${currentView}"]`).css({ 'background': '#667eea', 'color': '#fff' });
     }
 
     function applyButtonStyles(button) {
@@ -342,360 +502,255 @@
     }
 
     function renderPanelContent() {
-      const mockPanel = document.getElementById('mockPanel');
-      
-      // Apply panel styles
-      mockPanel.style.width = widgetConfig.panel.width + 'px';
-      mockPanel.style.height = widgetConfig.panel.height + 'px';
-      mockPanel.style.borderRadius = widgetConfig.panel.borderRadius + 'px';
-      mockPanel.style.backgroundColor = widgetConfig.panel.backgroundColor;
-      mockPanel.style.border = widgetConfig.panel.border;
-
-      // Render based on current view
-      if (currentView === 'landing') {
-        renderLandingScreen(mockPanel);
-      } else if (currentView === 'text') {
-        renderTextInterface(mockPanel);
-      } else if (currentView === 'voice') {
-        renderVoiceInterface(mockPanel);
+      const panel = $('#mockPanel');
+      panel.css({
+          'background': widgetConfig.panel.backgroundColor || '#16161e',
+          'border-radius': (widgetConfig.panel.borderRadius || 20) + 'px',
+          'border': widgetConfig.panel.border || '1px solid rgba(255,255,255,0.08)',
+      });
+      panel.empty();
+      switch (currentView) {
+          case 'voiceIdle': renderVoiceIdleScreen(panel); break;
+          case 'voice': renderVoiceActiveCall(panel); break;
+          case 'landing': renderLandingScreen(panel); break;
+          case 'text': renderTextInterface(panel); break;
+          default: renderVoiceIdleScreen(panel); break;
       }
-      
-      // Add panel selector after rendering
-      addPanelSelector();
+    }
+
+    function bindPanelClicks(panel) {
+        panel.find('[data-element-type]').off('click').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const elementType = $(this).data('element-type');
+            handleMockElementClick(e, elementType);
+        });
+    }
+
+    function handleMockElementClick(e, elementType) {
+        if (clickTimeout && lastClickTarget === elementType) {
+            clearTimeout(clickTimeout);
+            clickTimeout = null;
+            lastClickTarget = null;
+            if (elementType === 'button' || elementType === 'closeButton') { panelOpen = !panelOpen; togglePanel(); }
+            else if (elementType === 'heroPrimaryBtn') { currentView = 'voice'; renderPanelContent(); updateViewButtons(); }
+            else if (elementType === 'heroSecondaryBtn') { currentView = 'text'; renderPanelContent(); updateViewButtons(); }
+            else if (elementType === 'endCallButton') { currentView = 'voiceIdle'; renderPanelContent(); updateViewButtons(); }
+            else if (elementType === 'modeCard') {
+                const mode = $(e.currentTarget).data('mode');
+                if (mode === 'voice') { currentView = 'voiceIdle'; } else { currentView = 'text'; }
+                renderPanelContent(); updateViewButtons();
+            }
+            return;
+        }
+        lastClickTarget = elementType;
+        clickTimeout = setTimeout(function() {
+            clickTimeout = null;
+            lastClickTarget = null;
+            showControlsForElement(elementType);
+        }, 300);
+    }
+
+    function showControlsForElement(elementType) {
+        document.querySelectorAll('.element-highlight').forEach(el => el.classList.remove('element-highlight'));
+        showCustomizationControls(elementType);
+    }
+
+    function renderVoiceIdleScreen(panel) {
+        const v = widgetConfig.voice;
+        const dir = widgetConfig.direction || 'ltr';
+        const agentName = widgetConfig.agentName || 'Sasha';
+        const panelBg = widgetConfig.panel.backgroundColor || '#16161e';
+        const light = isLightBg(panelBg);
+        const footerBorderColor = light ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.06)';
+        const footerTextColor = light ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.35)';
+        const footerLinkColor = light ? (v.primaryBtnGradient1 || '#7C3AED') : '#a78bfa';
+        const closeColor = light ? '#6b7280' : 'rgba(255,255,255,0.5)';
+
+        panel.html(`
+            <div style="display:flex;flex-direction:column;direction:${dir}">
+                <div data-element-type="heroBackground" style="background:linear-gradient(160deg, ${v.heroGradient1 || '#2a2550'} 0%, ${v.heroGradient2 || '#1a1a2e'} 100%);padding:18px 20px 16px;cursor:pointer;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <div style="position:relative;">
+                                <div data-element-type="heroAvatar" style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg, ${v.avatarGradient1 || '#6d56f5'}, ${v.avatarGradient2 || '#a78bfa'});display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:700;cursor:pointer;">${agentName.charAt(0).toUpperCase()}</div>
+                                <div style="position:absolute;bottom:0;right:0;width:10px;height:10px;border-radius:50%;background:${v.onlineDotColor || '#22c55e'};border:2px solid ${v.heroGradient1 || '#2a2550'};"></div>
+                            </div>
+                            <div>
+                                <div data-element-type="heroAgentName" style="font-size:14px;font-weight:600;color:${v.agentNameColor || '#f0eff8'};cursor:pointer;">${agentName}</div>
+                                <div data-element-type="heroAgentRole" style="font-size:11px;color:${v.agentRoleColor || 'rgba(255,255,255,0.35)'};cursor:pointer;">${v.agentRole || 'AI Voice Assistant'}</div>
+                            </div>
+                        </div>
+                        <button data-element-type="closeButton" style="background:none;border:none;cursor:pointer;color:${closeColor};padding:4px;display:flex;align-items:center;justify-content:center;">
+                            <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 2L2 10M2 2l8 8"/></svg>
+                        </button>
+                    </div>
+                    <div data-element-type="heroHeadline" style="font-size:22px;font-weight:700;color:${v.headlineColor || '#ffffff'};margin-bottom:6px;cursor:pointer;">${v.headline || 'Hi there 👋'}</div>
+                    <div data-element-type="heroSubline" style="font-size:13px;color:${v.sublineColor || 'rgba(255,255,255,0.45)'};line-height:1.5;cursor:pointer;">${v.subline || 'Ask me anything — I respond instantly<br>in voice or text.'}</div>
+                </div>
+                <div style="padding:14px 20px 10px;background:${panelBg};">
+                    <button data-element-type="heroPrimaryBtn" style="width:100%;padding:13px 18px;border-radius:12px;border:none;background:linear-gradient(135deg, ${v.primaryBtnGradient1 || '#6d56f5'}, ${v.primaryBtnGradient2 || '#9d8df8'});color:${v.startCallButtonTextColor || '#ffffff'};font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${v.startCallButtonTextColor || '#ffffff'}" stroke-width="2"><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3M8 22h8"/></svg>
+                        ${v.startCallButtonText || 'Start Voice Call'}
+                    </button>
+                    <button data-element-type="heroSecondaryBtn" style="width:100%;padding:12px 18px;border-radius:12px;background:${v.secondaryBtnBg || 'rgba(255,255,255,0.05)'};border:1px solid ${v.secondaryBtnBorder || 'rgba(255,255,255,0.09)'};color:${v.secondaryBtnTextColor || 'rgba(255,255,255,0.6)'};font-size:14px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${v.secondaryBtnTextColor || 'rgba(255,255,255,0.6)'}" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        ${v.sendMessageText || 'Send a Message'}
+                    </button>
+                </div>
+                <div style="padding:6px 18px 10px;display:flex;justify-content:center;border-top:1px solid ${footerBorderColor};background:${panelBg};flex-shrink:0;">
+                    <span style="font-size:10px;color:${footerTextColor};">Powered by <span style="color:${footerLinkColor};font-weight:700;">TalkToPC</span></span>
+                </div>
+            </div>
+        `);
+        bindPanelClicks(panel);
     }
 
     function renderLandingScreen(panel) {
-      const config = widgetConfig.landing;
-      panel.innerHTML = `
-        <div class="mock-panel-header" style="background: ${widgetConfig.header.backgroundColor}; color: ${widgetConfig.header.textColor};" data-element-type="header">
-          <span>${widgetConfig.header.title}</span>
-          ${widgetConfig.header.showCloseButton ? '<button class="mock-panel-close" data-element-type="closeButton">×</button>' : ''}
-        </div>
-        <div class="mock-panel-content">
-          <div class="mock-landing-screen">
-            <div class="mock-landing-logo-wrapper" style="background-color: ${config.logoBackgroundColor || '#7C3AED'};" data-element-type="landingLogoBg">
-              <div class="mock-landing-logo" data-element-type="landingLogo">
-                ${config.logoType === 'image' && config.logoImageUrl ? `
-                  <img src="${config.logoImageUrl}" alt="Logo" style="max-width: 64px; max-height: 64px; object-fit: contain;">
-                ` : `
-                  <span>${config.logoIcon || config.logo || '🤖'}</span>
-                `}
-              </div>
-            </div>
-            <div class="mock-landing-title" style="color: ${config.titleColor};" data-element-type="landingTitle">${config.title || 'Welcome to AI Assistant'}</div>
-            <div class="mock-landing-subtitle" style="color: ${config.subtitleColor};" data-element-type="landingSubtitle">${config.subtitle || 'Choose how you\'d like to interact'}</div>
-            <div class="mock-mode-cards">
-              <div class="mock-mode-card" style="background: ${config.modeCardBackgroundColor};" data-element-type="modeCard" data-mode="voice">
-                <div class="mock-mode-icon">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: #7C3AED;">
-                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" fill="currentColor"/>
-                    <path d="M19 10v2a7 7 0 0 1-14 0v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
-                    <line x1="12" y1="19" x2="12" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                    <line x1="8" y1="23" x2="16" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                  </svg>
+        const l = widgetConfig.landing;
+        const dir = widgetConfig.direction || 'ltr';
+        const iconBgColor = l.modeCardIconBackgroundColor || '#7C3AED';
+        const logoBg = l.logoBackgroundColor || '#7C3AED';
+        const landBg = l.backgroundColor || 'linear-gradient(180deg, #ffffff 0%, rgba(168,85,247,0.03) 100%)';
+
+        panel.html(`
+            <div style="display:flex;flex-direction:column;flex:1;min-height:0;direction:${dir};">
+                <div style="flex:1;background:${landBg};border-radius:18px 18px 0 0;padding:30px 24px 20px;display:flex;flex-direction:column;align-items:center;">
+                    <div data-element-type="landingLogo" style="width:64px;height:64px;border-radius:14px;background:${logoBg};display:flex;align-items:center;justify-content:center;margin-bottom:16px;font-size:36px;cursor:pointer;box-shadow:0 8px 28px rgba(102,126,234,0.35);">${l.logo || '🤖'}</div>
+                    <div data-element-type="landingTitle" style="font-size:16px;font-weight:700;color:${l.titleColor || '#1e1b4b'};margin-bottom:4px;text-align:center;cursor:pointer;">${l.title || 'Welcome to AI Assistant'}</div>
+                    <div data-element-type="landingTitle" style="font-size:12px;color:#64748b;text-align:center;margin-bottom:20px;cursor:pointer;">${l.subtitle || "Choose how you'd like to interact"}</div>
+                    <div style="display:flex;gap:10px;width:100%;margin-top:auto;">
+                        <div data-element-type="modeCard" data-mode="voice" style="flex:1;aspect-ratio:1;background:${l.modeCardBackgroundColor || '#fff'};border:1px solid ${l.modeCardBorderColor || 'rgba(0,0,0,0.06)'};border-radius:12px;padding:14px;cursor:pointer;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                            <div style="width:44px;height:44px;border-radius:10px;background:${iconBgColor};display:flex;align-items:center;justify-content:center;margin-bottom:8px;color:#fff;">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+                            </div>
+                            <div style="font-size:13px;color:${l.modeCardTitleColor || '#1e1b4b'};">${l.voiceCardTitle || 'Voice Call'}</div>
+                        </div>
+                        <div data-element-type="modeCard" data-mode="text" style="flex:1;aspect-ratio:1;background:${l.modeCardBackgroundColor || '#fff'};border:1px solid ${l.modeCardBorderColor || 'rgba(0,0,0,0.06)'};border-radius:12px;padding:14px;cursor:pointer;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                            <div style="width:44px;height:44px;border-radius:10px;background:${iconBgColor};display:flex;align-items:center;justify-content:center;margin-bottom:8px;color:#fff;">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.54.36 2.98.97 4.29L1 23l6.71-1.97C9.02 21.64 10.46 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2z"/></svg>
+                            </div>
+                            <div style="font-size:13px;color:${l.modeCardTitleColor || '#1e1b4b'};">${l.textCardTitle || 'Text Chat'}</div>
+                        </div>
+                    </div>
                 </div>
-                <div class="mock-mode-title">${config.voiceCardTitle || 'Voice Call'}</div>
-              </div>
-              <div class="mock-mode-card" style="background: ${config.modeCardBackgroundColor};" data-element-type="modeCard" data-mode="text">
-                <div class="mock-mode-icon">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: #7C3AED;">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-                    <path d="M8 10h.01M12 10h.01M16 10h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                  </svg>
+                <div style="padding:6px 18px 10px;display:flex;justify-content:center;border-top:1px solid rgba(0,0,0,0.08);background:transparent;flex-shrink:0;">
+                    <span style="font-size:10px;color:rgba(0,0,0,0.4);">Powered by <span style="color:${iconBgColor};font-weight:700;">TalkToPC</span></span>
                 </div>
-                <div class="mock-mode-title">${config.textCardTitle || 'Text Chat'}</div>
-              </div>
             </div>
-          </div>
-        </div>
-      `;
-      
-      // Make elements selectable
-      setupElementListeners(panel);
+        `);
+        bindPanelClicks(panel);
     }
 
     function renderTextInterface(panel) {
-      const config = widgetConfig.text;
-      panel.innerHTML = `
-        <div class="mock-panel-header" style="background: ${widgetConfig.header.backgroundColor}; color: ${widgetConfig.header.textColor};" data-element-type="header">
-          <span>${widgetConfig.header.title}</span>
-          ${widgetConfig.header.showCloseButton ? '<button class="mock-panel-close" data-element-type="closeButton" onclick="switchView(\'landing\')">×</button>' : ''}
-        </div>
-        <div class="mock-text-interface">
-          <div class="mock-messages">
-            <div class="mock-message user" style="background: ${widgetConfig.messages.userBackgroundColor}; color: ${widgetConfig.messages.textColor}; border-radius: ${widgetConfig.messages.borderRadius}px; font-size: ${widgetConfig.messages.fontSize};" data-element-type="userMessage">
-              Hello! How can I help you?
+        const panelBg = widgetConfig.panel.backgroundColor || '#16161e';
+        const light = isLightBg(panelBg);
+        const dir = widgetConfig.direction || 'ltr';
+        const inputBg = light ? '#f3f4f6' : 'rgba(255,255,255,0.06)';
+        const inputBorder = light ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)';
+        const inputColor = light ? '#111827' : '#fff';
+        const m = widgetConfig.messages;
+        const t = widgetConfig.text;
+        const footerBorderColor = light ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.06)';
+        const footerTextColor = light ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.35)';
+        const footerLinkColor = light ? (widgetConfig.voice.primaryBtnGradient1 || '#7C3AED') : '#a78bfa';
+
+        panel.html(`
+            <div style="display:flex;flex-direction:column;flex:1;min-height:0;background:${panelBg};direction:${dir};">
+                <div style="flex:1;padding:16px;overflow-y:auto;">
+                    <div data-element-type="userMessage" style="max-width:75%;padding:10px 14px;border-radius:${m.borderRadius || 16}px;background:${m.userBackgroundColor || '#E5E7EB'};color:${m.textColor || '#1F2937'};font-size:${m.fontSize || '14px'};margin-bottom:10px;margin-left:auto;cursor:pointer;">Hello!</div>
+                    <div data-element-type="agentMessage" style="max-width:75%;padding:10px 14px;border-radius:${m.borderRadius || 16}px;background:${m.agentBackgroundColor || (light ? '#f3f4f6' : 'rgba(255,255,255,0.08)')};color:${m.textColor || (light ? '#1F2937' : 'rgba(255,255,255,0.85)')};font-size:${m.fontSize || '14px'};margin-bottom:10px;cursor:pointer;">Hi! How can I help?</div>
+                </div>
+                <div style="padding:8px 12px;border-top:1px solid ${light ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.06)'};">
+                    <div style="display:flex;gap:8px;">
+                        <input data-element-type="input" type="text" readonly placeholder="${t.inputPlaceholder || 'Type your message...'}" style="flex:1;padding:10px 14px;border-radius:20px;background:${inputBg};border:1px solid ${inputBorder};color:${inputColor};font-size:13px;outline:none;cursor:pointer;">
+                        <button data-element-type="sendButton" style="width:36px;height:36px;border-radius:50%;border:none;background:${t.sendButtonColor || '#7C3AED'};color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <div style="padding:6px 18px 10px;display:flex;justify-content:center;border-top:1px solid ${footerBorderColor};background:${panelBg};flex-shrink:0;">
+                    <span style="font-size:10px;color:${footerTextColor};">Powered by <span style="color:${footerLinkColor};font-weight:700;">TalkToPC</span></span>
+                </div>
             </div>
-            <div class="mock-message agent" style="background: ${widgetConfig.messages.agentBackgroundColor}; color: ${widgetConfig.messages.textColor}; border-radius: ${widgetConfig.messages.borderRadius}px; font-size: ${widgetConfig.messages.fontSize};" data-element-type="agentMessage">
-              Hi! I'm here to assist you. What would you like to know?
-            </div>
-            <div class="mock-message user" style="background: ${widgetConfig.messages.userBackgroundColor}; color: ${widgetConfig.messages.textColor}; border-radius: ${widgetConfig.messages.borderRadius}px; font-size: ${widgetConfig.messages.fontSize};" data-element-type="userMessage">
-              Can you tell me about your features?
-            </div>
-          </div>
-          <div class="mock-input-area">
-            <input type="text" class="mock-input" placeholder="${config.inputPlaceholder}" style="border-color: ${config.inputFocusColor};" data-element-type="input">
-            <button class="mock-send-button" style="background: ${config.sendButtonColor};" data-element-type="sendButton">${config.sendButtonText || '→'}</button>
-          </div>
-        </div>
-      `;
-      
-      // Make elements selectable
-      setupElementListeners(panel);
+        `);
+        bindPanelClicks(panel);
     }
 
-    function renderVoiceInterface(panel) {
-      const config = widgetConfig.voice;
-      // Show active call state matching real widget structure
-      panel.innerHTML = `
-        <div class="mock-panel-header" style="background: ${widgetConfig.header.backgroundColor}; color: ${widgetConfig.header.textColor};" data-element-type="header">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span>${widgetConfig.header.title}</span>
-            <div style="display: flex; align-items: center; gap: 6px; margin-left: 8px;">
-              <div style="width: 6px; height: 6px; background: #10b981; border-radius: 50%;"></div>
-              <span style="font-size: 12px; opacity: 0.9;">Online</span>
-            </div>
-          </div>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <button style="background: none; border: none; color: ${widgetConfig.header.textColor}; cursor: pointer; padding: 4px; display: flex; align-items: center;" data-element-type="backButton">←</button>
-            ${widgetConfig.header.showCloseButton ? '<button class="mock-panel-close" data-element-type="closeButton">×</button>' : ''}
-          </div>
-        </div>
-        <div class="mock-voice-interface">
-          <!-- Voice Section -->
-          <!-- Multi-row layout when history is collapsed -->
-          <div class="mock-voice-section" id="mockVoiceSectionExpanded">
-            <div class="mock-voice-timer" data-element-type="timer">
-              <div class="mock-timer-dot"></div>
-              <span>00:11</span>
-            </div>
-            <div class="mock-waveform" data-element-type="waveform">
-              ${widgetConfig.voice.waveformType === 'waveform' ? `
-                <div class="mock-waveform-bar"></div>
-                <div class="mock-waveform-bar"></div>
-                <div class="mock-waveform-bar"></div>
-                <div class="mock-waveform-bar"></div>
-                <div class="mock-waveform-bar"></div>
-                <div class="mock-waveform-bar"></div>
-                <div class="mock-waveform-bar"></div>
-                <div class="mock-waveform-bar"></div>
-                <div class="mock-waveform-bar"></div>
-                <div class="mock-waveform-bar"></div>
-                <div class="mock-waveform-bar"></div>
-                <div class="mock-waveform-bar"></div>
-                <div class="mock-waveform-bar"></div>
-                <div class="mock-waveform-bar"></div>
-                <div class="mock-waveform-bar"></div>
-              ` : widgetConfig.voice.waveformType === 'icon' ? `
-                <div class="mock-waveform-icon" style="font-size: 48px; line-height: 1;">${widgetConfig.voice.waveformIcon || '🎤'}</div>
-              ` : widgetConfig.voice.waveformType === 'image' && widgetConfig.voice.waveformImageUrl ? `
-                <img src="${widgetConfig.voice.waveformImageUrl}" alt="Waveform" class="mock-waveform-image" style="max-width: 60px; max-height: 60px; object-fit: contain;">
-              ` : `
-                <div class="mock-waveform-bar"></div>
-                <div class="mock-waveform-bar"></div>
-                <div class="mock-waveform-bar"></div>
-                <div class="mock-waveform-bar"></div>
-                <div class="mock-waveform-bar"></div>
-                <div class="mock-waveform-bar"></div>
-                <div class="mock-waveform-bar"></div>
-                <div class="mock-waveform-bar"></div>
-                <div class="mock-waveform-bar"></div>
-                <div class="mock-waveform-bar"></div>
-                <div class="mock-waveform-bar"></div>
-                <div class="mock-waveform-bar"></div>
-                <div class="mock-waveform-bar"></div>
-                <div class="mock-waveform-bar"></div>
-                <div class="mock-waveform-bar"></div>
-              `}
-            </div>
-            <div class="mock-voice-status" data-element-type="statusTitle">
-              <div class="mock-status-dot"></div>
-              <span>Listening...</span>
-            </div>
-            <div class="mock-voice-controls">
-              <button class="mock-control-btn secondary" data-element-type="micButton" title="Mute">
-                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                  <line x1="12" y1="19" x2="12" y2="23"/>
-                </svg>
-              </button>
-              <button class="mock-control-btn danger" data-element-type="endCallButton" title="End Call">
-                <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                  <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" transform="rotate(135 12 12)"/>
-                </svg>
-              </button>
-              <button class="mock-control-btn secondary" data-element-type="speakerButton" title="Speaker">
-                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-                  <path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-          
-          <!-- Single-row compact layout when history is expanded -->
-          <div class="mock-voice-section-compact" id="mockVoiceSectionCompact" style="display: none;">
-            <div class="mock-compact-row">
-              <div class="mock-compact-waveform" data-element-type="waveform">
-                ${widgetConfig.voice.waveformType === 'waveform' ? `
-                  <div class="mock-waveform-bar"></div>
-                  <div class="mock-waveform-bar"></div>
-                  <div class="mock-waveform-bar"></div>
-                  <div class="mock-waveform-bar"></div>
-                  <div class="mock-waveform-bar"></div>
-                  <div class="mock-waveform-bar"></div>
-                  <div class="mock-waveform-bar"></div>
-                  <div class="mock-waveform-bar"></div>
-                  <div class="mock-waveform-bar"></div>
-                  <div class="mock-waveform-bar"></div>
-                  <div class="mock-waveform-bar"></div>
-                  <div class="mock-waveform-bar"></div>
-                  <div class="mock-waveform-bar"></div>
-                  <div class="mock-waveform-bar"></div>
-                  <div class="mock-waveform-bar"></div>
-                ` : widgetConfig.voice.waveformType === 'icon' ? `
-                  <div class="mock-waveform-icon" style="font-size: 24px; line-height: 1;">${widgetConfig.voice.waveformIcon || '🎤'}</div>
-                ` : widgetConfig.voice.waveformType === 'image' && widgetConfig.voice.waveformImageUrl ? `
-                  <img src="${widgetConfig.voice.waveformImageUrl}" alt="Waveform" class="mock-waveform-image" style="max-width: 32px; max-height: 32px; object-fit: contain;">
-                ` : `
-                  <div class="mock-waveform-bar"></div>
-                  <div class="mock-waveform-bar"></div>
-                  <div class="mock-waveform-bar"></div>
-                  <div class="mock-waveform-bar"></div>
-                  <div class="mock-waveform-bar"></div>
-                  <div class="mock-waveform-bar"></div>
-                  <div class="mock-waveform-bar"></div>
-                  <div class="mock-waveform-bar"></div>
-                  <div class="mock-waveform-bar"></div>
-                  <div class="mock-waveform-bar"></div>
-                  <div class="mock-waveform-bar"></div>
-                  <div class="mock-waveform-bar"></div>
-                  <div class="mock-waveform-bar"></div>
-                  <div class="mock-waveform-bar"></div>
-                  <div class="mock-waveform-bar"></div>
-                `}
-              </div>
-              <div class="mock-compact-timer" data-element-type="timer">
-                <div class="mock-timer-dot"></div>
-                <span>00:11</span>
-              </div>
-              <div class="mock-compact-status" data-element-type="statusTitle">
-                <div class="mock-status-dot"></div>
-                <span>Listening...</span>
-              </div>
-              <div class="mock-compact-controls">
-                <button class="mock-control-btn secondary" data-element-type="micButton" title="Mute">
-                  <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                    <line x1="12" y1="19" x2="12" y2="23"/>
-                  </svg>
-                </button>
-                <button class="mock-control-btn danger" data-element-type="endCallButton" title="End Call">
-                  <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                    <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" transform="rotate(135 12 12)"/>
-                  </svg>
-                </button>
-                <button class="mock-control-btn secondary" data-element-type="speakerButton" title="Speaker">
-                  <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-                    <path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/>
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Conversation Section -->
-          <div class="mock-conversation-section">
-            <div class="mock-conversation-header">
-              <span>CONVERSATION</span>
-              <div class="mock-conversation-toggle" data-element-type="conversationToggle">
-                <span id="historyToggleText">Show history</span>
-                <svg id="historyToggleIcon" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path d="M6 9l6 6 6-6"/>
-                </svg>
-              </div>
-            </div>
-            
-            <!-- Collapsed: Live transcript only (no bubbles) -->
-            <div class="mock-live-transcript-collapsed" id="collapsedTranscript" data-element-type="liveTranscript">
-              <div class="mock-live-indicator" data-element-type="liveIndicator">
-                <div class="mock-live-dot"></div>
-                <span>LIVE</span>
-              </div>
-              <div class="mock-live-text-collapsed" data-element-type="liveTranscriptText" style="color: #64748b; font-size: 14px; line-height: 1.6; margin-top: 8px;">
-                Hello, I'm Sasha from Bridgewise, How can I help you today?
-              </div>
-            </div>
-            
-            <!-- Expanded: Full conversation history -->
-            <div class="mock-conversation-history" id="expandedHistory">
-              <div class="mock-history-message">
-                <div class="mock-history-avatar" data-element-type="agentAvatar" style="cursor: pointer;">
-                  ${widgetConfig.voice.avatarType === 'image' && widgetConfig.voice.avatarImageUrl ? `
-                    <img src="${widgetConfig.voice.avatarImageUrl}" alt="Agent" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; pointer-events: none;">
-                  ` : `
-                    <span style="pointer-events: none;">${widgetConfig.voice.avatarIcon || '🤖'}</span>
-                  `}
+    function renderVoiceActiveCall(panel) {
+        const v = widgetConfig.voice;
+        const dir = widgetConfig.direction || 'ltr';
+        const panelBg = widgetConfig.panel.backgroundColor || '#16161e';
+        const light = isLightBg(panelBg);
+        const callBg1 = v.heroGradient1 || '#2a2550';
+        const callBg2 = v.heroGradient2 || '#1a1a2e';
+        const waveColor = v.waveformBarColor || v.primaryBtnGradient1 || '#7C3AED';
+        const timerTextColor = v.headlineColor || '#fff';
+        const sectionBorder = light ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)';
+        const convHeaderColor = light ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)';
+        const inputBg = light ? '#f3f4f6' : 'rgba(255,255,255,0.06)';
+        const inputBorder = light ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)';
+        const inputColor = light ? '#111827' : '#fff';
+        const liveColor = v.liveIndicatorTextColor || '#10b981';
+        const liveDotColor = v.liveIndicatorDotColor || '#10b981';
+        const transcriptColor = v.liveTranscriptTextColor || '#64748b';
+        const footerBorderColor = light ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.06)';
+        const footerTextColor = light ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.35)';
+        const footerLinkColor = light ? (v.primaryBtnGradient1 || '#7C3AED') : '#a78bfa';
+        const agentName = widgetConfig.agentName || 'Sasha';
+
+        const bars = [10,16,22,28,32,36,38,40,38,36,32,28,22,16,10].map((h) =>
+            `<div style="width:3px;border-radius:2px;background:${waveColor};height:${h}px;"></div>`
+        ).join('');
+
+        panel.html(`
+            <div style="display:flex;flex-direction:column;flex:1;min-height:0;direction:${dir};background:linear-gradient(160deg, ${callBg1} 0%, ${callBg2} 100%);color:${timerTextColor};">
+                <div style="padding:16px 20px;border-bottom:1px solid ${sectionBorder};text-align:center;">
+                    <div data-element-type="timer" style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,0.06);font-size:12px;font-family:'JetBrains Mono',monospace;cursor:pointer;margin-bottom:12px;">
+                        <div style="width:6px;height:6px;border-radius:50%;background:#ef4444;"></div><span>00:11</span>
+                    </div>
+                    <div data-element-type="waveform" style="display:flex;align-items:center;justify-content:center;gap:2px;height:48px;margin-bottom:10px;cursor:pointer;">${bars}</div>
+                    <div style="display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;color:#10b981;font-weight:500;margin-bottom:12px;">
+                        <div style="width:6px;height:6px;border-radius:50%;background:#10b981;"></div>Listening...
+                    </div>
+                    <div style="display:flex;justify-content:center;gap:10px;">
+                        <button data-element-type="micButton" style="width:44px;height:44px;border-radius:50%;background:${v.micButtonColor || '#7C3AED'};border:none;cursor:pointer;color:#fff;display:flex;align-items:center;justify-content:center;">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+                        </button>
+                        <button data-element-type="endCallButton" style="width:48px;height:48px;border-radius:50%;background:${v.endCallButtonColor || '#ef4444'};border:none;cursor:pointer;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(239,68,68,0.4);">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" transform="rotate(135 12 12)"/></svg>
+                        </button>
+                        <button data-element-type="speakerButton" style="width:44px;height:44px;border-radius:50%;background:${v.speakerButtonColor || '#FFFFFF'};border:none;cursor:pointer;color:#333;display:flex;align-items:center;justify-content:center;">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/></svg>
+                        </button>
+                    </div>
                 </div>
-                <div class="mock-history-bubble">I help you today?</div>
-              </div>
-              <div class="mock-history-message">
-                <div class="mock-history-avatar" data-element-type="agentAvatar" style="cursor: pointer;">
-                  ${widgetConfig.voice.avatarType === 'image' && widgetConfig.voice.avatarImageUrl ? `
-                    <img src="${widgetConfig.voice.avatarImageUrl}" alt="Agent" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; pointer-events: none;">
-                  ` : `
-                    <span style="pointer-events: none;">${widgetConfig.voice.avatarIcon || '🤖'}</span>
-                  `}
+                <div style="flex:1;display:flex;flex-direction:column;background:${panelBg};min-height:0;">
+                    <div style="padding:10px 16px 6px;display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-size:10px;font-weight:600;color:${convHeaderColor};letter-spacing:0.5px;">CONVERSATION</span>
+                    </div>
+                    <div data-element-type="liveTranscript" style="padding:0 16px 10px;cursor:pointer;flex:1;">
+                        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+                            <div style="width:6px;height:6px;border-radius:50%;background:${liveDotColor};"></div>
+                            <span style="font-size:10px;font-weight:700;color:${liveColor};">LIVE</span>
+                        </div>
+                        <div style="font-size:${v.liveTranscriptFontSize || '14px'};color:${transcriptColor};line-height:1.6;">Hello, I'm ${agentName}, How can I help you today?</div>
+                    </div>
+                    <div style="padding:8px 12px;border-top:1px solid ${sectionBorder};background:${panelBg};">
+                        <div style="display:flex;gap:8px;">
+                            <input type="text" readonly placeholder="Type your message..." style="flex:1;padding:8px 12px;border-radius:20px;background:${inputBg};border:1px solid ${inputBorder};color:${inputColor};font-size:13px;outline:none;">
+                            <button style="width:32px;height:32px;border-radius:50%;border:none;background:${waveColor};color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div style="padding:6px 18px 10px;display:flex;justify-content:center;border-top:1px solid ${footerBorderColor};background:${panelBg};flex-shrink:0;">
+                        <span style="font-size:10px;color:${footerTextColor};">Powered by <span style="color:${footerLinkColor};font-weight:700;">TalkToPC</span></span>
+                    </div>
                 </div>
-                <div class="mock-history-bubble">I am doing well, thank you for asking.</div>
-              </div>
-              <div class="mock-live-message-row">
-                <div class="mock-history-avatar" data-element-type="agentAvatar" style="cursor: pointer;">
-                  ${widgetConfig.voice.avatarType === 'image' && widgetConfig.voice.avatarImageUrl ? `
-                    <img src="${widgetConfig.voice.avatarImageUrl}" alt="Agent" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; pointer-events: none;">
-                  ` : `
-                    <span style="pointer-events: none;">${widgetConfig.voice.avatarIcon || '🤖'}</span>
-                  `}
-                </div>
-                <div class="mock-history-bubble">
-                  <span class="mock-live-badge">LIVE</span>
-                  How may I assist you with the website today?
-                </div>
-              </div>
             </div>
-          </div>
-          
-          <!-- Text Input Area -->
-          <div class="mock-voice-input-area">
-            <div class="mock-voice-input-wrapper">
-              <input type="text" class="mock-voice-text-input" placeholder="${widgetConfig.text.inputPlaceholder || 'Type your message...'}" data-element-type="voiceInput">
-              <button class="mock-voice-send-btn" style="background: ${widgetConfig.text.sendButtonColor};" data-element-type="voiceSendButton">
-                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <line x1="22" y1="2" x2="11" y2="13"/>
-                  <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-          
-          <!-- Powered By -->
-          <div class="mock-powered-by">
-            <span>⚡</span>
-            <span>Powered by <strong>TalkToPC</strong></span>
-          </div>
-        </div>
-      `;
-      
-      // Make elements selectable
-      setupElementListeners(panel);
-      
-      // Initialize history view state
-      setTimeout(() => {
-        updateHistoryView();
-      }, 0);
+        `);
+        bindPanelClicks(panel);
     }
     
     function setupElementListeners(panel) {
@@ -1196,7 +1251,7 @@
               <h3>End Call Button</h3>
               <div class="control-item">
                 <label>Background Color</label>
-                <input type="color" id="endCallBtnColor" value="#ef4444">
+                <input type="color" id="endCallBtnColor" value="${widgetConfig.voice.endCallButtonColor || '#ef4444'}">
               </div>
             </div>
           `;
@@ -1207,7 +1262,7 @@
               <h3>Speaker Button</h3>
               <div class="control-item">
                 <label>Background Color</label>
-                <input type="color" id="speakerBtnColor" value="#FFFFFF">
+                <input type="color" id="speakerBtnColor" value="${widgetConfig.voice.speakerButtonColor || '#FFFFFF'}">
               </div>
             </div>
           `;
@@ -1241,7 +1296,7 @@
               </div>
               <div class="control-item" id="waveformColorControl">
                 <label>Waveform Color</label>
-                <input type="color" id="waveformColor" value="${widgetConfig.voice.micButtonColor}">
+                <input type="color" id="waveformColor" value="${widgetConfig.voice.waveformBarColor || widgetConfig.voice.micButtonColor}">
               </div>
               <div class="control-item" id="waveformIconControl" style="display: ${widgetConfig.voice.waveformType === 'icon' ? 'block' : 'none'};">
                 <label>Icon (Emoji or Text)</label>
@@ -1277,18 +1332,15 @@
         case 'liveTranscriptText':
           controlsHTML = `
             <div class="customization-group">
-              <h3>Live Transcript (Collapsed View)</h3>
+              <h3>Live Transcript</h3>
               <div class="control-item">
                 <label>Transcript Text Color</label>
-                <input type="color" id="liveTranscriptColor" value="#64748b">
+                <input type="text" id="liveTranscriptColor" value="${widgetConfig.voice.liveTranscriptTextColor || '#64748b'}" placeholder="#64748b">
               </div>
               <div class="control-item">
                 <label>Font Size</label>
-                <input type="text" id="liveTranscriptFontSize" value="14px" placeholder="14px">
+                <input type="text" id="liveTranscriptFontSize" value="${widgetConfig.voice.liveTranscriptFontSize || '14px'}" placeholder="14px">
               </div>
-              <p style="color: #6b7280; font-size: 12px; margin-top: 8px;">
-                This is the live transcript shown when history is collapsed. It displays only the current spoken text (max 2 lines).
-              </p>
             </div>
           `;
           break;
@@ -1442,19 +1494,156 @@
               <h3>Mode Cards (Voice/Text Buttons)</h3>
               <div class="control-item">
                 <label>Voice Card Title</label>
-                <input type="text" id="voiceCardTitle" value="Voice Call" placeholder="Voice Call">
+                <input type="text" id="voiceCardTitle" value="${widgetConfig.landing.voiceCardTitle || 'Voice Call'}" placeholder="Voice Call">
               </div>
               <div class="control-item">
                 <label>Text Card Title</label>
-                <input type="text" id="textCardTitle" value="Text Chat" placeholder="Text Chat">
+                <input type="text" id="textCardTitle" value="${widgetConfig.landing.textCardTitle || 'Text Chat'}" placeholder="Text Chat">
               </div>
               <div class="control-item">
                 <label>Background Color</label>
                 <input type="color" id="modeCardBg" value="${widgetConfig.landing.modeCardBackgroundColor}">
               </div>
-              <p style="color: #6b7280; font-size: 12px; margin-top: 8px;">
-                These are the buttons on the landing screen that let users choose between voice and text chat.
-              </p>
+            </div>
+          `;
+          break;
+        case 'heroBackground':
+          controlsHTML = `
+            <div class="customization-group">
+              <h3>Hero Background</h3>
+              <div class="control-item">
+                <label>Gradient Start Color</label>
+                <input type="color" id="heroGradient1" value="${widgetConfig.voice.heroGradient1 || '#2a2550'}">
+              </div>
+              <div class="control-item">
+                <label>Gradient End Color</label>
+                <input type="color" id="heroGradient2" value="${widgetConfig.voice.heroGradient2 || '#1a1a2e'}">
+              </div>
+            </div>
+          `;
+          break;
+        case 'heroAvatar':
+          controlsHTML = `
+            <div class="customization-group">
+              <h3>Hero Avatar</h3>
+              <div class="control-item">
+                <label>Gradient Color 1</label>
+                <input type="color" id="avatarGradient1" value="${widgetConfig.voice.avatarGradient1 || '#6d56f5'}">
+              </div>
+              <div class="control-item">
+                <label>Gradient Color 2</label>
+                <input type="color" id="avatarGradient2" value="${widgetConfig.voice.avatarGradient2 || '#a78bfa'}">
+              </div>
+              <div class="control-item">
+                <label>Agent Name</label>
+                <input type="text" id="agentNameInput" value="${widgetConfig.agentName || 'Sasha'}" placeholder="Sasha">
+              </div>
+            </div>
+          `;
+          break;
+        case 'heroAgentName':
+          controlsHTML = `
+            <div class="customization-group">
+              <h3>Agent Name</h3>
+              <div class="control-item">
+                <label>Name</label>
+                <input type="text" id="agentNameInput" value="${widgetConfig.agentName || 'Sasha'}" placeholder="Sasha">
+              </div>
+              <div class="control-item">
+                <label>Text Color</label>
+                <input type="color" id="agentNameColor" value="${widgetConfig.voice.agentNameColor || '#f0eff8'}">
+              </div>
+            </div>
+          `;
+          break;
+        case 'heroAgentRole':
+          controlsHTML = `
+            <div class="customization-group">
+              <h3>Agent Role</h3>
+              <div class="control-item">
+                <label>Role Text</label>
+                <input type="text" id="agentRoleInput" value="${widgetConfig.voice.agentRole || 'AI Voice Assistant'}" placeholder="AI Voice Assistant">
+              </div>
+              <div class="control-item">
+                <label>Text Color</label>
+                <input type="text" id="agentRoleColor" value="${widgetConfig.voice.agentRoleColor || 'rgba(255,255,255,0.35)'}" placeholder="rgba(255,255,255,0.35)">
+              </div>
+            </div>
+          `;
+          break;
+        case 'heroHeadline':
+          controlsHTML = `
+            <div class="customization-group">
+              <h3>Headline</h3>
+              <div class="control-item">
+                <label>Headline Text</label>
+                <input type="text" id="headlineInput" value="${(widgetConfig.voice.headline || 'Hi there 👋').replace(/"/g, '&quot;')}" placeholder="Hi there 👋">
+              </div>
+              <div class="control-item">
+                <label>Text Color</label>
+                <input type="color" id="headlineColor" value="${widgetConfig.voice.headlineColor || '#ffffff'}">
+              </div>
+            </div>
+          `;
+          break;
+        case 'heroSubline':
+          controlsHTML = `
+            <div class="customization-group">
+              <h3>Subline</h3>
+              <div class="control-item">
+                <label>Subline Text (HTML allowed)</label>
+                <textarea id="sublineInput" rows="2" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;">${widgetConfig.voice.subline || 'Ask me anything — I respond instantly<br>in voice or text.'}</textarea>
+              </div>
+              <div class="control-item">
+                <label>Text Color</label>
+                <input type="text" id="sublineColor" value="${widgetConfig.voice.sublineColor || 'rgba(255,255,255,0.45)'}" placeholder="rgba(255,255,255,0.45)">
+              </div>
+            </div>
+          `;
+          break;
+        case 'heroPrimaryBtn':
+          controlsHTML = `
+            <div class="customization-group">
+              <h3>Primary Button (Start Call)</h3>
+              <div class="control-item">
+                <label>Button Text</label>
+                <input type="text" id="startCallBtnText" value="${widgetConfig.voice.startCallButtonText || 'Start Voice Call'}" placeholder="Start Voice Call">
+              </div>
+              <div class="control-item">
+                <label>Gradient Color 1</label>
+                <input type="color" id="primaryBtnGradient1" value="${widgetConfig.voice.primaryBtnGradient1 || '#6d56f5'}">
+              </div>
+              <div class="control-item">
+                <label>Gradient Color 2</label>
+                <input type="color" id="primaryBtnGradient2" value="${widgetConfig.voice.primaryBtnGradient2 || '#9d8df8'}">
+              </div>
+              <div class="control-item">
+                <label>Text Color</label>
+                <input type="color" id="startCallBtnTextColor" value="${widgetConfig.voice.startCallButtonTextColor || '#FFFFFF'}">
+              </div>
+            </div>
+          `;
+          break;
+        case 'heroSecondaryBtn':
+          controlsHTML = `
+            <div class="customization-group">
+              <h3>Secondary Button (Send Message)</h3>
+              <div class="control-item">
+                <label>Button Text</label>
+                <input type="text" id="sendMessageTextInput" value="${widgetConfig.voice.sendMessageText || 'Send a Message'}" placeholder="Send a Message">
+              </div>
+              <div class="control-item">
+                <label>Background</label>
+                <input type="text" id="secondaryBtnBg" value="${widgetConfig.voice.secondaryBtnBg || 'rgba(255,255,255,0.05)'}" placeholder="rgba(255,255,255,0.05)">
+              </div>
+              <div class="control-item">
+                <label>Border Color</label>
+                <input type="text" id="secondaryBtnBorder" value="${widgetConfig.voice.secondaryBtnBorder || 'rgba(255,255,255,0.09)'}" placeholder="rgba(255,255,255,0.09)">
+              </div>
+              <div class="control-item">
+                <label>Text Color</label>
+                <input type="text" id="secondaryBtnTextColor" value="${widgetConfig.voice.secondaryBtnTextColor || 'rgba(255,255,255,0.6)'}" placeholder="rgba(255,255,255,0.6)">
+              </div>
             </div>
           `;
           break;
@@ -1752,7 +1941,6 @@
         });
       }
 
-      // Mic button controls
       if (elementType === 'micButton') {
         document.getElementById('micBtnColor')?.addEventListener('input', (e) => {
           widgetConfig.voice.micButtonColor = e.target.value;
@@ -1869,20 +2057,20 @@
         });
       }
 
-      // End call button controls
       if (elementType === 'endCallButton') {
         document.getElementById('endCallBtnColor')?.addEventListener('input', (e) => {
-          const buttons = document.querySelectorAll('[data-element-type="endCallButton"]');
-          buttons.forEach(btn => btn.style.background = e.target.value);
+          widgetConfig.voice.endCallButtonColor = e.target.value;
+          markPropertyModified('voice', 'endCallButtonColor');
+          renderPanelContent();
           updateConfigCode();
         });
       }
 
-      // Speaker button controls
       if (elementType === 'speakerButton') {
         document.getElementById('speakerBtnColor')?.addEventListener('input', (e) => {
-          const buttons = document.querySelectorAll('[data-element-type="speakerButton"]');
-          buttons.forEach(btn => btn.style.background = e.target.value);
+          widgetConfig.voice.speakerButtonColor = e.target.value;
+          markPropertyModified('voice', 'speakerButtonColor');
+          renderPanelContent();
           updateConfigCode();
         });
       }
@@ -1903,10 +2091,9 @@
           updateConfigCode();
         });
         document.getElementById('waveformColor')?.addEventListener('input', (e) => {
-          const bars = document.querySelectorAll('.mock-waveform-bar');
-          bars.forEach(bar => bar.style.background = e.target.value);
-          widgetConfig.voice.micButtonColor = e.target.value; // Store for config
-          markPropertyModified('voice', 'micButtonColor');
+          widgetConfig.voice.waveformBarColor = e.target.value;
+          markPropertyModified('voice', 'waveformBarColor');
+          renderPanelContent();
           updateConfigCode();
         });
         document.getElementById('waveformIcon')?.addEventListener('input', (e) => {
@@ -1923,16 +2110,17 @@
         });
       }
 
-      // Live transcript controls
       if (elementType === 'liveTranscript' || elementType === 'liveTranscriptText') {
         document.getElementById('liveTranscriptColor')?.addEventListener('input', (e) => {
-          const text = document.querySelector('.mock-live-text-collapsed');
-          if (text) text.style.color = e.target.value;
+          widgetConfig.voice.liveTranscriptTextColor = e.target.value;
+          markPropertyModified('voice', 'liveTranscriptTextColor');
+          renderPanelContent();
           updateConfigCode();
         });
         document.getElementById('liveTranscriptFontSize')?.addEventListener('input', (e) => {
-          const text = document.querySelector('.mock-live-text-collapsed');
-          if (text) text.style.fontSize = e.target.value;
+          widgetConfig.voice.liveTranscriptFontSize = e.target.value;
+          markPropertyModified('voice', 'liveTranscriptFontSize');
+          renderPanelContent();
           updateConfigCode();
         });
       }
@@ -2046,6 +2234,135 @@
           updateConfigCode();
         });
       }
+
+      if (elementType === 'heroBackground') {
+        document.getElementById('heroGradient1')?.addEventListener('input', (e) => {
+          widgetConfig.voice.heroGradient1 = e.target.value;
+          markPropertyModified('voice', 'heroGradient1');
+          renderPanelContent(); updateConfigCode();
+        });
+        document.getElementById('heroGradient2')?.addEventListener('input', (e) => {
+          widgetConfig.voice.heroGradient2 = e.target.value;
+          markPropertyModified('voice', 'heroGradient2');
+          renderPanelContent(); updateConfigCode();
+        });
+      }
+
+      if (elementType === 'heroAvatar') {
+        document.getElementById('avatarGradient1')?.addEventListener('input', (e) => {
+          widgetConfig.voice.avatarGradient1 = e.target.value;
+          markPropertyModified('voice', 'avatarGradient1');
+          renderPanelContent(); updateConfigCode();
+        });
+        document.getElementById('avatarGradient2')?.addEventListener('input', (e) => {
+          widgetConfig.voice.avatarGradient2 = e.target.value;
+          markPropertyModified('voice', 'avatarGradient2');
+          renderPanelContent(); updateConfigCode();
+        });
+        document.getElementById('agentNameInput')?.addEventListener('input', (e) => {
+          widgetConfig.agentName = e.target.value;
+          markPropertyModified('agentName');
+          renderPanelContent(); updateConfigCode();
+        });
+      }
+
+      if (elementType === 'heroAgentName') {
+        document.getElementById('agentNameInput')?.addEventListener('input', (e) => {
+          widgetConfig.agentName = e.target.value;
+          markPropertyModified('agentName');
+          renderPanelContent(); updateConfigCode();
+        });
+        document.getElementById('agentNameColor')?.addEventListener('input', (e) => {
+          widgetConfig.voice.agentNameColor = e.target.value;
+          markPropertyModified('voice', 'agentNameColor');
+          renderPanelContent(); updateConfigCode();
+        });
+      }
+
+      if (elementType === 'heroAgentRole') {
+        document.getElementById('agentRoleInput')?.addEventListener('input', (e) => {
+          widgetConfig.voice.agentRole = e.target.value;
+          markPropertyModified('voice', 'agentRole');
+          renderPanelContent(); updateConfigCode();
+        });
+        document.getElementById('agentRoleColor')?.addEventListener('input', (e) => {
+          widgetConfig.voice.agentRoleColor = e.target.value;
+          markPropertyModified('voice', 'agentRoleColor');
+          renderPanelContent(); updateConfigCode();
+        });
+      }
+
+      if (elementType === 'heroHeadline') {
+        document.getElementById('headlineInput')?.addEventListener('input', (e) => {
+          widgetConfig.voice.headline = e.target.value;
+          markPropertyModified('voice', 'headline');
+          renderPanelContent(); updateConfigCode();
+        });
+        document.getElementById('headlineColor')?.addEventListener('input', (e) => {
+          widgetConfig.voice.headlineColor = e.target.value;
+          markPropertyModified('voice', 'headlineColor');
+          renderPanelContent(); updateConfigCode();
+        });
+      }
+
+      if (elementType === 'heroSubline') {
+        document.getElementById('sublineInput')?.addEventListener('input', (e) => {
+          widgetConfig.voice.subline = e.target.value;
+          markPropertyModified('voice', 'subline');
+          renderPanelContent(); updateConfigCode();
+        });
+        document.getElementById('sublineColor')?.addEventListener('input', (e) => {
+          widgetConfig.voice.sublineColor = e.target.value;
+          markPropertyModified('voice', 'sublineColor');
+          renderPanelContent(); updateConfigCode();
+        });
+      }
+
+      if (elementType === 'heroPrimaryBtn') {
+        document.getElementById('startCallBtnText')?.addEventListener('input', (e) => {
+          widgetConfig.voice.startCallButtonText = e.target.value;
+          markPropertyModified('voice', 'startCallButtonText');
+          renderPanelContent(); updateConfigCode();
+        });
+        document.getElementById('primaryBtnGradient1')?.addEventListener('input', (e) => {
+          widgetConfig.voice.primaryBtnGradient1 = e.target.value;
+          markPropertyModified('voice', 'primaryBtnGradient1');
+          renderPanelContent(); updateConfigCode();
+        });
+        document.getElementById('primaryBtnGradient2')?.addEventListener('input', (e) => {
+          widgetConfig.voice.primaryBtnGradient2 = e.target.value;
+          markPropertyModified('voice', 'primaryBtnGradient2');
+          renderPanelContent(); updateConfigCode();
+        });
+        document.getElementById('startCallBtnTextColor')?.addEventListener('input', (e) => {
+          widgetConfig.voice.startCallButtonTextColor = e.target.value;
+          markPropertyModified('voice', 'startCallButtonTextColor');
+          renderPanelContent(); updateConfigCode();
+        });
+      }
+
+      if (elementType === 'heroSecondaryBtn') {
+        document.getElementById('sendMessageTextInput')?.addEventListener('input', (e) => {
+          widgetConfig.voice.sendMessageText = e.target.value;
+          markPropertyModified('voice', 'sendMessageText');
+          renderPanelContent(); updateConfigCode();
+        });
+        document.getElementById('secondaryBtnBg')?.addEventListener('input', (e) => {
+          widgetConfig.voice.secondaryBtnBg = e.target.value;
+          markPropertyModified('voice', 'secondaryBtnBg');
+          renderPanelContent(); updateConfigCode();
+        });
+        document.getElementById('secondaryBtnBorder')?.addEventListener('input', (e) => {
+          widgetConfig.voice.secondaryBtnBorder = e.target.value;
+          markPropertyModified('voice', 'secondaryBtnBorder');
+          renderPanelContent(); updateConfigCode();
+        });
+        document.getElementById('secondaryBtnTextColor')?.addEventListener('input', (e) => {
+          widgetConfig.voice.secondaryBtnTextColor = e.target.value;
+          markPropertyModified('voice', 'secondaryBtnTextColor');
+          renderPanelContent(); updateConfigCode();
+        });
+      }
     }
 
     function updateConfigCode() {
@@ -2070,108 +2387,40 @@
     }
 
     function resetToDefaults() {
-      // Clear all modified properties tracking
       Object.keys(modifiedProperties).forEach(key => delete modifiedProperties[key]);
-      
-      widgetConfig = {
-        button: {
-          size: 'medium',
-          shape: 'circle',
-          backgroundColor: '#FFFFFF',
-          hoverColor: '#D3D3D3', // SDK default: light gray
-          shadow: true,
-          shadowColor: 'rgba(0,0,0,0.15)'
-        },
-        icon: {
-          type: 'custom',
-          customImage: 'https://talktopc.com/logo192.png',
-          size: 'medium',
-          backgroundColor: '#FFFFFF'
-        },
-        panel: {
-          width: 360,
-          height: 550, // Updated from SDK default 500
-          borderRadius: 24,
-          backgroundColor: '#FFFFFF',
-          border: '1px solid #E5E7EB'
-        },
-        direction: 'ltr',
-        position: {
-          vertical: 'bottom',
-          horizontal: 'right',
-          offset: { x: 20, y: 20 }
-        },
-        header: {
-          title: 'Chat Assistant',
-          backgroundColor: '#7C3AED',
-          textColor: '#FFFFFF',
-          showCloseButton: true
-        },
-        messages: {
-          userBackgroundColor: '#E5E7EB',
-          agentBackgroundColor: '#F3F4F6',
-          textColor: '#1F2937',
-          fontSize: '14px',
-          borderRadius: 16
-        },
-        text: {
-          sendButtonText: '→',
-          sendButtonColor: '#7C3AED',
-          sendButtonHoverColor: '#6D28D9',
-          inputPlaceholder: 'Type your message...',
-          inputFocusColor: '#7C3AED'
-        },
-        voice: {
-          micButtonColor: '#7C3AED',
-          micButtonActiveColor: '#EF4444',
-          avatarBackgroundColor: '#667eea',
-          avatarType: 'icon',
-          avatarIcon: '🤖',
-          avatarImageUrl: '',
-          startCallButtonText: 'Start Call',
-          startCallButtonColor: '#667eea',
-          startCallButtonTextColor: '#FFFFFF',
-          statusTitleColor: '#1e293b',
-          statusSubtitleColor: '#64748b',
-          waveformType: 'waveform',
-          waveformIcon: '🎤',
-          waveformImageUrl: ''
-        },
-      landing: {
-        logo: '🤖',
-        logoType: 'icon',
-        logoIcon: '🤖',
-        logoImageUrl: '',
-        logoBackgroundColor: '#7C3AED',
-        title: 'Welcome to AI Assistant',
-        subtitle: 'Choose how you\'d like to interact',
-        voiceCardTitle: 'Voice Call',
-        textCardTitle: 'Text Chat',
-        titleColor: '#1e293b',
-        subtitleColor: '#64748b',
-        modeCardBackgroundColor: '#FFFFFF'
-      },
-        position: {
-          vertical: 'bottom',
-          horizontal: 'right',
-          offset: { x: 20, y: 20 }
-        }
-      };
-      
+      widgetConfig = JSON.parse(JSON.stringify(defaultConfig));
+      currentView = 'voiceIdle';
+      updateViewButtons();
       initMockWidget();
       updateConfigCode();
       selectedElement = null;
       document.querySelectorAll('.element-highlight').forEach(el => {
         el.classList.remove('element-highlight');
       });
+      $('.theme-btn').css('border-color', 'transparent');
+      $('.theme-btn[data-theme="default"]').css('border-color', '#667eea');
       showCustomizationControls('default');
     }
 
     // No edit mode toggle needed - single click = edit, double click = interact
 
-    // Initialize event listeners (moved to document ready)
     $(document).ready(function() {
         $('#resetBtn').on('click', resetToDefaults);
+
+        $(document).on('click', '.view-btn', function() {
+            currentView = $(this).data('view');
+            updateViewButtons();
+            renderPanelContent();
+        });
+
+        $(document).on('click', '.theme-btn', function() {
+            const themeName = $(this).data('theme');
+            applyTheme(themeName);
+        });
+
+        $(document).on('click', '#mockPillLauncher', function(e) {
+            handleMockElementClick(e, 'button');
+        });
     });
 
     // Add a way to select panel via a small indicator
@@ -2192,47 +2441,24 @@
       }
     }
 
-    // Initialize when DOM is ready
     $(document).ready(function() {
         console.log('TalkToPC Widget Customization: DOM ready, initializing...');
         
-        // Check if required elements exist
-        const mockButton = document.getElementById('mockButton');
         const mockPanel = document.getElementById('mockPanel');
-        const customizationControls = document.getElementById('customizationControls');
         const saveBtn = document.getElementById('saveCustomizationBtn');
         
-        if (!mockButton || !mockPanel) {
-            console.error('TalkToPC Widget Customization: Required elements not found!', {
-                mockButton: !!mockButton,
-                mockPanel: !!mockPanel,
-                customizationControls: !!customizationControls,
-                saveBtn: !!saveBtn
-            });
+        if (!mockPanel) {
+            console.error('TalkToPC Widget Customization: mockPanel not found!');
             return;
         }
         
         initMockWidget();
         updateConfigCode();
         
-        // Make panel selectable (click on panel border/background)
-        if (mockPanel) {
-            mockPanel.addEventListener('click', (e) => {
-                // Only select panel if clicking on the panel itself or empty space, not on child elements
-                if (e.target === e.currentTarget || 
-                    (e.target.classList.contains('mock-panel-content') && !e.target.querySelector(':hover'))) {
-                    selectElement('panel', e.currentTarget);
-                }
-            });
-        }
-        
-        // Setup WordPress save button
         if (saveBtn) {
             $('#saveCustomizationBtn').on('click', function() {
                 saveSettings();
             });
-        } else {
-            console.warn('TalkToPC Widget Customization: Save button not found!');
         }
         
         console.log('TalkToPC Widget Customization: Initialization complete');
@@ -2300,7 +2526,10 @@
         settings.talktopc_text_input_placeholder = widgetConfig.text.inputPlaceholder;
         settings.talktopc_text_input_focus_color = widgetConfig.text.inputFocusColor;
         
-        // Voice settings
+        // Agent name
+        settings.talktopc_agent_name = widgetConfig.agentName || '';
+
+        // Voice settings (legacy)
         settings.talktopc_voice_mic_color = widgetConfig.voice.micButtonColor;
         settings.talktopc_voice_mic_active_color = widgetConfig.voice.micButtonActiveColor;
         settings.talktopc_voice_avatar_color = widgetConfig.voice.avatarBackgroundColor;
@@ -2311,6 +2540,36 @@
         settings.talktopc_voice_status_subtitle_color = widgetConfig.voice.statusSubtitleColor;
         settings.talktopc_voice_live_dot_color = widgetConfig.voice.liveDotColor;
         settings.talktopc_voice_live_text_color = widgetConfig.voice.liveTextColor;
+
+        // Voice settings (new)
+        settings.talktopc_voice_pill_gradient = widgetConfig.voice.pillGradient || '';
+        settings.talktopc_voice_pill_text_color = widgetConfig.voice.pillTextColor || '';
+        settings.talktopc_voice_pill_dot_color = widgetConfig.voice.pillDotColor || '';
+        settings.talktopc_voice_avatar_gradient1 = widgetConfig.voice.avatarGradient1 || '';
+        settings.talktopc_voice_avatar_gradient2 = widgetConfig.voice.avatarGradient2 || '';
+        settings.talktopc_voice_online_dot_color = widgetConfig.voice.onlineDotColor || '';
+        settings.talktopc_voice_hero_gradient1 = widgetConfig.voice.heroGradient1 || '';
+        settings.talktopc_voice_hero_gradient2 = widgetConfig.voice.heroGradient2 || '';
+        settings.talktopc_voice_agent_name_color = widgetConfig.voice.agentNameColor || '';
+        settings.talktopc_voice_agent_role_color = widgetConfig.voice.agentRoleColor || '';
+        settings.talktopc_voice_headline_color = widgetConfig.voice.headlineColor || '';
+        settings.talktopc_voice_subline_color = widgetConfig.voice.sublineColor || '';
+        settings.talktopc_voice_primary_btn_gradient1 = widgetConfig.voice.primaryBtnGradient1 || '';
+        settings.talktopc_voice_primary_btn_gradient2 = widgetConfig.voice.primaryBtnGradient2 || '';
+        settings.talktopc_voice_send_message_text = widgetConfig.voice.sendMessageText || '';
+        settings.talktopc_voice_secondary_btn_bg = widgetConfig.voice.secondaryBtnBg || '';
+        settings.talktopc_voice_secondary_btn_border = widgetConfig.voice.secondaryBtnBorder || '';
+        settings.talktopc_voice_secondary_btn_text_color = widgetConfig.voice.secondaryBtnTextColor || '';
+        settings.talktopc_voice_agent_role = widgetConfig.voice.agentRole || '';
+        settings.talktopc_voice_headline = widgetConfig.voice.headline || '';
+        settings.talktopc_voice_subline = widgetConfig.voice.subline || '';
+        settings.talktopc_voice_waveform_bar_color = widgetConfig.voice.waveformBarColor || '';
+        settings.talktopc_voice_speaker_color = widgetConfig.voice.speakerButtonColor || '';
+        settings.talktopc_voice_end_call_color = widgetConfig.voice.endCallButtonColor || '';
+        settings.talktopc_voice_live_indicator_text_color = widgetConfig.voice.liveIndicatorTextColor || '';
+        settings.talktopc_voice_live_indicator_dot_color = widgetConfig.voice.liveIndicatorDotColor || '';
+        settings.talktopc_voice_live_transcript_text_color = widgetConfig.voice.liveTranscriptTextColor || '';
+        settings.talktopc_voice_live_transcript_font_size = widgetConfig.voice.liveTranscriptFontSize || '';
         
         // Landing settings
         settings.talktopc_landing_logo = widgetConfig.landing.logo;

@@ -97,6 +97,7 @@ function talktopc_build_widget_config($agent_id = null) {
     // ==========================================================================
     $config['appId'] = get_option('talktopc_app_id');
     $config['agentId'] = $agent_id !== null ? $agent_id : get_option('talktopc_agent_id');
+    if ($v = get_option('talktopc_agent_name')) $config['agentName'] = $v;
     
     // ==========================================================================
     // BASIC OPTIONS (Widget UI only - NOT agent settings)
@@ -316,6 +317,33 @@ function talktopc_build_widget_config($agent_id = null) {
     // Live indicator colors - SDK has explicit defaults
     if ($v = get_option('talktopc_voice_live_dot_color')) $voice['liveDotColor'] = $v;
     if ($v = get_option('talktopc_voice_live_text_color')) $voice['liveTextColor'] = $v;
+    if ($v = get_option('talktopc_voice_pill_gradient')) $voice['pillGradient'] = $v;
+    if ($v = get_option('talktopc_voice_pill_text_color')) $voice['pillTextColor'] = $v;
+    if ($v = get_option('talktopc_voice_pill_dot_color')) $voice['pillDotColor'] = $v;
+    if ($v = get_option('talktopc_voice_avatar_gradient1')) $voice['avatarGradient1'] = $v;
+    if ($v = get_option('talktopc_voice_avatar_gradient2')) $voice['avatarGradient2'] = $v;
+    if ($v = get_option('talktopc_voice_online_dot_color')) $voice['onlineDotColor'] = $v;
+    if ($v = get_option('talktopc_voice_hero_gradient1')) $voice['heroGradient1'] = $v;
+    if ($v = get_option('talktopc_voice_hero_gradient2')) $voice['heroGradient2'] = $v;
+    if ($v = get_option('talktopc_voice_agent_name_color')) $voice['agentNameColor'] = $v;
+    if ($v = get_option('talktopc_voice_agent_role_color')) $voice['agentRoleColor'] = $v;
+    if ($v = get_option('talktopc_voice_headline_color')) $voice['headlineColor'] = $v;
+    if ($v = get_option('talktopc_voice_subline_color')) $voice['sublineColor'] = $v;
+    if ($v = get_option('talktopc_voice_primary_btn_gradient1')) $voice['primaryBtnGradient1'] = $v;
+    if ($v = get_option('talktopc_voice_primary_btn_gradient2')) $voice['primaryBtnGradient2'] = $v;
+    if ($v = get_option('talktopc_voice_secondary_btn_bg')) $voice['secondaryBtnBg'] = $v;
+    if ($v = get_option('talktopc_voice_secondary_btn_border')) $voice['secondaryBtnBorder'] = $v;
+    if ($v = get_option('talktopc_voice_secondary_btn_text_color')) $voice['secondaryBtnTextColor'] = $v;
+    if ($v = get_option('talktopc_voice_waveform_bar_color')) $voice['waveformBarColor'] = $v;
+    if ($v = get_option('talktopc_voice_send_message_text')) $voice['sendMessageText'] = $v;
+    if ($v = get_option('talktopc_voice_agent_role')) $voice['agentRole'] = $v;
+    if ($v = get_option('talktopc_voice_headline')) $voice['headline'] = $v;
+    if ($v = get_option('talktopc_voice_subline')) $voice['subline'] = $v;
+    if ($v = get_option('talktopc_voice_speaker_color')) $voice['speakerButtonColor'] = $v;
+    if ($v = get_option('talktopc_voice_live_indicator_text_color')) $voice['liveIndicatorTextColor'] = $v;
+    if ($v = get_option('talktopc_voice_live_indicator_dot_color')) $voice['liveIndicatorDotColor'] = $v;
+    if ($v = get_option('talktopc_voice_live_transcript_text_color')) $voice['liveTranscriptTextColor'] = $v;
+    if ($v = get_option('talktopc_voice_live_transcript_font_size')) $voice['liveTranscriptFontSize'] = $v;
     
     $config['voice'] = $voice;
     

@@ -32,8 +32,8 @@ echo ""
 
 cd "$PLUGIN_DIR"
 
-# Build rsync command
-RSYNC_CMD="rsync -avz --no-perms --no-group --no-owner --no-times -e \"ssh -i $SSH_KEY -o StrictHostKeyChecking=no\""
+# Build rsync command (-I: ignore mtime/size quick skip; pairs with --no-times so edited files still sync)
+RSYNC_CMD="rsync -avz -I --no-perms --no-group --no-owner --no-times -e \"ssh -i $SSH_KEY -o StrictHostKeyChecking=no\""
 
 # Add --delete flag if sync-delete is enabled
 if [ "$SYNC_DELETE" = true ]; then

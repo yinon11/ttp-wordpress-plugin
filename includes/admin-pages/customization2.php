@@ -16,6 +16,7 @@ if (!defined('ABSPATH')) exit;
  */
 function talktopc_get_all_widget_settings() {
     return [
+        'agentName' => get_option('talktopc_agent_name', 'Sasha'),
         'button' => [
             'size' => get_option('talktopc_button_size', 'medium'),
             'shape' => get_option('talktopc_button_shape', 'circle'),
@@ -71,7 +72,7 @@ function talktopc_get_all_widget_settings() {
             'micButtonColor' => get_option('talktopc_voice_mic_color', '#7C3AED'),
             'micButtonActiveColor' => get_option('talktopc_voice_mic_active_color', '#EF4444'),
             'avatarBackgroundColor' => get_option('talktopc_voice_avatar_color', '#667eea'),
-            'startCallButtonText' => get_option('talktopc_voice_start_btn_text', 'Start Call'),
+            'startCallButtonText' => get_option('talktopc_voice_start_btn_text', 'Start Voice Call'),
             'startCallButtonColor' => get_option('talktopc_voice_start_btn_color', '#667eea'),
             'startCallButtonTextColor' => get_option('talktopc_voice_start_btn_text_color', '#FFFFFF'),
             'statusTitleColor' => get_option('talktopc_voice_status_title_color', '#1e293b'),
@@ -84,6 +85,34 @@ function talktopc_get_all_widget_settings() {
             'avatarType' => 'icon',
             'avatarIcon' => '🤖',
             'avatarImageUrl' => '',
+            'pillGradient' => get_option('talktopc_voice_pill_gradient', ''),
+            'pillTextColor' => get_option('talktopc_voice_pill_text_color', '#ffffff'),
+            'pillDotColor' => get_option('talktopc_voice_pill_dot_color', '#4ade80'),
+            'avatarGradient1' => get_option('talktopc_voice_avatar_gradient1', '#6d56f5'),
+            'avatarGradient2' => get_option('talktopc_voice_avatar_gradient2', '#a78bfa'),
+            'onlineDotColor' => get_option('talktopc_voice_online_dot_color', '#22c55e'),
+            'heroGradient1' => get_option('talktopc_voice_hero_gradient1', '#2a2550'),
+            'heroGradient2' => get_option('talktopc_voice_hero_gradient2', '#1a1a2e'),
+            'agentNameColor' => get_option('talktopc_voice_agent_name_color', '#f0eff8'),
+            'agentRoleColor' => get_option('talktopc_voice_agent_role_color', 'rgba(255,255,255,0.35)'),
+            'headlineColor' => get_option('talktopc_voice_headline_color', '#ffffff'),
+            'sublineColor' => get_option('talktopc_voice_subline_color', 'rgba(255,255,255,0.45)'),
+            'primaryBtnGradient1' => get_option('talktopc_voice_primary_btn_gradient1', '#6d56f5'),
+            'primaryBtnGradient2' => get_option('talktopc_voice_primary_btn_gradient2', '#9d8df8'),
+            'sendMessageText' => get_option('talktopc_voice_send_message_text', 'Send a Message'),
+            'secondaryBtnBg' => get_option('talktopc_voice_secondary_btn_bg', 'rgba(255,255,255,0.05)'),
+            'secondaryBtnBorder' => get_option('talktopc_voice_secondary_btn_border', 'rgba(255,255,255,0.09)'),
+            'secondaryBtnTextColor' => get_option('talktopc_voice_secondary_btn_text_color', 'rgba(255,255,255,0.6)'),
+            'agentRole' => get_option('talktopc_voice_agent_role', 'AI Voice Assistant'),
+            'headline' => get_option('talktopc_voice_headline', 'Hi there 👋'),
+            'subline' => get_option('talktopc_voice_subline', 'Ask me anything — I respond instantly<br>in voice or text.'),
+            'waveformBarColor' => get_option('talktopc_voice_waveform_bar_color', '#7C3AED'),
+            'speakerButtonColor' => get_option('talktopc_voice_speaker_color', '#FFFFFF'),
+            'endCallButtonColor' => get_option('talktopc_voice_end_call_color', '#ef4444'),
+            'liveIndicatorTextColor' => get_option('talktopc_voice_live_indicator_text_color', '#10b981'),
+            'liveIndicatorDotColor' => get_option('talktopc_voice_live_indicator_dot_color', '#10b981'),
+            'liveTranscriptTextColor' => get_option('talktopc_voice_live_transcript_text_color', '#64748b'),
+            'liveTranscriptFontSize' => get_option('talktopc_voice_live_transcript_font_size', '14px'),
         ],
         'landing' => [
             'logo' => get_option('talktopc_landing_logo', '🤖'),
@@ -138,17 +167,49 @@ function talktopc_render_customization2_page() {
 
         <div class="container" style="max-width: 1800px; margin: 0 auto; padding: 40px 20px; display: grid; grid-template-columns: minmax(600px, 1fr) 420px; gap: 24px; align-items: start;">
             <div class="preview-section" style="background: white; border-radius: 16px; padding: 24px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); min-height: 600px; height: 100%; position: relative; overflow: visible; display: flex; flex-direction: column;">
-                <div style="display: flex; align-items: center; margin-bottom: 20px; flex-shrink: 0; position: relative;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-shrink: 0;">
                     <h2 style="font-size: 24px; font-weight: 700; color: #111827; margin: 0;">Preview</h2>
-                    <span style="font-size: 14px; color: #6b7280; font-weight: 500; position: absolute; left: 50%; transform: translateX(-50%);">✏️ Single click to customize • Double click to interact</span>
+                    <span style="font-size: 12px; color: #9ca3af; font-weight: 500;">✏️ Single click = customize • Double click = interact</span>
                 </div>
-                <div class="preview-area" id="previewArea" style="background: #f3f4f6; border-radius: 12px; height: 600px; position: relative; overflow: scroll !important; border: 2px dashed #d1d5db; padding: 60px; box-sizing: border-box; min-width: 500px; flex: 1; scrollbar-width: auto; -webkit-overflow-scrolling: touch;">
-                    <div style="position: relative; min-height: 800px; width: 100%; padding-bottom: 200px;">
-                        <div class="mock-widget" id="mockWidget" data-element-type="position" style="position: absolute; bottom: 60px; right: 60px; z-index: 1000; min-width: 360px; transform: translateZ(0); cursor: pointer; padding: 4px; border-radius: 8px; transition: background 0.2s;">
-                            <div class="mock-widget-panel open" id="mockPanel" style="position: absolute; bottom: 90px; right: 0; width: 360px; height: 550px; background: white; border-radius: 24px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); display: flex; overflow: hidden; flex-direction: column; z-index: 1;">
-                                <!-- Panel content will be dynamically generated -->
+                <div id="viewSwitcher" style="display: flex; gap: 6px; margin-bottom: 12px;">
+                    <button type="button" class="view-btn active" data-view="voiceIdle" style="padding: 6px 14px; border-radius: 8px; border: none; font-size: 12px; font-weight: 500; cursor: pointer; background: #667eea; color: #fff;">Voice Idle</button>
+                    <button type="button" class="view-btn" data-view="voice" style="padding: 6px 14px; border-radius: 8px; border: none; font-size: 12px; font-weight: 500; cursor: pointer; background: #e5e7eb; color: #6b7280;">Active Call</button>
+                    <button type="button" class="view-btn" data-view="landing" style="padding: 6px 14px; border-radius: 8px; border: none; font-size: 12px; font-weight: 500; cursor: pointer; background: #e5e7eb; color: #6b7280;">Landing</button>
+                    <button type="button" class="view-btn" data-view="text" style="padding: 6px 14px; border-radius: 8px; border: none; font-size: 12px; font-weight: 500; cursor: pointer; background: #e5e7eb; color: #6b7280;">Text</button>
+                </div>
+                <div class="preview-area" id="previewArea">
+                    <div class="preview-browser-chrome" style="background: #dee1e6; padding: 8px 12px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #c4c7cc;">
+                        <div style="display: flex; gap: 6px;">
+                            <div style="width: 12px; height: 12px; border-radius: 50%; background: #ff5f57;"></div>
+                            <div style="width: 12px; height: 12px; border-radius: 50%; background: #febc2e;"></div>
+                            <div style="width: 12px; height: 12px; border-radius: 50%; background: #28c840;"></div>
+                        </div>
+                        <div style="flex: 1; background: #fff; border-radius: 6px; padding: 4px 12px; font-size: 11px; color: #6b7280; text-align: center;">yourwebsite.com</div>
+                    </div>
+                    <div class="preview-page-body" style="background: #f9fafb;">
+                        <div style="padding: 40px; color: #d1d5db; font-size: 14px;">
+                            <div style="width: 60%; height: 12px; background: #e5e7eb; border-radius: 4px; margin-bottom: 10px;"></div>
+                            <div style="width: 80%; height: 12px; background: #e5e7eb; border-radius: 4px; margin-bottom: 10px;"></div>
+                            <div style="width: 45%; height: 12px; background: #e5e7eb; border-radius: 4px; margin-bottom: 30px;"></div>
+                            <div style="width: 70%; height: 12px; background: #e5e7eb; border-radius: 4px; margin-bottom: 10px;"></div>
+                            <div style="width: 55%; height: 12px; background: #e5e7eb; border-radius: 4px;"></div>
+                        </div>
+                        <div id="mockWidget">
+                            <div id="mockPanel" style="position: absolute; bottom: 56px; left: 50%; transform: translateX(-50%); width: 300px; background: #16161e; border-radius: 20px; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 24px 60px rgba(0,0,0,0.4); overflow: hidden; display: flex; flex-direction: column;">
+                                <!-- Panel content dynamically generated by JS -->
                             </div>
-                            <button class="mock-widget-button" id="mockButton" style="position: relative; width: 60px; height: 60px; border-radius: 50%; background: #FFFFFF; border: none; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 24px; transition: all 0.3s; z-index: 2;">🎤</button>
+                            <div id="mockPillLauncher" style="display: flex; align-items: center; gap: 10px; padding: 7px 16px 7px 7px; background: linear-gradient(135deg, #581c87, #312e81, #1e1b4b); border-radius: 999px; box-shadow: 0 8px 32px rgba(0,0,0,0.25); cursor: pointer; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                                <div id="pillIconCircle" style="width: 36px; height: 36px; border-radius: 50%; background: #ffffff; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                    <img src="https://talktopc.com/logo192.png" alt="" style="width: 22px; height: 22px; border-radius: 50%; object-fit: cover;" id="pillIconImg">
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 1px;">
+                                    <div id="pillTitle" style="font-size: 13px; font-weight: 600; color: #ffffff; line-height: 1.2; white-space: nowrap;">Chat Assistant</div>
+                                    <div style="display: flex; align-items: center; gap: 5px; font-size: 11px; color: rgba(255,255,255,0.55); line-height: 1.2;">
+                                        <div id="pillDot" style="width: 7px; height: 7px; border-radius: 50%; background: #4ade80; flex-shrink: 0;"></div>
+                                        <span id="pillStatus">Online</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -168,6 +229,32 @@ function talktopc_render_customization2_page() {
                             💡 <strong>Tip:</strong> Single click any element to see customization options. Double click to use it normally.
                         </span>
                     </p>
+                </div>
+
+                <div id="quickThemes" style="margin-bottom: 20px;">
+                    <h4 style="font-size: 12px; font-weight: 600; color: #6b7280; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Quick Themes</h4>
+                    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;">
+                        <button type="button" class="theme-btn active" data-theme="default" style="border: 2px solid #667eea; border-radius: 8px; overflow: hidden; cursor: pointer; padding: 0; background: #1a1a2e;">
+                            <div style="background: linear-gradient(160deg, #2a2550, #1a1a2e); padding: 6px; height: 40px;"><div style="height: 6px; border-radius: 3px; background: linear-gradient(135deg, #6d56f5, #9d8df8); opacity: 0.9;"></div></div>
+                            <div style="font-size: 10px; color: #e5e7eb; padding: 4px; text-align: center;">Default</div>
+                        </button>
+                        <button type="button" class="theme-btn" data-theme="light" style="border: 2px solid transparent; border-radius: 8px; overflow: hidden; cursor: pointer; padding: 0; background: #f5f3ff;">
+                            <div style="background: linear-gradient(160deg, #ede9fe, #f5f3ff); padding: 6px; height: 40px;"><div style="height: 6px; border-radius: 3px; background: linear-gradient(135deg, #7c3aed, #a78bfa); opacity: 0.9;"></div></div>
+                            <div style="font-size: 10px; color: #374151; padding: 4px; text-align: center;">Light</div>
+                        </button>
+                        <button type="button" class="theme-btn" data-theme="sunset" style="border: 2px solid transparent; border-radius: 8px; overflow: hidden; cursor: pointer; padding: 0; background: #1a0a2e;">
+                            <div style="background: linear-gradient(160deg, #4a1942, #1a0a2e); padding: 6px; height: 40px;"><div style="height: 6px; border-radius: 3px; background: linear-gradient(135deg, #f97316, #ec4899); opacity: 0.9;"></div></div>
+                            <div style="font-size: 10px; color: #e5e7eb; padding: 4px; text-align: center;">Sunset</div>
+                        </button>
+                        <button type="button" class="theme-btn" data-theme="hebrew" style="border: 2px solid transparent; border-radius: 8px; overflow: hidden; cursor: pointer; padding: 0; background: #0f172a;">
+                            <div style="background: linear-gradient(160deg, #1a2744, #0f172a); padding: 6px; height: 40px;"><div style="height: 6px; border-radius: 3px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); opacity: 0.9;"></div></div>
+                            <div style="font-size: 10px; color: #e5e7eb; padding: 4px; text-align: center; direction: rtl;">עברית</div>
+                        </button>
+                        <button type="button" class="theme-btn" data-theme="sasha" style="border: 2px solid transparent; border-radius: 8px; overflow: hidden; cursor: pointer; padding: 0; background: #ebe6de;">
+                            <div style="background: linear-gradient(160deg, #f8f5ef, #ebe6de); padding: 6px; height: 40px;"><div style="height: 6px; border-radius: 3px; background: linear-gradient(135deg, #c4a265, #9e7e4f); opacity: 0.9;"></div></div>
+                            <div style="font-size: 10px; color: #374151; padding: 4px; text-align: center;">S-Law</div>
+                        </button>
+                    </div>
                 </div>
 
                 <div id="customizationControls" style="flex: 0 0 auto; overflow: visible; margin-bottom: 16px;">
@@ -241,23 +328,41 @@ function talktopc_render_customization2_page() {
         }
 
         .preview-area {
-            background: #f3f4f6;
+            background: #e8eaed;
             border-radius: 12px;
             height: 600px;
+            min-height: 480px;
             position: relative;
-            overflow: scroll !important;
-            border: 2px dashed #d1d5db;
-            padding: 60px;
+            overflow: hidden;
+            border: 1px solid #d1d5db;
             box-sizing: border-box;
             min-width: 500px;
             flex: 1;
-            scrollbar-width: auto;
-            -webkit-overflow-scrolling: touch;
+            display: flex;
+            flex-direction: column;
         }
 
-        .preview-area > div {
-            min-height: 800px;
+        .preview-area > .preview-browser-chrome {
+            flex-shrink: 0;
+        }
+
+        .preview-area > .preview-page-body {
+            flex: 1;
+            min-height: 0;
             position: relative;
+            overflow: hidden;
+            /* Explicit height so % positioning inside is reliable (flex item otherwise can confuse % bottom) */
+            min-height: 200px;
+        }
+
+        /* Admin preview: keep mock widget in upper–middle of fake page (not glued to bottom) */
+        #previewArea .preview-page-body #mockWidget {
+            position: absolute;
+            bottom: 328px;
+            top: auto;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
         }
 
         .customization-panel {
