@@ -1,0 +1,84 @@
+# CLAUDE.md - TalkToPC Voice Widget (WordPress Plugin)
+
+## Project Overview
+
+AI-powered voice assistant plugin for WordPress. Visitors have natural voice conversations with AI agents in 40+ languages. Features one-click OAuth setup, automatic AI agent creation from site content, WooCommerce support, and full widget customization. ~6,700 lines of core PHP.
+
+**Version:** 1.9.113
+
+## Tech Stack
+
+- **PHP:** 7.4+
+- **Platform:** WordPress 5.0+
+- **No build tool** — pure PHP/HTML/CSS/JS
+
+## Entry Point
+
+`talktopc.php` - Main plugin file. Defines constants, includes all modules, handles automatic database migrations on upgrade.
+
+## Project Structure (`/includes`)
+
+| File | LOC | Purpose |
+|---|---|---|
+| `admin-settings.php` | 489 | Settings registration, sanitizers, admin menu, backend sync hooks |
+| `admin-page.php` | 42 | Dashboard page renderer setup |
+| `admin-settings-sections.php` | 554 | UI sections (Chat, Advanced, E-commerce) |
+| `admin-styles.php` | 1,575 | All admin CSS (animations, grid, responsive) |
+| `admin-helpers.php` | 67 | Utility functions for admin pages |
+| `ajax-handlers.php` | 1,553 | 15+ AJAX endpoints |
+| `oauth.php` | 383 | OAuth 2.0 flow, nonce verification, auto-agent setup |
+| `frontend-widget.php` | 528 | Widget enqueue, config builder, page rule matching |
+| `migration.php` | 557 | Database migration utility for legacy table upgrades |
+
+### Admin Pages (`/includes/admin-pages/`)
+
+- `dashboard.php` (36 KB) - Connection status, agent selection, settings UI, OAuth flow
+- `customization2.php` (50 KB) - Live widget preview, appearance customization
+- `appearance.php` (4.8 KB) - Color/position/icon settings
+- `page-rules.php` (6.9 KB) - Per-page agent assignment
+- `chat.php` (1.6 KB) - Chat-specific settings
+- `advanced.php` (1.6 KB) - Advanced configuration
+
+### Admin Scripts (`/includes/admin-scripts/`)
+
+- `dashboard.js.php` (1,081 LOC) - Agent management, API fetch, create/update UI
+- `page-rules.js.php` (349 LOC) - Page rules CRUD
+- `common.js.php` (101 LOC) - Shared utilities, `wp_localize_script` for AJAX
+- `customization2.js` (132 KB) - Widget preview engine, real-time customization
+
+## AJAX Handlers (15 total)
+
+`talktopc_fetch_agents`, `talktopc_fetch_voices`, `talktopc_fetch_credits`, `talktopc_create_agent`, `talktopc_update_agent`, `talktopc_generate_prompt`, `talktopc_save_page_rules`, `talktopc_save_widget_customization2`, `talktopc_get_signed_url` (public/nopriv), and more.
+
+## OAuth Flow (`oauth.php`)
+
+1. User clicks "Connect" → Verify nonce, generate one-time secret, store in 5-min transient
+2. Redirect to TalkToPC authorization endpoint
+3. Callback verifies nonce + secret with `hash_equals()`, stores credentials
+4. Auto-fetch agents; create default if none exist
+
+## Deployment Scripts
+
+- `deploy_to_svn.sh` - Deploy to WordPress.org SVN (trunk & tags)
+- `production_deploy.sh` - Auto-bump patch version, create zip, save to ~/Downloads
+- `upload_all.sh` - Rsync plugin to remote server
+- `clear_cache.sh` - Cache management
+
+## Install & Setup
+
+1. Deploy to `/wp-content/plugins/`
+2. Activate the plugin
+3. Click **Connect to TalkToPC** (OAuth)
+
+## Conventions & Patterns
+
+- **Namespace:** `talktopc_*` prefix for all functions
+- **Security:** `check_admin_referer()`, `wp_verify_nonce()`, `current_user_can()`, `sanitize_*` callbacks; OAuth 2.0 with one-time secrets
+- **JS pattern:** PHP-generated `.js.php` files via `wp_add_inline_script()` (WordPress.org compliant)
+- **Config:** WordPress Options API (no custom tables; migration provided for legacy data)
+- **Error logging:** Guarded with `WP_DEBUG`
+- **Distribution:** `.distignore` excludes `.sh`, `.md`, `.git/`, `node_modules`
+
+## Important
+
+**On any change to this repository, update this CLAUDE.md file to reflect the current state of the project.** Keep the project structure, build instructions, and guidelines accurate and up to date.
